@@ -148,16 +148,16 @@ const defaultState = () => ({
   log:["Select Start Combat to begin."], lastSeen:Date.now()
 });
 
-let state = loadState();
-let currentView = "combat";
-let currentSkill = "mining";
-let lastTick = performance.now();
 let authenticated = false;
 let authSession = loadAuthSession();
 let authMode = "signup";
 let cloudSaveTimer = null;
 let activeSaveKey = SAVE_KEY;
 let identityUser = null;
+let state = loadState();
+let currentView = "combat";
+let currentSkill = "mining";
+let lastTick = performance.now();
 
 function xpForLevel(level) {
   let total = 0;
@@ -662,8 +662,18 @@ async function login(email,password) {
 
 async function signup(email,password) {
   await identityRequest("/signup",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email,password})});
+  let lastError;
+  for (let attempt=0;attempt<6;attempt++) {
+    try {
+      if (attempt) await new Promise(resolve=>setTimeout(resolve,500));
+      await login(email,password);
+      return;
+    } catch (error) {
+      lastError=error;
+    }
+  }
   setAuthMode("login");
-  throw new Error("Account created. Confirm your email, then log in.");
+  throw new Error(lastError?.message||"Account created. Log in with the password you just chose.");
 }
 
 async function validAccessToken() {
@@ -748,6 +758,9 @@ function setAuthMode(mode) {
   document.querySelector("#auth-submit").textContent=signupMode?"Create Account":"Log In";
   document.querySelector("#auth-switch").textContent=signupMode?"Already have an account? Log in":"Need an account? Sign up";
   document.querySelector("#auth-password").autocomplete=signupMode?"new-password":"current-password";
+  document.querySelector("#auth-note").textContent=signupMode
+    ?"Create an account once, then use it on any device."
+    :"Your cloud progress will load after you sign in.";
 }
 
 async function logout() {

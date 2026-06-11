@@ -1,14 +1,15 @@
-const { getStore } = require("@netlify/blobs");
+const { connectLambda, getStore } = require("@netlify/blobs");
 
 exports.handler = async (event, context) => {
   const user = context.clientContext && context.clientContext.user;
   if (!user) return response(401, { error: "Authentication required" });
 
+  if (event.blobs) connectLambda(event);
   const store = getStore("player-saves");
   const key = `player-${user.sub}`;
 
   if (event.httpMethod === "GET") {
-    const save = await store.get(key, { type: "json", consistency: "strong" });
+    const save = await store.get(key, { type: "json" });
     return response(200, { save: save || null });
   }
 

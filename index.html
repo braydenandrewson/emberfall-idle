@@ -51,8 +51,9 @@
       <section id="view-combat" class="view active">
         <div class="section-heading">
           <div><span class="eyebrow">Whisperwood Outskirts</span><h2>Combat Grounds</h2></div>
-          <div class="zone-selector"><span>Zone 1</span><strong>Greenveil Trail</strong></div>
+          <div class="zone-selector"><span id="zone-number">Zone 1</span><strong id="zone-name">Greenveil Trail</strong></div>
         </div>
+        <div id="zone-list" class="zone-list"></div>
         <div class="combat-layout">
           <article class="fighter-card hero-card">
             <div class="fighter-heading">
@@ -82,13 +83,14 @@
               <strong id="attack-timer-text">2.4s</strong>
             </div>
             <button class="primary-button" id="combat-toggle">Start Combat</button>
+            <button class="potion-button" id="use-potion">Use Potion <strong id="potion-count">0</strong></button>
             <p id="combat-note">Defeat enemies to train Attack, Strength, Defence, and Hitpoints.</p>
           </div>
 
           <article class="fighter-card enemy-card">
             <div class="fighter-heading">
-              <div><span>Common enemy</span><h3>Greenveil Goblin</h3></div>
-              <strong class="level-badge danger">Lv. 3</strong>
+              <div><span id="enemy-rank">Common enemy</span><h3 id="enemy-name">Greenveil Goblin</h3></div>
+              <strong class="level-badge danger">Lv. <span id="enemy-level">3</span></strong>
             </div>
             <div class="portrait-stage">
               <div class="aura enemy-aura"></div>
@@ -99,8 +101,10 @@
             <div class="meter health enemy-health"><i id="enemy-hp-bar"></i></div>
             <div class="loot-preview">
               <span>Possible loot</span>
-              <div><b>Coins</b><b>Bronze ore</b><b>Goblin scrap</b></div>
+              <div id="enemy-loot"><b>Coins</b><b>Copper ore</b><b>Goblin scrap</b></div>
             </div>
+            <button class="boss-button" id="boss-toggle">Challenge Boss</button>
+            <p class="hunt-progress" id="hunt-progress">Defeat 10 enemies to reveal the boss.</p>
           </article>
         </div>
         <div class="combat-log-panel">
@@ -168,6 +172,17 @@
           <div><span class="eyebrow">Permanent upgrades</span><h3>Tools of the Trade</h3></div>
           <p>Purchase upgrades for individual skills. Tool speed shortens every action; gathering kits increase the amount produced.</p>
         </div>
+        <article class="potion-shop">
+          <div>
+            <span class="eyebrow">Combat supplies</span>
+            <h3>Health Potion</h3>
+            <p>Restores 40 health during combat. Potions cannot raise health above its maximum.</p>
+          </div>
+          <div class="potion-purchase">
+            <span>Owned: <strong id="market-potions">0</strong></span>
+            <button class="primary-button" id="buy-potion">25 coins</button>
+          </div>
+        </article>
         <div id="market-grid" class="market-grid"></div>
       </section>
 

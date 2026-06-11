@@ -1,5 +1,30 @@
 const SAVE_KEY = "emberfall-idle-save-v1";
 const productionSkills = ["mining","woodcutting","fishing","smithing"];
+const POTION_ITEM = "Health Potion";
+const POTION_COST = 25;
+const POTION_HEAL = 40;
+const zoneData = [
+  {
+    name:"Greenveil Trail", requiredKills:10,
+    enemy:{name:"Greenveil Goblin", level:3, hp:32, maxHit:6, attackTime:3000, coins:[4,9], item:"Goblin Scrap", bonusItem:"Copper Ore"},
+    boss:{name:"Grak the Trailbreaker", level:8, hp:115, maxHit:10, attackTime:2600, coins:[45,65], item:"Trailbreaker Crest"}
+  },
+  {
+    name:"Ashen Quarry", requiredKills:14,
+    enemy:{name:"Cinder Kobold", level:12, hp:72, maxHit:11, attackTime:2700, coins:[9,15], item:"Cinder Scale", bonusItem:"Iron Ore"},
+    boss:{name:"Magmar, Quarry Tyrant", level:20, hp:260, maxHit:17, attackTime:2300, coins:[110,145], item:"Molten Core"}
+  },
+  {
+    name:"Frostmere Pass", requiredKills:18,
+    enemy:{name:"Frostbound Raider", level:24, hp:145, maxHit:17, attackTime:2400, coins:[16,25], item:"Frozen Sigil", bonusItem:"Coal"},
+    boss:{name:"Skall the White Warden", level:35, hp:520, maxHit:25, attackTime:2100, coins:[230,290], item:"Warden Horn"}
+  },
+  {
+    name:"Emberfall Citadel", requiredKills:24,
+    enemy:{name:"Emberguard Knight", level:40, hp:270, maxHit:25, attackTime:2200, coins:[28,42], item:"Emberguard Seal", bonusItem:"Iron Bar"},
+    boss:{name:"Vharos, the Cinder King", level:55, hp:950, maxHit:36, attackTime:1900, coins:[500,650], item:"Cinder Crown"}
+  }
+];
 const masteryMilestones = [
   { level:10, text:"+5% skill XP" },
   { level:25, text:"+1 item per action" },
@@ -56,7 +81,8 @@ const defaultState = () => ({
   },
   activeSkill:null, selectedActions:{mining:"copper",woodcutting:"normal",fishing:"shrimp",smithing:"bronze"},
   actionElapsed:0, combat:false, attackElapsed:0, enemyAttackElapsed:0, heroHp:100, enemyHp:32,
-  kills:0, log:["Select Start Combat to begin."], lastSeen:Date.now()
+  kills:0, currentZone:0, unlockedZones:1, zoneKills:[0,0,0,0], fightingBoss:false,
+  log:["Select Start Combat to begin."], lastSeen:Date.now()
 });
 
 let state = loadState();
@@ -98,6 +124,10 @@ function attackPower() { return 5 + skillLevel("attack") + (state.equipment.weap
 function defencePower() { return 3 + skillLevel("defence") + (state.equipment.shield === "Bronze Shield" ? 5 : 0); }
 function maxHit() { return 2 + Math.floor(skillLevel("strength") / 2) + (state.equipment.weapon === "Bronze Dagger" ? 2 : 0); }
 function combatLevel() { return Math.max(1, Math.floor((skillLevel("attack")+skillLevel("strength")+skillLevel("defence")+skillLevel("hitpoints"))/4)); }
+function currentZone() { return zoneData[state.currentZone]; }
+function currentEnemy() { return state.fightingBoss ? currentZone().boss : currentZone().enemy; }
+function enemyMaxHp() { return currentEnemy().hp; }
+function bossReady(zoneIndex=state.currentZone) { return state.zoneKills[zoneIndex] >= zoneData[zoneIndex].requiredKills; }
 function addItem(name, qty) { state.inventory[name] = (state.inventory[name] || 0) + qty; if (state.inventory[name] <= 0) delete state.inventory[name]; }
 function hasCosts(costs={}) { return Object.entries(costs).every(([item,qty]) => (state.inventory[item]||0) >= qty); }
 function payCosts(costs={}) { Object.entries(costs).forEach(([item,qty]) => addItem(item,-qty)); }
@@ -113,7 +143,8 @@ function loadState() {
     productionSkills.forEach(id=>skills[id]={...base.skills[id],...(parsed.skills?.[id]||{})});
     const upgrades={...base.upgrades};
     productionSkills.forEach(id=>upgrades[id]={...base.upgrades[id],...(parsed.upgrades?.[id]||{})});
-    return { ...base, ...parsed, skills, upgrades, selectedActions:{...base.selectedActions,...parsed.selectedActions}, equipment:{...base.equipment,...parsed.equipment} };
+    const zoneKills=base.zoneKills.map((value,index)=>parsed.zoneKills?.[index] ?? value);
+    return { ...base, ...parsed, skills, upgrades, zoneKills, selectedActions:{...base.selectedActions,...parsed.selectedActions}, equipment:{...base.equipment,...parsed.equipment} };
   } catch { return defaultState(); }
 }
 
@@ -183,6 +214,7 @@ function updateSkill(dt) {
 }
 
 function updateCombat(dt) {
+  const enemy=currentEnemy();
   state.attackElapsed += dt;
   state.enemyAttackElapsed += dt;
   if (state.attackElapsed >= 2400) {
@@ -195,27 +227,45 @@ function updateCombat(dt) {
     addLog(`Rowan strikes the goblin for ${hit}.`);
     if (state.enemyHp <= 0) defeatEnemy();
   }
-  if (state.enemyAttackElapsed >= 3000 && state.combat) {
-    state.enemyAttackElapsed -= 3000;
-    const hit = Math.max(0, Math.floor(Math.random()*7) - Math.floor(defencePower()/8));
+  if (state.enemyAttackElapsed >= enemy.attackTime && state.combat) {
+    state.enemyAttackElapsed -= enemy.attackTime;
+    const hit = Math.max(0, Math.floor(Math.random()*(enemy.maxHit+1)) - Math.floor(defencePower()/8));
     state.heroHp -= hit;
     state.skills.defence.xp += 3*Math.max(1,hit);
     state.skills.hitpoints.xp += hit;
     popDamage("hero",hit);
     addLog(hit ? `The goblin hits Rowan for ${hit}.` : "Rowan blocks the goblin's attack.");
     if (state.heroHp <= 0) {
-      state.combat=false; state.heroHp=maxHp(); state.enemyHp=32; state.coins=Math.max(0,state.coins-5);
-      addLog("Rowan retreats and loses 5 coins.");
+      const loss=Math.min(state.coins,5*(state.currentZone+1));
+      state.combat=false; state.heroHp=maxHp(); state.enemyHp=enemyMaxHp(); state.coins-=loss;
+      addLog(`Rowan retreats and loses ${loss} coins.`);
       toast("Defeated - Rowan recovered");
     }
   }
 }
 
 function defeatEnemy() {
-  state.kills++; state.coins += 4 + Math.floor(Math.random()*6); addItem("Goblin Scrap",1);
-  if (Math.random()<.45) addItem("Copper Ore",1);
-  state.enemyHp=32; state.attackElapsed=0; state.enemyAttackElapsed=0;
-  addLog(`Goblin defeated. Total kills: ${state.kills}.`);
+  const enemy=currentEnemy();
+  const coinReward=enemy.coins[0]+Math.floor(Math.random()*(enemy.coins[1]-enemy.coins[0]+1));
+  state.kills++; state.coins+=coinReward; addItem(enemy.item,1);
+  if (!state.fightingBoss && enemy.bonusItem && Math.random()<.45) addItem(enemy.bonusItem,1);
+  if (state.fightingBoss) {
+    const defeatedZone=state.currentZone;
+    addLog(`${enemy.name} defeated! Rowan earns ${coinReward} coins.`);
+    if (defeatedZone+1<zoneData.length && state.unlockedZones<defeatedZone+2) {
+      state.unlockedZones=defeatedZone+2;
+      toast(`${zoneData[defeatedZone+1].name} unlocked`);
+    } else if (defeatedZone===zoneData.length-1) {
+      toast("The Cinder King has fallen");
+    }
+    state.fightingBoss=false;
+  } else {
+    state.zoneKills[state.currentZone]++;
+    addLog(`${enemy.name} defeated. Hunt progress: ${state.zoneKills[state.currentZone]}/${currentZone().requiredKills}.`);
+    if (state.zoneKills[state.currentZone]===currentZone().requiredKills) toast(`${currentZone().boss.name} revealed`);
+  }
+  state.enemyHp=currentEnemy().hp; state.attackElapsed=0; state.enemyAttackElapsed=0;
+  renderCombatSetup();
 }
 
 function addLog(message) {
@@ -256,17 +306,19 @@ function render() {
   if (currentView==="marketplace") renderMarketplace();
   if (currentView==="mastery") renderMastery();
   if (skillData[currentView]) renderSkill();
+  renderCombatSetup();
   renderLive();
 }
 
 function renderLive() {
+  const enemy=currentEnemy(), enemyHpMax=enemy.hp;
   const hp=Math.max(0,state.heroHp), ehp=Math.max(0,state.enemyHp);
   document.querySelector("#coins").textContent=state.coins.toLocaleString();
   document.querySelector("#hero-level").textContent=combatLevel();
   document.querySelector("#hero-hp-text").textContent=`${Math.ceil(hp)} / ${maxHp()}`;
   document.querySelector("#hero-hp-bar").style.width=`${Math.min(100,hp/maxHp()*100)}%`;
-  document.querySelector("#enemy-hp-text").textContent=`${Math.ceil(ehp)} / 32`;
-  document.querySelector("#enemy-hp-bar").style.width=`${ehp/32*100}%`;
+  document.querySelector("#enemy-hp-text").textContent=`${Math.ceil(ehp)} / ${enemyHpMax}`;
+  document.querySelector("#enemy-hp-bar").style.width=`${Math.max(0,ehp)/enemyHpMax*100}%`;
   document.querySelector("#attack-stat").textContent=attackPower();
   document.querySelector("#defence-stat").textContent=defencePower();
   document.querySelector("#maxhit-stat").textContent=maxHit();
@@ -275,6 +327,8 @@ function renderLive() {
   document.querySelector("#combat-toggle").textContent=state.combat ? "Retreat" : "Start Combat";
   document.querySelector("#battle-status").textContent=state.combat ? "Battle in progress" : "Ready to fight";
   document.querySelector(".battle-status").classList.toggle("running",state.combat);
+  document.querySelector("#potion-count").textContent=state.inventory[POTION_ITEM]||0;
+  document.querySelector("#use-potion").disabled=!(state.inventory[POTION_ITEM]>0) || state.heroHp>=maxHp();
   if (skillData[currentSkill]) {
     const action=getAction();
     const duration=actionTime(currentSkill,action);
@@ -283,6 +337,45 @@ function renderLive() {
     document.querySelector("#active-skill-label").textContent=state.activeSkill ? `Training ${skillData[state.activeSkill].name}` : "Not training";
     document.querySelector("#skill-toggle").textContent=state.activeSkill===currentSkill ? "Stop Training" : "Begin";
   }
+}
+
+function renderCombatSetup() {
+  const zone=currentZone(), enemy=currentEnemy();
+  document.querySelector("#zone-number").textContent=`Zone ${state.currentZone+1}`;
+  document.querySelector("#zone-name").textContent=zone.name;
+  document.querySelector("#enemy-rank").textContent=state.fightingBoss ? "Zone boss" : "Common enemy";
+  document.querySelector("#enemy-name").textContent=enemy.name;
+  document.querySelector("#enemy-level").textContent=enemy.level;
+  document.querySelector("#enemy-image").alt=enemy.name;
+  document.querySelector("#enemy-image").dataset.zone=state.currentZone;
+  document.querySelector(".enemy-card").classList.toggle("boss-active",state.fightingBoss);
+  document.querySelector("#enemy-loot").innerHTML=[
+    `<b>${enemy.coins[0]}-${enemy.coins[1]} coins</b>`,
+    `<b>${enemy.item}</b>`,
+    !state.fightingBoss && enemy.bonusItem ? `<b>${enemy.bonusItem}</b>` : ""
+  ].join("");
+  const ready=bossReady();
+  document.querySelector("#boss-toggle").disabled=!ready;
+  document.querySelector("#boss-toggle").textContent=state.fightingBoss ? "Hunt Regular Enemy" : ready ? "Challenge Boss" : "Boss Locked";
+  document.querySelector("#hunt-progress").textContent=ready
+    ? `${zone.boss.name} is ready to challenge.`
+    : `Defeat ${zone.requiredKills-state.zoneKills[state.currentZone]} more enemies to reveal the boss.`;
+  document.querySelector("#zone-list").innerHTML=zoneData.map((item,index)=>{
+    const locked=index>=state.unlockedZones;
+    const cleared=index+1<state.unlockedZones || (index===zoneData.length-1 && state.inventory[item.boss.item]);
+    return `<button class="zone-card ${index===state.currentZone?"selected":""} ${locked?"locked":""}" data-zone="${index}" ${locked?"disabled":""}>
+      <span>Zone ${index+1}</span><strong>${item.name}</strong><small>${cleared?"Boss defeated":locked?"Locked":`${state.zoneKills[index]}/${item.requiredKills} hunted`}</small>
+    </button>`;
+  }).join("");
+  document.querySelectorAll(".zone-card:not(.locked)").forEach(button=>button.onclick=()=>selectZone(Number(button.dataset.zone)));
+}
+
+function selectZone(index) {
+  if (index>=state.unlockedZones || index===state.currentZone) return;
+  state.combat=false; state.currentZone=index; state.fightingBoss=false;
+  state.enemyHp=currentEnemy().hp; state.attackElapsed=0; state.enemyAttackElapsed=0;
+  addLog(`Rowan travels to ${currentZone().name}.`);
+  render();
 }
 
 function renderSkill() {
@@ -320,6 +413,8 @@ function renderSkillProgress() {
 
 function renderMarketplace() {
   document.querySelector("#market-coins").textContent=state.coins.toLocaleString();
+  document.querySelector("#market-potions").textContent=state.inventory[POTION_ITEM]||0;
+  document.querySelector("#buy-potion").disabled=state.coins<POTION_COST;
   document.querySelector("#market-grid").innerHTML=productionSkills.map(id=>{
     const upgrades=state.upgrades[id];
     const speedMax=upgrades.speed>=10, yieldMax=upgrades.yield>=5;
@@ -369,7 +464,28 @@ function capitalize(s) { return s[0].toUpperCase()+s.slice(1); }
 function formatDuration(ms) { const h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000); return h ? `${h}h ${m}m` : `${m} minutes`; }
 
 document.querySelectorAll(".nav-item").forEach(btn=>btn.onclick=()=>navigate(btn.dataset.view));
-document.querySelector("#combat-toggle").onclick=()=>{ state.combat=!state.combat; state.activeSkill=null; addLog(state.combat?"Rowan engages the Greenveil Goblin.":"Rowan retreats from combat."); render(); };
+document.querySelector("#combat-toggle").onclick=()=>{
+  state.combat=!state.combat; state.activeSkill=null;
+  addLog(state.combat?`Rowan engages ${currentEnemy().name}.`:"Rowan retreats from combat.");
+  render();
+};
+document.querySelector("#boss-toggle").onclick=()=>{
+  if (!bossReady()) return;
+  state.combat=false; state.fightingBoss=!state.fightingBoss; state.enemyHp=currentEnemy().hp;
+  state.attackElapsed=0; state.enemyAttackElapsed=0;
+  addLog(state.fightingBoss?`${currentZone().boss.name} enters the battlefield.`:`Rowan returns to hunting ${currentZone().enemy.name}.`);
+  render();
+};
+document.querySelector("#use-potion").onclick=()=>{
+  if (!(state.inventory[POTION_ITEM]>0) || state.heroHp>=maxHp()) return;
+  addItem(POTION_ITEM,-1);
+  const healed=Math.min(POTION_HEAL,maxHp()-state.heroHp);
+  state.heroHp+=healed; addLog(`Rowan drinks a health potion and restores ${healed} health.`); toast(`Restored ${healed} health`); render();
+};
+document.querySelector("#buy-potion").onclick=()=>{
+  if (state.coins<POTION_COST) return toast("Not enough coins");
+  state.coins-=POTION_COST; addItem(POTION_ITEM,1); toast("Health potion purchased"); saveState(); render();
+};
 document.querySelector("#skill-toggle").onclick=()=>{
   if (state.activeSkill===currentSkill) { state.activeSkill=null; state.actionElapsed=0; }
   else { state.combat=false; state.activeSkill=currentSkill; state.actionElapsed=0; }
@@ -383,6 +499,9 @@ document.querySelector("#offline-close").onclick=()=>document.querySelector("#of
 window.addEventListener("beforeunload",()=>saveState());
 setInterval(()=>saveState(),15000);
 
+state.currentZone=Math.min(state.currentZone,zoneData.length-1,state.unlockedZones-1);
+state.fightingBoss=state.fightingBoss && bossReady();
+state.enemyHp=Math.min(state.enemyHp,currentEnemy().hp);
 state.heroHp=Math.min(state.heroHp,maxHp());
 applyOfflineProgress();
 render();

@@ -1,0 +1,9 @@
+# Generated browser previews
+preview*.png
+
+# Local editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+

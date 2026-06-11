@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#10150f">
+  <title>Emberfall Idle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">E</span>
+        <div>
+          <h1>Emberfall</h1>
+          <p>Idle Adventures</p>
+        </div>
+      </div>
+      <div class="top-stats">
+        <div><span>Combat</span><strong id="combat-level">1</strong></div>
+        <div><span>Total Level</span><strong id="total-level">6</strong></div>
+        <div><span>Coins</span><strong id="coins">0</strong></div>
+      </div>
+      <div class="save-state" id="save-state">Saved locally</div>
+    </header>
+
+    <aside class="sidebar">
+      <p class="nav-label">Adventure</p>
+      <button class="nav-item active" data-view="combat"><span class="nav-icon">X</span>Combat</button>
+      <p class="nav-label">Gathering</p>
+      <button class="nav-item" data-view="mining"><span class="nav-icon">M</span>Mining <b id="nav-mining">1</b></button>
+      <button class="nav-item" data-view="woodcutting"><span class="nav-icon">W</span>Woodcutting <b id="nav-woodcutting">1</b></button>
+      <button class="nav-item" data-view="fishing"><span class="nav-icon">F</span>Fishing <b id="nav-fishing">1</b></button>
+      <p class="nav-label">Crafting</p>
+      <button class="nav-item" data-view="smithing"><span class="nav-icon">S</span>Smithing <b id="nav-smithing">1</b></button>
+      <p class="nav-label">Character</p>
+      <button class="nav-item" data-view="inventory"><span class="nav-icon">I</span>Inventory</button>
+      <button class="nav-item" data-view="marketplace"><span class="nav-icon">$</span>Marketplace</button>
+      <button class="nav-item" data-view="mastery"><span class="nav-icon">A</span>All Skills</button>
+      <div class="sidebar-footer">
+        <button id="save-button">Save game</button>
+        <button id="reset-button">Reset</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <section id="view-combat" class="view active">
+        <div class="section-heading">
+          <div><span class="eyebrow">Whisperwood Outskirts</span><h2>Combat Grounds</h2></div>
+          <div class="zone-selector"><span>Zone 1</span><strong>Greenveil Trail</strong></div>
+        </div>
+        <div class="combat-layout">
+          <article class="fighter-card hero-card">
+            <div class="fighter-heading">
+              <div><span>Your adventurer</span><h3>Rowan</h3></div>
+              <strong class="level-badge">Lv. <span id="hero-level">1</span></strong>
+            </div>
+            <div class="portrait-stage">
+              <div class="aura"></div>
+              <img id="hero-image" src="assets/hero.png" alt="Rowan, your adventurer">
+              <span class="damage-number" id="hero-damage"></span>
+            </div>
+            <div class="bar-label"><span>Health</span><strong id="hero-hp-text">100 / 100</strong></div>
+            <div class="meter health"><i id="hero-hp-bar"></i></div>
+            <div class="combat-stats">
+              <div><span>Attack</span><strong id="attack-stat">6</strong></div>
+              <div><span>Defence</span><strong id="defence-stat">4</strong></div>
+              <div><span>Max Hit</span><strong id="maxhit-stat">3</strong></div>
+            </div>
+          </article>
+
+          <div class="battle-center">
+            <div class="battle-status"><span class="live-dot"></span><strong id="battle-status">Ready to fight</strong></div>
+            <div class="crossed-swords">X</div>
+            <div class="attack-timer">
+              <span>Next strike</span>
+              <div class="timer-track"><i id="attack-timer-bar"></i></div>
+              <strong id="attack-timer-text">2.4s</strong>
+            </div>
+            <button class="primary-button" id="combat-toggle">Start Combat</button>
+            <p id="combat-note">Defeat enemies to train Attack, Strength, Defence, and Hitpoints.</p>
+          </div>
+
+          <article class="fighter-card enemy-card">
+            <div class="fighter-heading">
+              <div><span>Common enemy</span><h3>Greenveil Goblin</h3></div>
+              <strong class="level-badge danger">Lv. 3</strong>
+            </div>
+            <div class="portrait-stage">
+              <div class="aura enemy-aura"></div>
+              <img id="enemy-image" src="assets/goblin.png" alt="Greenveil Goblin">
+              <span class="damage-number" id="enemy-damage"></span>
+            </div>
+            <div class="bar-label"><span>Health</span><strong id="enemy-hp-text">32 / 32</strong></div>
+            <div class="meter health enemy-health"><i id="enemy-hp-bar"></i></div>
+            <div class="loot-preview">
+              <span>Possible loot</span>
+              <div><b>Coins</b><b>Bronze ore</b><b>Goblin scrap</b></div>
+            </div>
+          </article>
+        </div>
+        <div class="combat-log-panel">
+          <div><span class="eyebrow">Field report</span><h3>Combat Log</h3></div>
+          <div id="combat-log" class="combat-log"><p>Select Start Combat to begin.</p></div>
+        </div>
+      </section>
+
+      <section id="view-skill" class="view">
+        <div class="section-heading">
+          <div><span class="eyebrow">Progress while you are away</span><h2 id="skill-title">Mining</h2></div>
+          <div class="skill-level-card"><span>Skill Level</span><strong id="skill-level">1</strong></div>
+        </div>
+        <div class="skill-workspace">
+          <article class="current-action">
+            <span class="eyebrow">Current action</span>
+            <div class="action-illustration"><span id="action-monogram">M</span></div>
+            <h3 id="action-name">Copper Vein</h3>
+            <p id="action-description">Mine useful ore from the shallow hills.</p>
+            <div class="xp-row"><span id="skill-xp-text">0 / 83 XP</span><strong id="skill-xp-rate">+10 XP</strong></div>
+            <div class="meter xp"><i id="skill-xp-bar"></i></div>
+            <div class="mastery-summary">
+              <div class="xp-row"><span>Mastery <b id="mastery-level">1</b></span><strong id="mastery-xp-rate">+10 MXP</strong></div>
+              <div class="meter mastery-meter"><i id="mastery-xp-bar"></i></div>
+              <span id="mastery-xp-text">0 / 83 Mastery XP</span>
+            </div>
+            <div class="action-progress">
+              <div class="timer-track"><i id="skill-timer-bar"></i></div>
+              <strong id="skill-timer-text">3.0s</strong>
+            </div>
+            <button class="primary-button" id="skill-toggle">Begin</button>
+          </article>
+          <div>
+            <div class="panel-heading"><div><span class="eyebrow">Choose a task</span><h3>Available Actions</h3></div><span id="active-skill-label">Not training</span></div>
+            <div id="action-list" class="action-list"></div>
+            <div class="milestone-panel">
+              <div class="panel-heading"><div><span class="eyebrow">Permanent bonuses</span><h3>Mastery Milestones</h3></div></div>
+              <div id="milestone-list" class="milestone-list"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-inventory" class="view">
+        <div class="section-heading"><div><span class="eyebrow">Everything you have earned</span><h2>Inventory & Equipment</h2></div><div class="zone-selector"><span>Used slots</span><strong id="used-slots">0 / 30</strong></div></div>
+        <div class="inventory-layout">
+          <article class="equipment-panel">
+            <div class="panel-heading"><div><span class="eyebrow">Currently equipped</span><h3>Adventurer</h3></div></div>
+            <div class="equipment-hero"><img src="assets/hero.png" alt=""></div>
+            <div id="equipment-slots" class="equipment-slots"></div>
+          </article>
+          <article>
+            <div class="panel-heading"><div><span class="eyebrow">Resources and spoils</span><h3>Backpack</h3></div></div>
+            <div id="inventory-grid" class="inventory-grid"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-marketplace" class="view">
+        <div class="section-heading">
+          <div><span class="eyebrow">Invest your battle spoils</span><h2>Guild Marketplace</h2></div>
+          <div class="zone-selector"><span>Available coins</span><strong id="market-coins">0</strong></div>
+        </div>
+        <div class="market-intro">
+          <div><span class="eyebrow">Permanent upgrades</span><h3>Tools of the Trade</h3></div>
+          <p>Purchase upgrades for individual skills. Tool speed shortens every action; gathering kits increase the amount produced.</p>
+        </div>
+        <div id="market-grid" class="market-grid"></div>
+      </section>
+
+      <section id="view-mastery" class="view">
+        <div class="section-heading"><div><span class="eyebrow">A life of many talents</span><h2>All Skills</h2></div><div class="zone-selector"><span>Total XP</span><strong id="total-xp">0</strong></div></div>
+        <div id="mastery-grid" class="mastery-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <div id="offline-modal" class="modal hidden">
+    <div class="modal-card">
+      <span class="eyebrow">Welcome back</span>
+      <h2>Your adventure continued</h2>
+      <p id="offline-time"></p>
+      <div id="offline-loot" class="offline-loot"></div>
+      <button class="primary-button" id="offline-close">Collect</button>
+    </div>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>

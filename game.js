@@ -1,4 +1,5 @@
 const SAVE_KEY = "emberfall-idle-save-v1";
+const MAX_LEVEL = 100;
 const productionSkills = ["mining","woodcutting","fishing","smithing"];
 const POTION_ITEM = "Health Potion";
 const POTION_COST = 25;
@@ -30,7 +31,50 @@ const masteryMilestones = [
   { level:25, text:"+1 item per action" },
   { level:50, text:"10% faster actions" },
   { level:75, text:"+1 item per action" },
-  { level:99, text:"Double all output" }
+  { level:100, text:"Double all output" }
+];
+
+const equipmentData = {
+  "Rusty Sword":{slot:"weapon",attack:0,maxHit:0},
+  "Bronze Dagger":{slot:"weapon",attack:4,maxHit:2},
+  "Wooden Shield":{slot:"shield",defence:0},
+  "Leather Jerkin":{slot:"body",defence:0,maxHp:0},
+  "None":{},
+  "Bronze Sword":{slot:"weapon",attack:4,maxHit:2},
+  "Bronze Shield":{slot:"shield",defence:5},
+  "Bronze Platebody":{slot:"body",defence:7,maxHp:10},
+  "Bronze Helm":{slot:"head",defence:3,maxHp:5},
+  "Iron Sword":{slot:"weapon",attack:9,maxHit:4},
+  "Iron Shield":{slot:"shield",defence:11},
+  "Iron Platebody":{slot:"body",defence:15,maxHp:20},
+  "Iron Helm":{slot:"head",defence:7,maxHp:10},
+  "Steel Sword":{slot:"weapon",attack:16,maxHit:7},
+  "Steel Shield":{slot:"shield",defence:19},
+  "Steel Platebody":{slot:"body",defence:26,maxHp:35},
+  "Steel Helm":{slot:"head",defence:12,maxHp:18},
+  "Emberforged Blade":{slot:"weapon",attack:28,maxHit:12},
+  "Emberforged Aegis":{slot:"shield",defence:31},
+  "Emberforged Plate":{slot:"body",defence:42,maxHp:60},
+  "Emberforged Crown":{slot:"head",defence:20,maxHp:30}
+};
+
+const craftingRecipes = [
+  {name:"Bronze Sword",level:5,costs:{"Bronze Bar":3}},
+  {name:"Bronze Shield",level:10,costs:{"Bronze Bar":4}},
+  {name:"Bronze Platebody",level:15,costs:{"Bronze Bar":7}},
+  {name:"Bronze Helm",level:20,costs:{"Bronze Bar":4}},
+  {name:"Iron Sword",level:30,costs:{"Iron Bar":4}},
+  {name:"Iron Shield",level:35,costs:{"Iron Bar":5}},
+  {name:"Iron Platebody",level:40,costs:{"Iron Bar":9}},
+  {name:"Iron Helm",level:45,costs:{"Iron Bar":5}},
+  {name:"Steel Sword",level:55,costs:{"Steel Bar":5}},
+  {name:"Steel Shield",level:60,costs:{"Steel Bar":7}},
+  {name:"Steel Platebody",level:65,costs:{"Steel Bar":12}},
+  {name:"Steel Helm",level:70,costs:{"Steel Bar":7}},
+  {name:"Emberforged Blade",level:85,costs:{"Embersteel Bar":7,"Molten Core":1}},
+  {name:"Emberforged Aegis",level:90,costs:{"Embersteel Bar":9,"Warden Horn":1}},
+  {name:"Emberforged Plate",level:95,costs:{"Embersteel Bar":15,"Cinder Crown":1}},
+  {name:"Emberforged Crown",level:100,costs:{"Embersteel Bar":10,"Trailbreaker Crest":1}}
 ];
 
 const skillData = {
@@ -40,7 +84,12 @@ const skillData = {
       { id:"copper", name:"Copper Vein", level:1, time:3000, xp:10, item:"Copper Ore", qty:1, description:"Mine useful ore from the shallow hills." },
       { id:"tin", name:"Tin Vein", level:5, time:3600, xp:16, item:"Tin Ore", qty:1, description:"Extract pale tin for bronze alloys." },
       { id:"iron", name:"Iron Deposit", level:15, time:4400, xp:28, item:"Iron Ore", qty:1, description:"Work a dense vein of sturdy iron." },
-      { id:"coal", name:"Coal Seam", level:25, time:5200, xp:42, item:"Coal", qty:1, description:"Gather fuel for advanced smithing." }
+      { id:"coal", name:"Coal Seam", level:25, time:5200, xp:42, item:"Coal", qty:1, description:"Gather fuel for advanced smithing." },
+      { id:"silver", name:"Silver Lode", level:40, time:6100, xp:70, item:"Silver Ore", qty:1, description:"Extract bright ore from deep stone." },
+      { id:"mithril", name:"Mithril Vein", level:55, time:7200, xp:105, item:"Mithril Ore", qty:1, description:"Mine rare blue metal from ancient rock." },
+      { id:"obsidian", name:"Obsidian Shelf", level:70, time:8300, xp:150, item:"Obsidian", qty:1, description:"Break volcanic glass from heated caverns." },
+      { id:"emberite", name:"Emberite Core", level:85, time:9500, xp:220, item:"Emberite Ore", qty:1, description:"Harvest ore infused with living flame." },
+      { id:"star", name:"Starfall Crater", level:100, time:11000, xp:320, item:"Star Metal", qty:1, description:"Mine metal left by a fallen star." }
     ]
   },
   woodcutting: {
@@ -49,7 +98,11 @@ const skillData = {
       { id:"normal", name:"Common Tree", level:1, time:2800, xp:9, item:"Logs", qty:1, description:"Cut dependable timber near the trail." },
       { id:"oak", name:"Old Oak", level:8, time:3900, xp:20, item:"Oak Logs", qty:1, description:"Harvest tough, mature oak." },
       { id:"willow", name:"River Willow", level:18, time:4800, xp:34, item:"Willow Logs", qty:1, description:"Cut flexible wood from the riverbank." },
-      { id:"ember", name:"Emberpine", level:30, time:6000, xp:55, item:"Emberpine Logs", qty:1, description:"Gather resinous wood warm to the touch." }
+      { id:"ember", name:"Emberpine", level:30, time:6000, xp:55, item:"Emberpine Logs", qty:1, description:"Gather resinous wood warm to the touch." },
+      { id:"maple", name:"Red Maple", level:45, time:6900, xp:82, item:"Maple Logs", qty:1, description:"Cut dense timber favored by craftsmen." },
+      { id:"yew", name:"Ancient Yew", level:60, time:7900, xp:120, item:"Yew Logs", qty:1, description:"Harvest resilient wood from old groves." },
+      { id:"ash", name:"Ashen Heartwood", level:75, time:9000, xp:175, item:"Ashen Logs", qty:1, description:"Cut fire-hardened timber near the citadel." },
+      { id:"world", name:"Worldroot Branch", level:90, time:10400, xp:255, item:"Worldroot Logs", qty:1, description:"Gather legendary wood pulsing with life." }
     ]
   },
   fishing: {
@@ -58,16 +111,24 @@ const skillData = {
       { id:"shrimp", name:"Creek Shrimp", level:1, time:2600, xp:8, item:"Raw Shrimp", qty:1, description:"Net small shrimp in a quiet creek." },
       { id:"trout", name:"Silver Trout", level:7, time:3700, xp:19, item:"Raw Trout", qty:1, description:"Lure quick trout from clear water." },
       { id:"salmon", name:"Redfin Salmon", level:17, time:4700, xp:33, item:"Raw Salmon", qty:1, description:"Catch powerful fish in the rapids." },
-      { id:"eel", name:"Ember Eel", level:28, time:5900, xp:51, item:"Raw Ember Eel", qty:1, description:"Fish the glowing pools after dusk." }
+      { id:"eel", name:"Ember Eel", level:28, time:5900, xp:51, item:"Raw Ember Eel", qty:1, description:"Fish the glowing pools after dusk." },
+      { id:"tuna", name:"Deepwater Tuna", level:42, time:6800, xp:78, item:"Raw Tuna", qty:1, description:"Haul powerful fish from deep water." },
+      { id:"swordfish", name:"Storm Swordfish", level:58, time:8000, xp:118, item:"Raw Swordfish", qty:1, description:"Catch an aggressive fish during storms." },
+      { id:"ray", name:"Frostmere Ray", level:74, time:9200, xp:170, item:"Raw Frostmere Ray", qty:1, description:"Fish beneath the ice of Frostmere Pass." },
+      { id:"leviathan", name:"Young Leviathan", level:92, time:10800, xp:270, item:"Leviathan Meat", qty:1, description:"Land a legendary creature from the abyss." }
     ]
   },
   smithing: {
     name:"Smithing", letter:"S",
     actions: [
       { id:"bronze", name:"Bronze Bar", level:1, time:3400, xp:14, item:"Bronze Bar", qty:1, costs:{"Copper Ore":1,"Tin Ore":1}, description:"Smelt copper and tin into bronze." },
-      { id:"dagger", name:"Bronze Dagger", level:5, time:4200, xp:25, item:"Bronze Dagger", qty:1, costs:{"Bronze Bar":2}, description:"Forge a quick, balanced weapon." },
-      { id:"shield", name:"Bronze Shield", level:10, time:5100, xp:38, item:"Bronze Shield", qty:1, costs:{"Bronze Bar":4}, description:"Hammer out a sturdy round shield." },
-      { id:"ironbar", name:"Iron Bar", level:15, time:4600, xp:33, item:"Iron Bar", qty:1, costs:{"Iron Ore":1,"Coal":1}, description:"Refine iron for stronger equipment." }
+      { id:"ironbar", name:"Iron Bar", level:15, time:4600, xp:33, item:"Iron Bar", qty:1, costs:{"Iron Ore":1,"Coal":1}, description:"Refine iron for stronger equipment." },
+      { id:"steelbar", name:"Steel Bar", level:35, time:5800, xp:62, item:"Steel Bar", qty:1, costs:{"Iron Ore":2,"Coal":3}, description:"Temper iron with additional coal." },
+      { id:"silverbar", name:"Silver Bar", level:45, time:6400, xp:82, item:"Silver Bar", qty:1, costs:{"Silver Ore":2,"Coal":1}, description:"Purify silver for specialist crafts." },
+      { id:"mithrilbar", name:"Mithril Bar", level:60, time:7600, xp:125, item:"Mithril Bar", qty:1, costs:{"Mithril Ore":2,"Coal":4}, description:"Smelt rare mithril at intense heat." },
+      { id:"obsidianbar", name:"Obsidian Alloy", level:75, time:8800, xp:180, item:"Obsidian Alloy", qty:1, costs:{"Obsidian":2,"Mithril Bar":1}, description:"Bind volcanic glass with mithril." },
+      { id:"embersteel", name:"Embersteel Bar", level:85, time:10000, xp:250, item:"Embersteel Bar", qty:1, costs:{"Emberite Ore":2,"Obsidian Alloy":1,"Coal":5}, description:"Forge metal capable of holding flame." },
+      { id:"starbar", name:"Starforged Bar", level:100, time:12000, xp:360, item:"Starforged Bar", qty:1, costs:{"Star Metal":2,"Embersteel Bar":1}, description:"Shape metal from beyond the sky." }
     ]
   }
 };
@@ -98,7 +159,7 @@ function xpForLevel(level) {
 
 function levelForXp(xp) {
   let level = 1;
-  while (level < 99 && xp >= xpForLevel(level + 1)) level++;
+  while (level < MAX_LEVEL && xp >= xpForLevel(level + 1)) level++;
   return level;
 }
 
@@ -114,24 +175,34 @@ function actionQuantity(skill, action=getAction(skill)) {
   let quantity = action.qty + state.upgrades[skill].yield;
   if (masteryBonus(skill,25)) quantity++;
   if (masteryBonus(skill,75)) quantity++;
-  if (masteryBonus(skill,99)) quantity*=2;
+  if (masteryBonus(skill,100)) quantity*=2;
   return quantity;
 }
 function actionXp(skill, action=getAction(skill)) { return Math.round(action.xp * (masteryBonus(skill,10) ? 1.05 : 1)); }
 function upgradeCost(type, level) { return (type==="speed" ? 50 : 100) * Math.pow(2,level); }
-function maxHp() { return 90 + skillLevel("hitpoints") * 10; }
-function attackPower() { return 5 + skillLevel("attack") + (state.equipment.weapon === "Bronze Dagger" ? 4 : 0); }
-function defencePower() { return 3 + skillLevel("defence") + (state.equipment.shield === "Bronze Shield" ? 5 : 0); }
-function maxHit() { return 2 + Math.floor(skillLevel("strength") / 2) + (state.equipment.weapon === "Bronze Dagger" ? 2 : 0); }
+function equipmentBonus(stat) { return Object.values(state.equipment).reduce((total,item)=>total+(equipmentData[item]?.[stat]||0),0); }
+function maxHp() { return 90 + skillLevel("hitpoints") * 10 + equipmentBonus("maxHp"); }
+function attackPower() { return 5 + skillLevel("attack") + equipmentBonus("attack"); }
+function defencePower() { return 3 + skillLevel("defence") + equipmentBonus("defence"); }
+function maxHit() { return 2 + Math.floor(skillLevel("strength") / 2) + equipmentBonus("maxHit"); }
 function combatLevel() { return Math.max(1, Math.floor((skillLevel("attack")+skillLevel("strength")+skillLevel("defence")+skillLevel("hitpoints"))/4)); }
 function currentZone() { return zoneData[state.currentZone]; }
 function currentEnemy() { return state.fightingBoss ? currentZone().boss : currentZone().enemy; }
 function enemyMaxHp() { return currentEnemy().hp; }
 function bossReady(zoneIndex=state.currentZone) { return state.zoneKills[zoneIndex] >= zoneData[zoneIndex].requiredKills; }
-function addItem(name, qty) { state.inventory[name] = (state.inventory[name] || 0) + qty; if (state.inventory[name] <= 0) delete state.inventory[name]; }
+function addItem(name, qty, track=false) {
+  state.inventory[name] = (state.inventory[name] || 0) + qty;
+  if (state.inventory[name] <= 0) delete state.inventory[name];
+  if (track && qty>0) activity(`+${qty} ${name}`,"item");
+}
 function hasCosts(costs={}) { return Object.entries(costs).every(([item,qty]) => (state.inventory[item]||0) >= qty); }
 function payCosts(costs={}) { Object.entries(costs).forEach(([item,qty]) => addItem(item,-qty)); }
-function getAction(skill=currentSkill) { return skillData[skill].actions.find(a => a.id === state.selectedActions[skill]); }
+function getAction(skill=currentSkill) {
+  const action=skillData[skill].actions.find(a=>a.id===state.selectedActions[skill]);
+  if (action) return action;
+  state.selectedActions[skill]=skillData[skill].actions[0].id;
+  return skillData[skill].actions[0];
+}
 
 function loadState() {
   try {
@@ -200,12 +271,19 @@ function updateSkill(dt) {
     }
     state.actionElapsed -= duration;
     payCosts(action.costs);
-    addItem(action.item,actionQuantity(state.activeSkill,action));
+    const quantity=actionQuantity(state.activeSkill,action);
+    addItem(action.item,quantity,true);
     const before = skillLevel(state.activeSkill);
     const masteryBefore=masteryLevel(state.activeSkill);
     state.skills[state.activeSkill].xp += actionXp(state.activeSkill,action);
     state.skills[state.activeSkill].masteryXp += action.xp;
-    if (skillLevel(state.activeSkill)>before) toast(`${skillData[state.activeSkill].name} reached level ${skillLevel(state.activeSkill)}`);
+    if (skillLevel(state.activeSkill)>before) {
+      const level=skillLevel(state.activeSkill);
+      toast(`${skillData[state.activeSkill].name} reached level ${level}`);
+      activity(`${skillData[state.activeSkill].name} level ${level}`,"level");
+      renderProgressSummary();
+      renderSkill();
+    }
     const masteryAfter=masteryLevel(state.activeSkill);
     const milestone=masteryMilestones.find(item=>item.level>masteryBefore && item.level<=masteryAfter);
     if (milestone) toast(`${skillData[state.activeSkill].name} mastery ${milestone.level}: ${milestone.text}`);
@@ -221,20 +299,20 @@ function updateCombat(dt) {
     state.attackElapsed -= 2400;
     const hit = Math.max(1, Math.floor(Math.random()*(maxHit()+1)));
     state.enemyHp -= hit;
-    state.skills.attack.xp += 4*hit;
-    state.skills.strength.xp += 4*hit;
+    grantCombatXp("attack",4*hit);
+    grantCombatXp("strength",4*hit);
     popDamage("enemy",hit);
-    addLog(`Rowan strikes the goblin for ${hit}.`);
+    addLog(`Rowan strikes ${enemy.name} for ${hit}.`);
     if (state.enemyHp <= 0) defeatEnemy();
   }
   if (state.enemyAttackElapsed >= enemy.attackTime && state.combat) {
     state.enemyAttackElapsed -= enemy.attackTime;
     const hit = Math.max(0, Math.floor(Math.random()*(enemy.maxHit+1)) - Math.floor(defencePower()/8));
     state.heroHp -= hit;
-    state.skills.defence.xp += 3*Math.max(1,hit);
-    state.skills.hitpoints.xp += hit;
+    grantCombatXp("defence",3*Math.max(1,hit));
+    grantCombatXp("hitpoints",hit);
     popDamage("hero",hit);
-    addLog(hit ? `The goblin hits Rowan for ${hit}.` : "Rowan blocks the goblin's attack.");
+    addLog(hit ? `${enemy.name} hits Rowan for ${hit}.` : `Rowan blocks ${enemy.name}'s attack.`);
     if (state.heroHp <= 0) {
       const loss=Math.min(state.coins,5*(state.currentZone+1));
       state.combat=false; state.heroHp=maxHp(); state.enemyHp=enemyMaxHp(); state.coins-=loss;
@@ -247,8 +325,8 @@ function updateCombat(dt) {
 function defeatEnemy() {
   const enemy=currentEnemy();
   const coinReward=enemy.coins[0]+Math.floor(Math.random()*(enemy.coins[1]-enemy.coins[0]+1));
-  state.kills++; state.coins+=coinReward; addItem(enemy.item,1);
-  if (!state.fightingBoss && enemy.bonusItem && Math.random()<.45) addItem(enemy.bonusItem,1);
+  state.kills++; state.coins+=coinReward; activity(`+${coinReward} coins`,"coins"); addItem(enemy.item,1,true);
+  if (!state.fightingBoss && enemy.bonusItem && Math.random()<.45) addItem(enemy.bonusItem,1,true);
   if (state.fightingBoss) {
     const defeatedZone=state.currentZone;
     addLog(`${enemy.name} defeated! Rowan earns ${coinReward} coins.`);
@@ -297,12 +375,9 @@ function navigate(view) {
 }
 
 function render() {
-  document.querySelector("#coins").textContent=state.coins.toLocaleString();
-  const ids=Object.keys(state.skills);
-  document.querySelector("#total-level").textContent=ids.reduce((n,id)=>n+skillLevel(id),0);
-  document.querySelector("#combat-level").textContent=combatLevel();
-  ["mining","woodcutting","fishing","smithing"].forEach(id=>document.querySelector(`#nav-${id}`).textContent=skillLevel(id));
+  renderProgressSummary();
   if (currentView==="inventory") renderInventory();
+  if (currentView==="crafting") renderCrafting();
   if (currentView==="marketplace") renderMarketplace();
   if (currentView==="mastery") renderMastery();
   if (skillData[currentView]) renderSkill();
@@ -314,6 +389,7 @@ function renderLive() {
   const enemy=currentEnemy(), enemyHpMax=enemy.hp;
   const hp=Math.max(0,state.heroHp), ehp=Math.max(0,state.enemyHp);
   document.querySelector("#coins").textContent=state.coins.toLocaleString();
+  renderProgressSummary();
   document.querySelector("#hero-level").textContent=combatLevel();
   document.querySelector("#hero-hp-text").textContent=`${Math.ceil(hp)} / ${maxHp()}`;
   document.querySelector("#hero-hp-bar").style.width=`${Math.min(100,hp/maxHp()*100)}%`;
@@ -402,13 +478,20 @@ function renderSkillProgress() {
   const mLevel=masteryLevel(currentSkill), mxp=state.skills[currentSkill].masteryXp || 0;
   const mFloor=xpForLevel(mLevel), mCeiling=xpForLevel(mLevel+1);
   document.querySelector("#skill-level").textContent=level;
-  document.querySelector("#skill-xp-text").textContent=level===99 ? "Maximum level" : `${xp-floor} / ${ceiling-floor} XP`;
+  document.querySelector("#skill-xp-text").textContent=level===MAX_LEVEL ? "Maximum level" : `${xp-floor} / ${ceiling-floor} XP`;
   document.querySelector("#skill-xp-rate").textContent=`+${actionXp(currentSkill,action)} XP`;
-  document.querySelector("#skill-xp-bar").style.width=level===99 ? "100%" : `${(xp-floor)/(ceiling-floor)*100}%`;
+  document.querySelector("#skill-xp-bar").style.width=level===MAX_LEVEL ? "100%" : `${(xp-floor)/(ceiling-floor)*100}%`;
   document.querySelector("#mastery-level").textContent=mLevel;
   document.querySelector("#mastery-xp-rate").textContent=`+${action.xp} MXP`;
-  document.querySelector("#mastery-xp-text").textContent=mLevel===99 ? "Maximum mastery" : `${mxp-mFloor} / ${mCeiling-mFloor} Mastery XP`;
-  document.querySelector("#mastery-xp-bar").style.width=mLevel===99 ? "100%" : `${(mxp-mFloor)/(mCeiling-mFloor)*100}%`;
+  document.querySelector("#mastery-xp-text").textContent=mLevel===MAX_LEVEL ? "Maximum mastery" : `${mxp-mFloor} / ${mCeiling-mFloor} Mastery XP`;
+  document.querySelector("#mastery-xp-bar").style.width=mLevel===MAX_LEVEL ? "100%" : `${(mxp-mFloor)/(mCeiling-mFloor)*100}%`;
+}
+
+function renderProgressSummary() {
+  const ids=Object.keys(state.skills);
+  document.querySelector("#total-level").textContent=ids.reduce((total,id)=>total+skillLevel(id),0);
+  document.querySelector("#combat-level").textContent=combatLevel();
+  productionSkills.forEach(id=>document.querySelector(`#nav-${id}`).textContent=skillLevel(id));
 }
 
 function renderMarketplace() {
@@ -436,24 +519,95 @@ function renderMarketplace() {
 
 function renderInventory() {
   const entries=Object.entries(state.inventory).filter(([,q])=>q>0);
-  document.querySelector("#used-slots").textContent=`${entries.length} / 30`;
-  document.querySelector("#equipment-slots").innerHTML=Object.entries(state.equipment).map(([slot,item])=>`<div class="equipment-slot"><span>${capitalize(slot)}</span><strong>${item}</strong></div>`).join("");
+  document.querySelector("#used-slots").textContent=`${entries.length} / 60`;
+  document.querySelector("#equipment-slots").innerHTML=Object.entries(state.equipment).map(([slot,item])=>{
+    const stats=equipmentStatsText(item);
+    return `<div class="equipment-slot"><span>${capitalize(slot)}</span><div><strong>${item}</strong>${stats?`<small>${stats}</small>`:""}</div></div>`;
+  }).join("");
   document.querySelector("#inventory-grid").innerHTML=entries.length ? entries.map(([item,qty])=>{
-    const equip = item==="Bronze Dagger" ? "weapon" : item==="Bronze Shield" ? "shield" : null;
-    return `<div class="inventory-item"><header><span class="item-icon">${item[0]}</span><div><h4>${item}</h4><p>${equip?"Equipment":"Material"}</p></div></header><strong>${qty}</strong>${equip?`<button class="primary-button equip-button" data-item="${item}" data-slot="${equip}">Equip</button>`:""}</div>`;
+    const equip=equipmentData[item]?.slot;
+    return `<div class="inventory-item"><header><span class="item-icon">${item[0]}</span><div><h4>${item}</h4><p>${equip?equipmentStatsText(item):"Material"}</p></div></header><strong>${qty}</strong>${equip?`<button class="primary-button equip-button" data-item="${item}" data-slot="${equip}">Equip</button>`:""}</div>`;
   }).join("") : `<div class="inventory-empty">Your backpack is empty. Train a skill or defeat an enemy to find items.</div>`;
   document.querySelectorAll(".equip-button").forEach(btn=>btn.onclick=()=>{
-    state.equipment[btn.dataset.slot]=btn.dataset.item; addItem(btn.dataset.item,-1); toast(`${btn.dataset.item} equipped`); render();
+    const previous=state.equipment[btn.dataset.slot];
+    state.equipment[btn.dataset.slot]=btn.dataset.item;
+    addItem(btn.dataset.item,-1);
+    if (previous && previous!=="None" && !["Rusty Sword","Wooden Shield","Leather Jerkin"].includes(previous)) addItem(previous,1);
+    state.heroHp=Math.min(state.heroHp,maxHp());
+    toast(`${btn.dataset.item} equipped`); render();
   });
+}
+
+function renderCrafting() {
+  const level=skillLevel("smithing");
+  document.querySelector("#crafting-level").textContent=level;
+  document.querySelector("#crafting-grid").innerHTML=craftingRecipes.map(recipe=>{
+    const locked=level<recipe.level;
+    const affordable=hasCosts(recipe.costs);
+    const item=equipmentData[recipe.name];
+    const costs=Object.entries(recipe.costs).map(([name,qty])=>`${qty} ${name} (${state.inventory[name]||0})`).join(" + ");
+    return `<article class="recipe-card ${locked?"locked":""}">
+      <header><div><span>${capitalize(item.slot)}</span><h3>${recipe.name}</h3></div><strong>Lv. ${recipe.level}</strong></header>
+      <p class="recipe-stats">${equipmentStatsText(recipe.name)}</p>
+      <p class="recipe-cost">${locked?`Requires Smithing level ${recipe.level}`:costs}</p>
+      <button class="primary-button craft-button" data-recipe="${recipe.name}" ${locked||!affordable?"disabled":""}>Craft Gear</button>
+    </article>`;
+  }).join("");
+  document.querySelectorAll(".craft-button").forEach(button=>button.onclick=()=>craftGear(button.dataset.recipe));
+}
+
+function craftGear(name) {
+  const recipe=craftingRecipes.find(item=>item.name===name);
+  if (!recipe || skillLevel("smithing")<recipe.level || !hasCosts(recipe.costs)) return;
+  const before=skillLevel("smithing");
+  payCosts(recipe.costs); addItem(recipe.name,1,true);
+  state.skills.smithing.xp+=Math.round(recipe.level*8);
+  const after=skillLevel("smithing");
+  if (after>before) {
+    activity(`Smithing level ${after}`,"level");
+    toast(`Smithing reached level ${after}`);
+  }
+  activity(`Crafted ${recipe.name}`,"craft");
+  toast(`${recipe.name} crafted`);
+  render();
+}
+
+function equipmentStatsText(name) {
+  const item=equipmentData[name]||{};
+  return [["attack","ATK"],["defence","DEF"],["maxHit","Max Hit"],["maxHp","HP"]]
+    .filter(([stat])=>item[stat])
+    .map(([stat,label])=>`+${item[stat]} ${label}`)
+    .join(" / ");
 }
 
 function renderMastery() {
   const ids=Object.keys(state.skills);
   document.querySelector("#total-xp").textContent=ids.reduce((n,id)=>n+state.skills[id].xp,0).toLocaleString();
   document.querySelector("#mastery-grid").innerHTML=ids.map(id=>{
-    const level=skillLevel(id), floor=xpForLevel(level), ceiling=xpForLevel(level+1), pct=level===99?100:(state.skills[id].xp-floor)/(ceiling-floor)*100;
-    return `<article class="mastery-card"><header><h3>${skillData[id]?.name||capitalize(id)}</h3><strong>${level}</strong></header><p><span>${state.skills[id].xp.toLocaleString()} total XP</span><span>${level===99?"MAX":`${Math.max(0,ceiling-state.skills[id].xp)} to level`}</span></p><div class="meter xp"><i style="width:${pct}%"></i></div></article>`;
+    const level=skillLevel(id), floor=xpForLevel(level), ceiling=xpForLevel(level+1), pct=level===MAX_LEVEL?100:(state.skills[id].xp-floor)/(ceiling-floor)*100;
+    return `<article class="mastery-card"><header><h3>${skillData[id]?.name||capitalize(id)}</h3><strong>${level}</strong></header><p><span>${state.skills[id].xp.toLocaleString()} total XP</span><span>${level===MAX_LEVEL?"MAX":`${Math.max(0,ceiling-state.skills[id].xp)} to level`}</span></p><div class="meter xp"><i style="width:${pct}%"></i></div></article>`;
   }).join("");
+}
+
+function grantCombatXp(id,amount) {
+  const before=skillLevel(id);
+  state.skills[id].xp+=amount;
+  const after=skillLevel(id);
+  if (after>before) {
+    activity(`${capitalize(id)} level ${after}`,"level");
+    toast(`${capitalize(id)} reached level ${after}`);
+  }
+}
+
+function activity(message,type="item") {
+  const feed=document.querySelector("#activity-feed");
+  const entry=document.createElement("div");
+  entry.className=`activity-entry ${type}`;
+  entry.textContent=message;
+  feed.prepend(entry);
+  while (feed.children.length>5) feed.lastElementChild.remove();
+  setTimeout(()=>entry.classList.add("visible"),10);
+  setTimeout(()=>{ entry.classList.remove("visible"); setTimeout(()=>entry.remove(),250); },3500);
 }
 
 function toast(message) {

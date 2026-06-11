@@ -5,6 +5,10 @@ preview*.png
 # Netlify local state
 .netlify/
 
+# Temporary local tooling
+node_modules/
+test-results/
+
 # Local editor and OS files
 .vscode/
 .idea/

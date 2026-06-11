@@ -152,6 +152,8 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .equipment-slots { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
 .equipment-slot { border:1px solid var(--line); padding:9px; font-size:10px; display:flex; justify-content:space-between; }
 .equipment-slot span { color:var(--muted); }
+.equipment-slot > div { text-align:right; }
+.equipment-slot small { display:block; color:var(--gold); font-size:7px; margin-top:3px; }
 .inventory-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(145px,1fr)); gap:9px; }
 .inventory-item { border:1px solid var(--line); background:var(--panel); padding:13px; min-height:100px; display:flex; flex-direction:column; justify-content:space-between; }
 .inventory-item header { display:flex; gap:9px; align-items:center; }
@@ -169,6 +171,20 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .market-intro h3 { margin:4px 0 0; }
 .market-intro p { max-width:570px; color:var(--muted); font-size:11px; line-height:1.6; margin:0; }
 .market-grid { display:grid; grid-template-columns:repeat(2,minmax(300px,1fr)); gap:14px; }
+.crafting-intro { display:flex; justify-content:space-between; align-items:center; gap:30px; border:1px solid var(--line); background:var(--panel); padding:20px; margin-bottom:16px; }
+.crafting-intro h3 { margin:4px 0 0; }
+.crafting-intro p { max-width:580px; color:var(--muted); font-size:11px; line-height:1.6; margin:0; }
+.crafting-grid { display:grid; grid-template-columns:repeat(4,minmax(210px,1fr)); gap:11px; }
+.recipe-card { display:flex; flex-direction:column; border:1px solid var(--line); background:linear-gradient(155deg,#1c261e,#111713); padding:16px; min-height:205px; }
+.recipe-card.locked { opacity:.48; }
+.recipe-card header { display:flex; justify-content:space-between; gap:10px; border-bottom:1px solid var(--line); padding-bottom:10px; }
+.recipe-card header span { color:var(--muted); font-size:8px; text-transform:uppercase; letter-spacing:1px; }
+.recipe-card h3 { margin:3px 0 0; font-size:14px; }
+.recipe-card header > strong { color:var(--gold-2); font-size:10px; white-space:nowrap; }
+.recipe-stats { color:#8dce8d; font-size:9px; min-height:28px; line-height:1.5; margin:14px 0 8px; }
+.recipe-cost { color:var(--muted); font-size:8px; line-height:1.5; margin:0 0 14px; }
+.recipe-card button { margin-top:auto; padding:10px; font-size:8px; }
+.recipe-card button:disabled { opacity:.35; filter:grayscale(1); cursor:not-allowed; }
 .potion-shop { display:flex; justify-content:space-between; align-items:center; gap:25px; border:1px solid #446044; background:linear-gradient(155deg,#1b2a1d,#111713); padding:20px; margin-bottom:14px; }
 .potion-shop h3 { margin:4px 0; }
 .potion-shop p { color:var(--muted); font-size:10px; margin:0; }
@@ -184,6 +200,12 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .upgrade-row button:disabled { filter:grayscale(1); opacity:.45; cursor:not-allowed; }
 .toast { position:fixed; right:25px; bottom:25px; background:#1d281f; border:1px solid #6c5937; padding:12px 18px; color:var(--gold-2); font-size:11px; opacity:0; transform:translateY(10px); pointer-events:none; transition:.25s; z-index:30; }
 .toast.show { opacity:1; transform:none; }
+.activity-feed { position:fixed; z-index:28; right:22px; bottom:82px; width:min(250px,calc(100vw - 32px)); display:grid; gap:6px; pointer-events:none; }
+.activity-entry { opacity:0; transform:translateX(18px); transition:.25s; border:1px solid #3e503f; border-left:3px solid var(--green); background:rgba(15,23,17,.95); color:#d5dfd4; padding:9px 11px; box-shadow:0 10px 30px rgba(0,0,0,.25); font-size:10px; }
+.activity-entry.visible { opacity:1; transform:none; }
+.activity-entry.level { border-left-color:var(--gold); color:var(--gold-2); }
+.activity-entry.coins { border-left-color:#d8a843; }
+.activity-entry.craft { border-left-color:#a67bd1; }
 .modal { position:fixed; inset:0; background:rgba(5,8,6,.78); display:grid; place-items:center; z-index:50; backdrop-filter:blur(8px); }
 .modal.hidden { display:none; }
 .modal-card { width:min(420px,calc(100% - 32px)); background:linear-gradient(160deg,#202b22,#111713); border:1px solid #6a5634; padding:32px; box-shadow:var(--shadow); }
@@ -203,6 +225,7 @@ h1,h2,h3 { font-family: Cinzel, serif; }
   .sidebar-footer button { font-size:0; height:28px; }
   .combat-layout { grid-template-columns:1fr 130px 1fr; }
   .portrait-stage { height:290px; }
+  .crafting-grid { grid-template-columns:repeat(2,minmax(210px,1fr)); }
 }
 @media (max-width: 760px) {
   .app-shell { display:block; padding-bottom:calc(76px + env(safe-area-inset-bottom)); }
@@ -254,9 +277,14 @@ h1,h2,h3 { font-family: Cinzel, serif; }
   .market-grid { grid-template-columns:1fr; }
   .market-intro { display:block; }
   .market-intro p { margin-top:10px; }
+  .crafting-intro { display:block; }
+  .crafting-intro p { margin-top:10px; }
+  .crafting-grid { grid-template-columns:1fr 1fr; }
   .potion-shop { display:block; }
   .potion-purchase { justify-content:space-between; margin-top:14px; }
   .ios-install-tip { margin:-6px 0 14px; font-size:9px; }
+  .activity-feed { top:auto; right:8px; bottom:calc(76px + env(safe-area-inset-bottom)); width:min(230px,calc(100vw - 16px)); }
+  .activity-entry { font-size:9px; padding:8px 10px; }
 }
 
 @media (max-width: 390px) {
@@ -267,4 +295,5 @@ h1,h2,h3 { font-family: Cinzel, serif; }
   .market-card { padding:14px; }
   .upgrade-row { grid-template-columns:1fr; }
   .upgrade-row button { width:100%; }
+  .crafting-grid { grid-template-columns:1fr; }
 }

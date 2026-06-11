@@ -43,6 +43,7 @@
       <button class="nav-item" data-view="fishing" aria-label="Fishing"><span class="nav-icon">F</span><span class="nav-text">Fishing</span> <b id="nav-fishing">1</b></button>
       <p class="nav-label">Crafting</p>
       <button class="nav-item" data-view="smithing" aria-label="Smithing"><span class="nav-icon">S</span><span class="nav-text">Smithing</span> <b id="nav-smithing">1</b></button>
+      <button class="nav-item" data-view="crafting" aria-label="Crafting"><span class="nav-icon">C</span><span class="nav-text">Crafting</span></button>
       <p class="nav-label">Character</p>
       <button class="nav-item" data-view="inventory" aria-label="Inventory"><span class="nav-icon">I</span><span class="nav-text">Inventory</span></button>
       <button class="nav-item" data-view="marketplace" aria-label="Marketplace"><span class="nav-icon">$</span><span class="nav-text">Marketplace</span></button>
@@ -173,6 +174,18 @@
         </div>
       </section>
 
+      <section id="view-crafting" class="view">
+        <div class="section-heading">
+          <div><span class="eyebrow">Forge your advantage</span><h2>Gear Crafting</h2></div>
+          <div class="zone-selector"><span>Smithing Level</span><strong id="crafting-level">1</strong></div>
+        </div>
+        <div class="crafting-intro">
+          <div><span class="eyebrow">Equipment forge</span><h3>Turn bars into permanent power</h3></div>
+          <p>Craft weapons and armor from smelted bars. Higher tiers require stronger Smithing levels and improve combat statistics.</p>
+        </div>
+        <div id="crafting-grid" class="crafting-grid"></div>
+      </section>
+
       <section id="view-marketplace" class="view">
         <div class="section-heading">
           <div><span class="eyebrow">Invest your battle spoils</span><h2>Guild Marketplace</h2></div>
@@ -204,6 +217,7 @@
   </div>
 
   <div id="toast" class="toast"></div>
+  <div id="activity-feed" class="activity-feed" aria-live="polite"></div>
   <div id="offline-modal" class="modal hidden">
     <div class="modal-card">
       <span class="eyebrow">Welcome back</span>

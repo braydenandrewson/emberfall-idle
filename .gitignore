@@ -1,9 +1,12 @@
 # Generated browser previews
 preview*.png
+.tunnel-*.txt
+
+# Netlify local state
+.netlify/
 
 # Local editor and OS files
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
-

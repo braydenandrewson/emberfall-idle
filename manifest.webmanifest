@@ -1,0 +1,17 @@
+{
+  "name": "Emberfall Idle Adventures",
+  "short_name": "Emberfall",
+  "description": "Train skills, forge equipment, and defeat the bosses of Emberfall.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0f0c",
+  "theme_color": "#10150f",
+  "icons": [
+    {
+      "src": "assets/hero.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -463,6 +463,14 @@ function toast(message) {
 function capitalize(s) { return s[0].toUpperCase()+s.slice(1); }
 function formatDuration(ms) { const h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000); return h ? `${h}h ${m}m` : `${m} minutes`; }
 
+const iosInstallTip=document.querySelector("#ios-install-tip");
+const isIos=/iPad|iPhone|iPod/.test(navigator.userAgent);
+const isStandalone=window.matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+if (isIos && !isStandalone && !localStorage.getItem("emberfall-ios-tip-dismissed")) iosInstallTip.classList.remove("hidden");
+document.querySelector("#ios-install-close").onclick=()=>{
+  iosInstallTip.classList.add("hidden");
+  localStorage.setItem("emberfall-ios-tip-dismissed","1");
+};
 document.querySelectorAll(".nav-item").forEach(btn=>btn.onclick=()=>navigate(btn.dataset.view));
 document.querySelector("#combat-toggle").onclick=()=>{
   state.combat=!state.combat; state.activeSkill=null;

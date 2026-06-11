@@ -4,7 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#10150f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Emberfall">
+  <meta name="mobile-web-app-capable" content="yes">
   <title>Emberfall Idle</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/hero.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -30,17 +36,17 @@
 
     <aside class="sidebar">
       <p class="nav-label">Adventure</p>
-      <button class="nav-item active" data-view="combat"><span class="nav-icon">X</span>Combat</button>
+      <button class="nav-item active" data-view="combat" aria-label="Combat"><span class="nav-icon">X</span><span class="nav-text">Combat</span></button>
       <p class="nav-label">Gathering</p>
-      <button class="nav-item" data-view="mining"><span class="nav-icon">M</span>Mining <b id="nav-mining">1</b></button>
-      <button class="nav-item" data-view="woodcutting"><span class="nav-icon">W</span>Woodcutting <b id="nav-woodcutting">1</b></button>
-      <button class="nav-item" data-view="fishing"><span class="nav-icon">F</span>Fishing <b id="nav-fishing">1</b></button>
+      <button class="nav-item" data-view="mining" aria-label="Mining"><span class="nav-icon">M</span><span class="nav-text">Mining</span> <b id="nav-mining">1</b></button>
+      <button class="nav-item" data-view="woodcutting" aria-label="Woodcutting"><span class="nav-icon">W</span><span class="nav-text">Woodcutting</span> <b id="nav-woodcutting">1</b></button>
+      <button class="nav-item" data-view="fishing" aria-label="Fishing"><span class="nav-icon">F</span><span class="nav-text">Fishing</span> <b id="nav-fishing">1</b></button>
       <p class="nav-label">Crafting</p>
-      <button class="nav-item" data-view="smithing"><span class="nav-icon">S</span>Smithing <b id="nav-smithing">1</b></button>
+      <button class="nav-item" data-view="smithing" aria-label="Smithing"><span class="nav-icon">S</span><span class="nav-text">Smithing</span> <b id="nav-smithing">1</b></button>
       <p class="nav-label">Character</p>
-      <button class="nav-item" data-view="inventory"><span class="nav-icon">I</span>Inventory</button>
-      <button class="nav-item" data-view="marketplace"><span class="nav-icon">$</span>Marketplace</button>
-      <button class="nav-item" data-view="mastery"><span class="nav-icon">A</span>All Skills</button>
+      <button class="nav-item" data-view="inventory" aria-label="Inventory"><span class="nav-icon">I</span><span class="nav-text">Inventory</span></button>
+      <button class="nav-item" data-view="marketplace" aria-label="Marketplace"><span class="nav-icon">$</span><span class="nav-text">Marketplace</span></button>
+      <button class="nav-item" data-view="mastery" aria-label="All Skills"><span class="nav-icon">A</span><span class="nav-text">All Skills</span></button>
       <div class="sidebar-footer">
         <button id="save-button">Save game</button>
         <button id="reset-button">Reset</button>
@@ -48,6 +54,10 @@
     </aside>
 
     <main class="content">
+      <div id="ios-install-tip" class="ios-install-tip hidden">
+        <span>On iPhone, tap Share, then <strong>Add to Home Screen</strong>.</span>
+        <button id="ios-install-close" aria-label="Dismiss installation tip">Close</button>
+      </div>
       <section id="view-combat" class="view active">
         <div class="section-heading">
           <div><span class="eyebrow">Whisperwood Outskirts</span><h2>Combat Grounds</h2></div>

@@ -1,4 +1,6 @@
 const SAVE_KEY = "emberfall-idle-save-v1";
+const AUTH_KEY = "emberfall-idle-auth-v1";
+const LEGACY_IMPORT_KEY = "emberfall-idle-legacy-imported";
 const MAX_LEVEL = 100;
 const productionSkills = ["mining","woodcutting","fishing","smithing"];
 const POTION_ITEM = "Health Potion";
@@ -150,6 +152,12 @@ let state = loadState();
 let currentView = "combat";
 let currentSkill = "mining";
 let lastTick = performance.now();
+let authenticated = false;
+let authSession = loadAuthSession();
+let authMode = "signup";
+let cloudSaveTimer = null;
+let activeSaveKey = SAVE_KEY;
+let identityUser = null;
 
 function xpForLevel(level) {
   let total = 0;
@@ -204,33 +212,42 @@ function getAction(skill=currentSkill) {
   return skillData[skill].actions[0];
 }
 
-function loadState() {
+function loadState(key=activeSaveKey) {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return defaultState();
-    const parsed = JSON.parse(raw);
-    const base=defaultState();
-    const skills={...base.skills,...parsed.skills};
-    productionSkills.forEach(id=>skills[id]={...base.skills[id],...(parsed.skills?.[id]||{})});
-    const upgrades={...base.upgrades};
-    productionSkills.forEach(id=>upgrades[id]={...base.upgrades[id],...(parsed.upgrades?.[id]||{})});
-    const zoneKills=base.zoneKills.map((value,index)=>parsed.zoneKills?.[index] ?? value);
-    return { ...base, ...parsed, skills, upgrades, zoneKills, selectedActions:{...base.selectedActions,...parsed.selectedActions}, equipment:{...base.equipment,...parsed.equipment} };
+    return normalizeState(JSON.parse(raw));
   } catch { return defaultState(); }
 }
 
-function saveState(show=false) {
+function normalizeState(parsed={}) {
+  const base=defaultState();
+  const skills={...base.skills,...parsed.skills};
+  Object.keys(base.skills).forEach(id=>skills[id]={...base.skills[id],...(parsed.skills?.[id]||{})});
+  const upgrades={...base.upgrades};
+  productionSkills.forEach(id=>upgrades[id]={...base.upgrades[id],...(parsed.upgrades?.[id]||{})});
+  const zoneKills=base.zoneKills.map((value,index)=>parsed.zoneKills?.[index] ?? value);
+  return { ...base, ...parsed, skills, upgrades, zoneKills, selectedActions:{...base.selectedActions,...parsed.selectedActions}, equipment:{...base.equipment,...parsed.equipment} };
+}
+
+function saveState(show=false, immediateCloud=false) {
   state.lastSeen = Date.now();
-  localStorage.setItem(SAVE_KEY, JSON.stringify(state));
-  document.querySelector("#save-state").textContent = "Saved just now";
+  localStorage.setItem(activeSaveKey, JSON.stringify(state));
+  document.querySelector("#save-state").textContent = authenticated ? "Saving to cloud" : "Local cache";
+  if (authenticated) {
+    clearTimeout(cloudSaveTimer);
+    if (immediateCloud) saveCloudState(show);
+    else cloudSaveTimer=setTimeout(()=>saveCloudState(show),500);
+  }
   if (show) toast("Adventure saved");
 }
 
-function applyOfflineProgress() {
-  const away = Math.min(Date.now() - (state.lastSeen || Date.now()), 12 * 60 * 60 * 1000);
-  if (away < 60000 || !state.activeSkill) return;
+function applyOfflineProgress(elapsed=Date.now()-(state.lastSeen||Date.now())) {
+  const away = Math.max(0,Math.min(elapsed,12*60*60*1000));
+  state.lastSeen=Date.now();
+  if (away < 1000 || !state.activeSkill) return false;
   const action = getAction(state.activeSkill);
-  if (!action) return;
+  if (!action) return false;
   const duration=actionTime(state.activeSkill,action);
   const quantity=actionQuantity(state.activeSkill,action);
   const earnedXp=actionXp(state.activeSkill,action);
@@ -238,7 +255,7 @@ function applyOfflineProgress() {
   if (action.costs) {
     cycles = Math.min(cycles, ...Object.entries(action.costs).map(([item,qty]) => Math.floor((state.inventory[item]||0)/qty)));
   }
-  if (!cycles) return;
+  if (!cycles) return false;
   if (action.costs) Object.entries(action.costs).forEach(([item,qty]) => addItem(item,-qty*cycles));
   addItem(action.item, quantity * cycles);
   state.skills[state.activeSkill].xp += earnedXp * cycles;
@@ -246,13 +263,14 @@ function applyOfflineProgress() {
   document.querySelector("#offline-time").textContent = `You were away for ${formatDuration(away)}.`;
   document.querySelector("#offline-loot").innerHTML = `<div><span>${action.item}</span><strong>+${quantity*cycles}</strong></div><div><span>${skillData[state.activeSkill].name} XP</span><strong>+${earnedXp*cycles}</strong></div><div><span>Mastery XP</span><strong>+${action.xp*cycles}</strong></div>`;
   document.querySelector("#offline-modal").classList.remove("hidden");
+  return true;
 }
 
 function tick(now) {
   const dt = Math.min(now-lastTick,1000);
   lastTick = now;
-  if (state.activeSkill) updateSkill(dt);
-  if (state.combat) updateCombat(dt);
+  if (authenticated && !document.hidden && state.activeSkill) updateSkill(dt);
+  if (authenticated && !document.hidden && state.combat) updateCombat(dt);
   renderLive();
   requestAnimationFrame(tick);
 }
@@ -615,7 +633,133 @@ function toast(message) {
   clearTimeout(toast.timer); toast.timer=setTimeout(()=>el.classList.remove("show"),2200);
 }
 function capitalize(s) { return s[0].toUpperCase()+s.slice(1); }
-function formatDuration(ms) { const h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000); return h ? `${h}h ${m}m` : `${m} minutes`; }
+function formatDuration(ms) {
+  const h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000),s=Math.floor(ms%60000/1000);
+  if (h) return `${h}h ${m}m`;
+  if (m) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+function loadAuthSession() {
+  try { return JSON.parse(localStorage.getItem(AUTH_KEY)) || null; }
+  catch { return null; }
+}
+
+async function identityRequest(path,options={}) {
+  const response=await fetch(`/.netlify/identity${path}`,options);
+  const data=await response.json().catch(()=>({}));
+  if (!response.ok) throw new Error(data.msg||data.error_description||data.error||"Account request failed");
+  return data;
+}
+
+async function login(email,password) {
+  const body=new URLSearchParams({grant_type:"password",username:email,password});
+  const session=await identityRequest("/token",{method:"POST",headers:{"content-type":"application/x-www-form-urlencoded"},body});
+  authSession=session;
+  localStorage.setItem(AUTH_KEY,JSON.stringify(session));
+  await startAuthenticatedGame();
+}
+
+async function signup(email,password) {
+  await identityRequest("/signup",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email,password})});
+  setAuthMode("login");
+  throw new Error("Account created. Confirm your email, then log in.");
+}
+
+async function validAccessToken() {
+  if (!authSession?.access_token) return null;
+  try {
+    identityUser=await identityRequest("/user",{headers:{authorization:`Bearer ${authSession.access_token}`}});
+    return authSession.access_token;
+  } catch {
+    if (!authSession.refresh_token) return null;
+    try {
+      const body=new URLSearchParams({grant_type:"refresh_token",refresh_token:authSession.refresh_token});
+      authSession=await identityRequest("/token",{method:"POST",headers:{"content-type":"application/x-www-form-urlencoded"},body});
+      localStorage.setItem(AUTH_KEY,JSON.stringify(authSession));
+      identityUser=await identityRequest("/user",{headers:{authorization:`Bearer ${authSession.access_token}`}});
+      return authSession.access_token;
+    } catch { return null; }
+  }
+}
+
+async function cloudRequest(method,save) {
+  const token=await validAccessToken();
+  if (!token) throw new Error("Your session expired. Please log in again.");
+  const response=await fetch("/.netlify/functions/save",{
+    method,
+    headers:{authorization:`Bearer ${token}`,"content-type":"application/json"},
+    body:save?JSON.stringify({save}):undefined
+  });
+  const data=await response.json().catch(()=>({}));
+  if (!response.ok) throw new Error(data.error||"Cloud save failed");
+  return data;
+}
+
+async function saveCloudState(show=false) {
+  try {
+    await cloudRequest("PUT",state);
+    document.querySelector("#save-state").textContent="Saved to cloud";
+    if (show) toast("Cloud save complete");
+  } catch (error) {
+    document.querySelector("#save-state").textContent="Cloud save pending";
+    if (show) toast(error.message);
+  }
+}
+
+async function startAuthenticatedGame() {
+  const token=await validAccessToken();
+  if (!token) return showAuth();
+  const userId=identityUser?.id||identityUser?.sub;
+  if (!userId) throw new Error("Unable to identify this account.");
+  const userSaveKey=`${SAVE_KEY}:${userId}`;
+  const hasUserLocal=Boolean(localStorage.getItem(userSaveKey));
+  const canImportLegacy=!localStorage.getItem(LEGACY_IMPORT_KEY) && Boolean(localStorage.getItem(SAVE_KEY));
+  activeSaveKey=userSaveKey;
+  const local=hasUserLocal ? loadState(userSaveKey) : canImportLegacy ? loadState(SAVE_KEY) : defaultState();
+  const result=await cloudRequest("GET");
+  const cloud=result.save?normalizeState(result.save):null;
+  state=cloud && (!hasUserLocal || (cloud.lastSeen||0)>(local.lastSeen||0)) ? cloud : local;
+  if (canImportLegacy) localStorage.setItem(LEGACY_IMPORT_KEY,userId);
+  authenticated=true;
+  document.querySelector("#auth-modal").classList.add("hidden");
+  document.querySelector("#account-button").textContent="Log out";
+  const elapsed=Date.now()-(state.lastSeen||Date.now());
+  applyOfflineProgress(elapsed);
+  state.lastSeen=Date.now();
+  render();
+  await saveCloudState();
+}
+
+function showAuth(message="") {
+  authenticated=false;
+  document.querySelector("#auth-modal").classList.remove("hidden");
+  document.querySelector("#auth-error").textContent=message;
+  setAuthMode(authMode);
+}
+
+function setAuthMode(mode) {
+  authMode=mode;
+  const signupMode=mode==="signup";
+  document.querySelector("#auth-title").textContent=signupMode?"Create your account":"Welcome back";
+  document.querySelector("#auth-copy").textContent=signupMode
+    ?"Your progress will be saved securely and available on your other devices."
+    :"Log in to continue your saved adventure.";
+  document.querySelector("#auth-submit").textContent=signupMode?"Create Account":"Log In";
+  document.querySelector("#auth-switch").textContent=signupMode?"Already have an account? Log in":"Need an account? Sign up";
+  document.querySelector("#auth-password").autocomplete=signupMode?"new-password":"current-password";
+}
+
+async function logout() {
+  state.lastSeen=Date.now();
+  localStorage.setItem(activeSaveKey,JSON.stringify(state));
+  try { await saveCloudState(); } catch {}
+  authSession=null; authenticated=false;
+  identityUser=null; activeSaveKey=SAVE_KEY;
+  localStorage.removeItem(AUTH_KEY);
+  showAuth("You have been logged out.");
+  document.querySelector("#account-button").textContent="Account";
+}
 
 const iosInstallTip=document.querySelector("#ios-install-tip");
 const isIos=/iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -625,6 +769,28 @@ document.querySelector("#ios-install-close").onclick=()=>{
   iosInstallTip.classList.add("hidden");
   localStorage.setItem("emberfall-ios-tip-dismissed","1");
 };
+document.querySelector("#auth-switch").onclick=()=>{
+  document.querySelector("#auth-error").textContent="";
+  setAuthMode(authMode==="signup"?"login":"signup");
+};
+document.querySelector("#auth-form").onsubmit=async event=>{
+  event.preventDefault();
+  const email=document.querySelector("#auth-email").value.trim();
+  const password=document.querySelector("#auth-password").value;
+  const button=document.querySelector("#auth-submit");
+  document.querySelector("#auth-error").textContent="";
+  button.disabled=true; button.textContent=authMode==="signup"?"Creating...":"Logging in...";
+  try {
+    if (authMode==="signup") await signup(email,password);
+    else await login(email,password);
+  } catch (error) {
+    document.querySelector("#auth-error").textContent=error.message;
+  } finally {
+    button.disabled=false;
+    setAuthMode(authMode);
+  }
+};
+document.querySelector("#account-button").onclick=()=>authenticated?logout():showAuth();
 document.querySelectorAll(".nav-item").forEach(btn=>btn.onclick=()=>navigate(btn.dataset.view));
 document.querySelector("#combat-toggle").onclick=()=>{
   state.combat=!state.combat; state.activeSkill=null;
@@ -655,16 +821,36 @@ document.querySelector("#skill-toggle").onclick=()=>{
 };
 document.querySelector("#save-button").onclick=()=>saveState(true);
 document.querySelector("#reset-button").onclick=()=>{
-  if (confirm("Reset all Emberfall progress? This cannot be undone.")) { localStorage.removeItem(SAVE_KEY); state=defaultState(); navigate("combat"); toast("Progress reset"); }
+  if (confirm("Reset all Emberfall progress? This cannot be undone.")) {
+    state=defaultState(); state.lastSeen=Date.now();
+    localStorage.setItem(activeSaveKey,JSON.stringify(state));
+    saveState(false,true); navigate("combat"); toast("Progress reset");
+  }
 };
-document.querySelector("#offline-close").onclick=()=>document.querySelector("#offline-modal").classList.add("hidden");
-window.addEventListener("beforeunload",()=>saveState());
-setInterval(()=>saveState(),15000);
+document.querySelector("#offline-close").onclick=()=>{
+  document.querySelector("#offline-modal").classList.add("hidden");
+  saveState(false,true);
+};
+document.addEventListener("visibilitychange",()=>{
+  if (!authenticated) return;
+  if (document.hidden) {
+    saveState(false,true);
+  } else {
+    const elapsed=Date.now()-(state.lastSeen||Date.now());
+    applyOfflineProgress(elapsed);
+    state.lastSeen=Date.now();
+    saveState(false,true);
+    lastTick=performance.now();
+    render();
+  }
+});
+window.addEventListener("pagehide",()=>{ if(authenticated) saveState(false,true); });
+setInterval(()=>{ if(authenticated) saveState(); },15000);
 
 state.currentZone=Math.min(state.currentZone,zoneData.length-1,state.unlockedZones-1);
 state.fightingBoss=state.fightingBoss && bossReady();
 state.enemyHp=Math.min(state.enemyHp,currentEnemy().hp);
 state.heroHp=Math.min(state.heroHp,maxHp());
-applyOfflineProgress();
 render();
 requestAnimationFrame(tick);
+startAuthenticatedGame().catch(error=>showAuth(error.message));

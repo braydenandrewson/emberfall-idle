@@ -32,6 +32,7 @@
         <div><span>Coins</span><strong id="coins">0</strong></div>
       </div>
       <div class="save-state" id="save-state">Saved locally</div>
+      <button class="account-button" id="account-button">Account</button>
     </header>
 
     <aside class="sidebar">
@@ -218,6 +219,21 @@
 
   <div id="toast" class="toast"></div>
   <div id="activity-feed" class="activity-feed" aria-live="polite"></div>
+  <div id="auth-modal" class="modal auth-modal">
+    <div class="modal-card auth-card">
+      <span class="eyebrow">Cloud adventure</span>
+      <h2 id="auth-title">Create your account</h2>
+      <p id="auth-copy">Your progress will be saved securely and available on your other devices.</p>
+      <form id="auth-form">
+        <label>Email<input id="auth-email" type="email" autocomplete="email" required></label>
+        <label>Password<input id="auth-password" type="password" autocomplete="current-password" minlength="8" required></label>
+        <p id="auth-error" class="auth-error"></p>
+        <button class="primary-button" id="auth-submit" type="submit">Create Account</button>
+      </form>
+      <button class="auth-switch" id="auth-switch" type="button">Already have an account? Log in</button>
+      <p class="auth-note">Accounts require a verified email address. Check your inbox after signing up.</p>
+    </div>
+  </div>
   <div id="offline-modal" class="modal hidden">
     <div class="modal-card">
       <span class="eyebrow">Welcome back</span>

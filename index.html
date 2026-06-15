@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=13">
+  <link rel="stylesheet" href="styles.css?v=14">
 </head>
 <body>
   <div class="app-shell">
@@ -412,9 +412,10 @@
           </article>
           <article class="settings-card">
             <span class="eyebrow">Audio</span>
-            <h3>Sound Effects</h3>
-            <p>Combat hits, level-up chimes, and boss fanfares. Generated in your browser — no downloads.</p>
-            <label class="check-row"><input id="sound-toggle" type="checkbox" checked> Enable sound effects</label>
+            <h3>Soundtrack</h3>
+            <p>A continuous dark-fantasy ambient score, synthesized live in your browser — no downloads.</p>
+            <label class="check-row"><input id="music-toggle" type="checkbox" checked> Play soundtrack</label>
+            <label class="settings-slider">Volume <input id="music-volume" type="range" min="0" max="100" value="35"></label>
           </article>
           <article class="settings-card">
             <span class="eyebrow">Local progress</span>
@@ -451,6 +452,6 @@
       document.documentElement.dataset.emberfallError = `${event.message} (${event.lineno}:${event.colno})`;
     });
   </script>
-  <script src="game.js?v=13"></script>
+  <script src="game.js?v=14"></script>
 </body>
 </html>

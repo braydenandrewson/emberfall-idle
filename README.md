@@ -6,7 +6,7 @@ armory, and fight through escalating zones and bosses — even while you're away
 Its twist on the genre: you **gather and fight at the same time**, and aligning the two
 (Expedition Synergy) builds momentum that powers up both.
 
-> **Play in your browser:** https://YOUR-USERNAME.github.io/emberfall-idle/
+> **Play in your browser:** https://braydenandrewson.github.io/emberfall-idle/
 > *(Update this link after enabling GitHub Pages — see below.)*
 
 ## Features
@@ -37,7 +37,7 @@ Because the game is fully static, GitHub can host it:
 
 1. Repo **Settings → Pages**
 2. **Source:** Deploy from a branch → **main** / **/ (root)** → **Save**
-3. After ~1 minute it's live at `https://YOUR-USERNAME.github.io/emberfall-idle/`
+3. After ~1 minute it's live at `https://braydenandrewson.github.io/emberfall-idle/`
 
 ## Tech
 

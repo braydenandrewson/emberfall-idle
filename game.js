@@ -13,28 +13,77 @@ const POTION_ITEM = "Health Potion";
 const POTION_COST = 25;
 const POTION_HEAL = 40;
 const MOMENTUM_FULL_MS = 60000;
-const Sound = (() => {
-  let ctx=null;
-  const ensure=()=>{ if(!ctx){ try{ ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ ctx=null; } } return ctx; };
-  const enabled=()=>typeof state==="undefined" || state?.settings?.sound!==false;
-  function tone(freq,dur,{type="sine",gain=.12,delay=0,sweep=0}={}) {
-    const ac=ensure(); if(!ac||!enabled()) return;
-    const t=ac.currentTime+delay;
-    const osc=ac.createOscillator(), g=ac.createGain();
-    osc.type=type; osc.frequency.setValueAtTime(freq,t);
-    if(sweep) osc.frequency.exponentialRampToValueAtTime(Math.max(40,freq+sweep),t+dur);
-    g.gain.setValueAtTime(.0001,t); g.gain.linearRampToValueAtTime(gain,t+.01);
-    g.gain.exponentialRampToValueAtTime(.0001,t+dur);
-    osc.connect(g).connect(ac.destination); osc.start(t); osc.stop(t+dur+.02);
+// Procedural ambient soundtrack — a slow dark-fantasy loop synthesized in-browser.
+const Music = (() => {
+  let ctx=null, master=null, reverb=null, padFilter=null, timer=null, started=false;
+  let barIndex=0, nextBarTime=0, melodyStep=0;
+  const BPM=64, beat=60/BPM, bar=beat*4;
+  // A natural minor progression: Am - F - C - G (warm, melancholic, heroic).
+  const PROG=[
+    {root:"A1",pad:["A3","C4","E4"]},
+    {root:"F1",pad:["F3","A3","C4"]},
+    {root:"C2",pad:["C4","E4","G4"]},
+    {root:"G1",pad:["G3","B3","D4"]}
+  ];
+  // Pentatonic-leaning melody pool over A minor (avoids harsh dissonance).
+  const MELODY=["A4","C5","D5","E5","G5","E5","D5","C5","A4","E4","G4"];
+  const STEP={C:0,"C#":1,D:2,"D#":3,E:4,F:5,"F#":6,G:7,"G#":8,A:9,"A#":10,B:11};
+  const freq=name=>{ const oct=+name.slice(-1), key=name.slice(0,-1); return 440*Math.pow(2,((oct+1)*12+STEP[key]-69)/12); };
+  function ensure() {
+    if (ctx) return ctx;
+    try { ctx=new (window.AudioContext||window.webkitAudioContext)(); } catch(e){ return (ctx=null); }
+    master=ctx.createGain(); master.gain.value=0; master.connect(ctx.destination);
+    padFilter=ctx.createBiquadFilter(); padFilter.type="lowpass"; padFilter.frequency.value=1400; padFilter.connect(master);
+    const len=Math.floor(ctx.sampleRate*2.6), buf=ctx.createBuffer(2,len,ctx.sampleRate);
+    for (let ch=0;ch<2;ch++){ const d=buf.getChannelData(ch); for (let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.6); }
+    reverb=ctx.createConvolver(); reverb.buffer=buf;
+    const wet=ctx.createGain(); wet.gain.value=.55; reverb.connect(wet).connect(master);
+    Music._reverb=reverb; Music._wet=wet;
+    return ctx;
   }
+  function voice(f,time,dur,{type="triangle",gain=.12,attack=.02,detune=0,bus=master,verb=.4}={}) {
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.type=type; o.frequency.value=f; if (detune) o.detune.value=detune;
+    g.gain.setValueAtTime(.0001,time);
+    g.gain.linearRampToValueAtTime(gain,time+attack);
+    g.gain.exponentialRampToValueAtTime(.0001,time+dur);
+    o.connect(g); g.connect(bus); if (verb&&reverb) g.connect(reverb);
+    o.start(time); o.stop(time+dur+.05);
+  }
+  function scheduleBar(index,time) {
+    const chord=PROG[index%PROG.length];
+    chord.pad.forEach((n,i)=>{ voice(freq(n),time,bar+1.2,{type:"sawtooth",gain:.045,attack:.7,detune:-5,bus:padFilter}); voice(freq(n),time,bar+1.2,{type:"sawtooth",gain:.045,attack:.7,detune:6,bus:padFilter}); });
+    voice(freq(chord.root),time,bar*.96,{type:"sine",gain:.16,attack:.04,verb:.2});
+    voice(freq(chord.root),time,bar*.96,{type:"triangle",gain:.05,attack:.04,verb:.2});
+    for (let b=0;b<4;b++){
+      if (b!==0 && Math.random()<.45) continue;
+      const t=time+b*beat+(Math.random()<.3?beat/2:0);
+      const note=MELODY[melodyStep%MELODY.length]; melodyStep+=(Math.random()<.5?1:2);
+      voice(freq(note),t,beat*1.6,{type:"triangle",gain:.07,attack:.01,verb:.6});
+    }
+  }
+  function tick() {
+    if (!ctx) return;
+    while (nextBarTime < ctx.currentTime+.25){ scheduleBar(barIndex++,nextBarTime); nextBarTime+=bar; }
+  }
+  function vol() { return Math.max(0,Math.min(1,(state?.settings?.musicVolume??35)/100)); }
   return {
-    resume(){ const ac=ensure(); if(ac&&ac.state==="suspended") ac.resume(); },
-    hit(){ tone(170,.07,{type:"square",gain:.05}); },
-    crit(){ tone(340,.13,{type:"sawtooth",gain:.13,sweep:-180}); tone(170,.15,{type:"square",gain:.07,delay:.02}); },
-    levelUp(){ [523,659,784].forEach((f,i)=>tone(f,.16,{type:"triangle",gain:.12,delay:i*.09})); },
-    boss(){ [392,523,659,880].forEach((f,i)=>tone(f,.24,{type:"triangle",gain:.14,delay:i*.12})); tone(196,.5,{type:"sine",gain:.1}); },
-    overcharge(){ tone(300,.32,{type:"sawtooth",gain:.13,sweep:380}); },
-    click(){ tone(440,.04,{type:"sine",gain:.035}); }
+    enabled(){ return typeof state==="undefined" || state?.settings?.music!==false; },
+    start(){
+      if (!this.enabled()) return;
+      const ac=ensure(); if (!ac) return;
+      if (ac.state==="suspended") ac.resume();
+      if (!started){ started=true; nextBarTime=ac.currentTime+.15; timer=setInterval(tick,60); }
+      master.gain.cancelScheduledValues(ac.currentTime);
+      master.gain.linearRampToValueAtTime(vol(),ac.currentTime+1.5);
+    },
+    stop(){
+      if (!ctx||!master) return;
+      master.gain.cancelScheduledValues(ctx.currentTime);
+      master.gain.linearRampToValueAtTime(0,ctx.currentTime+.6);
+      clearInterval(timer); timer=null; started=false;
+    },
+    setVolume(){ if (ctx&&master&&started) master.gain.linearRampToValueAtTime(vol(),ctx.currentTime+.2); }
   };
 })();
 const combatStyles = {
@@ -688,7 +737,7 @@ const defaultState = () => ({
   blueprints:[],
   craftPity:{}, craftingUi:{filter:"available",search:"",pinned:[],collapsed:{}},
   stats:{actions:0,crafts:0,contracts:0,sold:0,abilities:0,overcharges:0,rareGear:0,salvaged:0,reforged:0},
-  settings:{sound:true},
+  settings:{music:true,musicVolume:35},
   inventoryUi:{search:"",category:"all",sort:"name"},
   actionElapsed:0, combat:false, attackElapsed:0, enemyAttackElapsed:0, heroHp:100, enemyHp:32, bossPhase:1,
   kills:0, currentZone:0, unlockedZones:1, zoneKills:Array(zoneData.length).fill(0), fightingBoss:false,
@@ -703,7 +752,7 @@ let currentSkill = "mining";
 let lastTick = performance.now();
 let lastLiveRender = 0;
 let momentumMs = 0;
-["pointerdown","keydown","touchstart"].forEach(evt=>window.addEventListener(evt,()=>Sound.resume(),{once:true}));
+["pointerdown","keydown","touchstart"].forEach(evt=>window.addEventListener(evt,()=>Music.start(),{once:true}));
 
 function xpForLevel(level) {
   let total = 0;
@@ -1230,7 +1279,6 @@ function activateOvercharge() {
   state.resonance.current-=25;
   state.resonance.overchargeUntil=Date.now()+60000+achievementBonus("overchargeSeconds")*1000;
   state.stats.overcharges=(state.stats.overcharges||0)+1;
-  Sound.overcharge();
   activity("Ember Overcharge activated","resonance");
   checkAchievements(); saveState(); render();
 }
@@ -1988,7 +2036,7 @@ function defeatEnemy() {
     addLog(`${enemy.name} defeated. Hunt progress: ${state.zoneKills[state.currentZone]}/${currentZone().requiredKills}.`);
     if (state.zoneKills[state.currentZone]===currentZone().requiredKills) toast(`${currentZone().boss.name} revealed`);
   }
-  if (wasBoss) { Sound.boss(); showBossBanner(enemy.name); } else Sound.hit();
+  if (wasBoss) showBossBanner(enemy.name);
   resetCombatStatuses();
   state.enemyHp=enemyMaxHp(); state.attackElapsed=0; state.enemyAttackElapsed=0;
   state.combatAutomation.killsRun=(state.combatAutomation.killsRun||0)+1;
@@ -2016,8 +2064,7 @@ function popDamage(target,amount,label="") {
   number.classList.toggle("crit-pop",crit);
   stage.classList.remove("hit"); number.classList.remove("pop");
   void stage.offsetWidth; stage.classList.add("hit"); number.classList.add("pop");
-  if (crit) { Sound.crit(); shakeCombat(); }
-  else if (label==="Heavy" && amount>0) Sound.hit();
+  if (crit) shakeCombat();
 }
 function shakeCombat() {
   const layout=document.querySelector(".combat-layout");
@@ -2459,7 +2506,8 @@ function renderProductionQueue() {
 
 function renderSettings() {
   document.querySelector("#hero-name-input").value=state.characterName;
-  const sound=document.querySelector("#sound-toggle"); if (sound) sound.checked=state.settings?.sound!==false;
+  const music=document.querySelector("#music-toggle"); if (music) music.checked=state.settings?.music!==false;
+  const volume=document.querySelector("#music-volume"); if (volume) volume.value=state.settings?.musicVolume??35;
 }
 
 function renderSkillProgress() {
@@ -3131,8 +3179,6 @@ function grantCombatXp(id,amount) {
 }
 
 function activity(message,type="item") {
-  if (type==="level") Sound.levelUp();
-  else if (type==="rare") Sound.crit();
   const feed=document.querySelector("#activity-feed");
   const entry=document.createElement("div");
   entry.className=`activity-entry ${type}`;
@@ -3278,11 +3324,16 @@ document.querySelector("#export-save").onclick=exportSave;
 document.querySelector("#import-save").onclick=()=>document.querySelector("#import-save-file").click();
 document.querySelector("#import-save-file").onchange=importSave;
 document.querySelector("#settings-reset").onclick=resetProgress;
-document.querySelector("#sound-toggle").onchange=event=>{
-  state.settings.sound=event.target.checked;
-  if (event.target.checked) { Sound.resume(); Sound.levelUp(); }
+document.querySelector("#music-toggle").onchange=event=>{
+  state.settings.music=event.target.checked;
+  if (event.target.checked) Music.start(); else Music.stop();
   saveState();
 };
+document.querySelector("#music-volume").oninput=event=>{
+  state.settings.musicVolume=Number(event.target.value);
+  Music.setVolume();
+};
+document.querySelector("#music-volume").onchange=()=>saveState();
 
 function exportSave() {
   saveState();

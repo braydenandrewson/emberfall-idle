@@ -450,6 +450,10 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .settings-control button,.settings-actions button { font-size:8px; padding:11px 14px; }
 .settings-actions { display:flex; gap:8px; margin-top:18px; }
 .settings-actions { flex-wrap:wrap; }
+.settings-card .check-row { display:flex; align-items:center; gap:10px; margin-top:16px; font-size:11px; color:var(--cream); }
+.settings-card .check-row input { accent-color:var(--gold); width:18px; height:18px; }
+.settings-slider { display:flex; align-items:center; gap:12px; margin-top:14px; font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); }
+.settings-slider input[type=range] { flex:1; accent-color:var(--gold); }
 .secondary-button { border:1px solid #4c5b4d; background:#101611; color:#c5cec5; padding:11px 14px; text-transform:uppercase; letter-spacing:1px; cursor:pointer; font-size:8px; }
 .secondary-button:hover { border-color:var(--gold); color:var(--gold-2); }
 .hidden-file-input { display:none; }

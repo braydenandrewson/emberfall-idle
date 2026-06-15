@@ -6,6 +6,10 @@ preview*.png
 node_modules/
 test-results/
 
+# Secrets — never commit API keys
+.env
+.env.*
+
 # Local editor and OS files
 .vscode/
 .idea/

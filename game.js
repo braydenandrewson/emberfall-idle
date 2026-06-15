@@ -288,6 +288,7 @@ const itemData = {
 const zoneData = [
   {
     name:"Greenveil Trail",biome:"Whisperwood frontier",recommended:[1,10],gearTiers:["Bronze"],requiredKills:10,
+    synergy:{skill:"woodcutting",actions:["normal","oak"],label:"Common or Oak logs"},
     environment:{name:"Sheltered Trail",description:"No environmental penalty. A suitable proving ground."},
     enemies:[
       {name:"Greenveil Goblin",rank:"Trail scavenger",level:3,hp:32,maxHit:6,attackTime:3000,coins:[4,9],item:"Goblin Scrap",bonusItem:"Copper Ore",image:"greenveil-goblin"},
@@ -298,6 +299,7 @@ const zoneData = [
   },
   {
     name:"Ashen Quarry",biome:"Volcanic mine",recommended:[11,22],gearTiers:["Iron","Steel"],requiredKills:14,
+    synergy:{skill:"mining",actions:["iron","coal"],label:"Iron or Coal"},
     environment:{name:"Ashfall",description:"Enemies deal 5% more damage in the choking heat.",enemyDamage:1.05},
     enemies:[
       {name:"Cinder Kobold",rank:"Quarry raider",level:12,hp:72,maxHit:11,attackTime:2700,coins:[9,15],item:"Cinder Scale",bonusItem:"Iron Ore",image:"cinder-kobold"},
@@ -308,6 +310,7 @@ const zoneData = [
   },
   {
     name:"Frostmere Pass",biome:"Frozen mountain pass",recommended:[23,38],gearTiers:["Silver"],requiredKills:18,
+    synergy:{skill:"fishing",actions:["salmon","eel"],label:"Redfin Salmon or Ember Eel"},
     environment:{name:"Biting Cold",description:"Player attack speed is 8% slower.",playerAttackTime:1.08},
     enemies:[
       {name:"Frostbound Raider",rank:"Pass marauder",level:24,hp:145,maxHit:17,attackTime:2400,coins:[16,25],item:"Frozen Sigil",bonusItem:"Coal",image:"frostbound-raider"},
@@ -318,6 +321,7 @@ const zoneData = [
   },
   {
     name:"Emberfall Citadel",biome:"Burning fortress",recommended:[39,58],gearTiers:["Mithril","Obsidian"],requiredKills:24,
+    synergy:{skill:"mining",actions:["mithril","obsidian"],label:"Mithril or Obsidian"},
     environment:{name:"Citadel Pressure",description:"Enemies gain 10% Defence and deal 10% more damage.",enemyDefence:1.1,enemyDamage:1.1},
     enemies:[
       {name:"Emberguard Knight",rank:"Citadel soldier",level:40,hp:270,maxHit:25,attackTime:2200,coins:[28,42],item:"Emberguard Seal",bonusItem:"Iron Bar",image:"emberguard-knight"},
@@ -328,6 +332,7 @@ const zoneData = [
   },
   {
     name:"Verdant Mire",biome:"Poisoned deep swamp",recommended:[58,70],gearTiers:["Emberforged"],requiredKills:28,
+    synergy:{skill:"woodcutting",actions:["yew"],label:"Ancient Yew"},
     environment:{name:"Toxic Miasma",description:"Enemy hits have a 15% chance to inflict poison.",poisonChance:.15,poisonDamage:7},
     enemies:[
       {name:"Mirestalker Lizard",rank:"Swamp hunter",level:58,hp:520,maxHit:38,attackTime:1950,coins:[48,70],item:"Mire Resin",bonusItem:"Emberite Ore",image:"mirestalker-lizard"},
@@ -338,6 +343,7 @@ const zoneData = [
   },
   {
     name:"Sunscar Expanse",biome:"Glass desert",recommended:[68,82],gearTiers:["Runic"],requiredKills:32,
+    synergy:{skill:"mining",actions:["runite"],label:"Runite"},
     environment:{name:"Scorching Zenith",description:"Enemies deal 15% more damage and all healing is reduced by 25%.",enemyDamage:1.15,healingReduction:.25},
     enemies:[
       {name:"Dune Jackal",rank:"Desert predator",level:70,hp:760,maxHit:52,attackTime:1750,coins:[72,102],item:"Sunscar Hide",bonusItem:"Runite Ore",image:"dune-jackal"},
@@ -348,6 +354,7 @@ const zoneData = [
   },
   {
     name:"Tempest Reach",biome:"Storm-wracked cliffs",recommended:[80,94],gearTiers:["Astral"],requiredKills:36,
+    synergy:{skill:"fishing",actions:["ray","leviathan"],label:"Frostmere Ray or Young Leviathan"},
     environment:{name:"Static Front",description:"Enemy attacks are 12% faster and successful hits delay your next strike.",enemyAttackTime:.88,slowOnHit:350},
     enemies:[
       {name:"Stormwing Harrier",rank:"Cliff predator",level:82,hp:1050,maxHit:66,attackTime:1550,coins:[100,138],item:"Stormglass",bonusItem:"Astral Ore",image:"stormwing-harrier"},
@@ -358,6 +365,7 @@ const zoneData = [
   },
   {
     name:"Astral Scar",biome:"Fractured cosmic wasteland",recommended:[92,110],gearTiers:["Starforged"],requiredKills:42,
+    synergy:{skill:"mining",actions:["astral","star"],label:"Astral Geode or Starfall Crater"},
     environment:{name:"Reality Fracture",description:"Enemies gain 18% Defence, 20% damage, and 8% evasion.",enemyDefence:1.18,enemyDamage:1.2,evasion:.08},
     enemies:[
       {name:"Voidling Ravager",rank:"Abyssal skirmisher",level:94,hp:1550,maxHit:82,attackTime:1450,coins:[145,190],item:"Void Shard",bonusItem:"Star Metal",image:"voidling-ravager"},
@@ -762,6 +770,7 @@ function actionTime(skill, action=getAction(skill)) {
 function actionQuantity(skill, action=getAction(skill)) {
   let quantity = action.qty + state.upgrades[skill].yield;
   if (isBuffActive("prospector") && ["mining","woodcutting","fishing"].includes(skill)) quantity++;
+  if (zoneSynergyYieldMatch(skill,action)) quantity++;
   if (masteryBonus(skill,25)) quantity++;
   if (masteryBonus(skill,75)) quantity++;
   if (isOvercharged()) quantity++;
@@ -857,6 +866,15 @@ function maxHit() { return Math.max(1,Math.round(baseMaxHit()*(combatStyles[stat
 function combatLevel() { return Math.max(1, Math.floor((skillLevel("attack")+skillLevel("strength")+skillLevel("defence")+skillLevel("hitpoints"))/4)); }
 function currentZone() { return zoneData[state.currentZone]; }
 function currentEnvironment() { return currentZone().environment||{}; }
+function zoneSynergy(index=state.currentZone) { return zoneData[index]?.synergy||null; }
+function synergyActive() {
+  const syn=zoneSynergy();
+  return Boolean(state.combat && syn && state.activeSkill===syn.skill && syn.actions.includes(state.selectedActions[syn.skill]));
+}
+function zoneSynergyYieldMatch(skill,action) {
+  const syn=zoneSynergy();
+  return Boolean(state.combat && syn && skill===syn.skill && action && syn.actions.includes(action.id));
+}
 function maxThreatRank(index=state.currentZone) {
   if (!state.bossDefeated[index]) return 0;
   const clears=Math.floor((state.zoneKills[index]||0)/Math.max(1,zoneData[index].requiredKills));
@@ -877,7 +895,8 @@ function combatDamageMultiplier() {
   const venom=isBuffActive("venom") ? .08 : 0;
   const feast=isBuffActive("leviathanmeal") ? .10 : 0;
   const shrine=isOvercharged() && townBranch("shrine","surge") ? (state.town.shrine||0)*.02 : 0;
-  return 1+relic+branch+venom+feast+shrine;
+  const expedition=synergyActive() ? .10 : 0;
+  return 1+relic+branch+venom+feast+shrine+expedition;
 }
 function playerAttackTime() {
   const meal=isBuffActive("embermeal") ? .05 : 0;
@@ -950,9 +969,12 @@ function itemMeta(name) {
   const category=isTrophy ? "Boss Relic" : isSpoil ? "Combat Material" : producingSkill ? "Skill Resource" : "Material";
   const source=producingSkill ? `${skillData[producingSkill].name} resource` : isTrophy ? "A rare trophy taken from a zone boss." : isSpoil ? "A useful component recovered from an enemy." : "A useful Emberfall material.";
   const relic=relicPowerData[name];
+  const craftList=recipes.length ? `${recipes.slice(0,3).map(recipe=>recipe.name).join(", ")}${recipes.length>3?" and more":""}` : "";
   const use=relic
-    ? `Attune one relic to unlock ${relic.description} Spare copies may be sold.`
-    : recipes.length ? `Used for ${recipes.slice(0,3).map(recipe=>recipe.name).join(", ")}${recipes.length>3?" and more":""}.` : "Trade spare stock at the guild for coins.";
+    ? (craftList
+        ? `Attune one to unlock ${relic.description} Also forges ${craftList} — attuning permanently spends the trophy, so keep spares for crafting.`
+        : `Attune one relic to unlock ${relic.description} Spare copies may be sold.`)
+    : craftList ? `Used for ${craftList}.` : "Trade spare stock at the guild for coins.";
   const tier=Math.max(1,...recipes.map(recipe=>recipe.level||1));
   return {icon:itemIconType(name),category,description:source,use,value:Math.max(1,Math.ceil(tier/5))};
 }
@@ -972,7 +994,8 @@ function itemIconType(name) {
 function itemIcon(name) {
   const type=itemMeta(name).icon||itemIconType(name);
   const file=name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
-  return `<span class="item-picture item-${type}" aria-hidden="true"><img src="assets/items-clean/${file}.png" alt="" onerror="this.remove()"><i></i></span>`;
+  const hue=[...name].reduce((value,char)=>(value*31+char.charCodeAt(0))%360,0);
+  return `<span class="item-picture item-${type}" style="--icon-hue:${hue}deg" aria-hidden="true"><img src="assets/items-clean/${file}.png" alt="" onerror="this.remove()"><i></i></span>`;
 }
 function rollRarity(bonus=0) {
   const roll=Math.random()*100-bonus;
@@ -2006,7 +2029,25 @@ function renderDirector() {
   document.querySelectorAll("[data-goal-view]").forEach(button=>button.onclick=()=>navigate(button.dataset.goalView));
 }
 
+function renderExpedition() {
+  const syn=zoneSynergy();
+  const active=synergyActive();
+  const zoneName=currentZone().name;
+  const skillName=syn ? skillData[syn.skill].name : "";
+  const html=!syn ? "" : active
+    ? `<strong>⚡ Expedition Synergy active</strong><span>+10% combat damage in ${zoneName} and +1 ${skillName} output while you fight and gather as one.</span>`
+    : `<strong>Expedition Synergy</strong><span>Fight in ${zoneName} while gathering ${syn.label} (${skillName}) to earn +10% damage here and +1 output.</span>`;
+  ["expedition-synergy","skill-expedition"].forEach(id=>{
+    const el=document.getElementById(id);
+    if (!el) return;
+    el.innerHTML=html;
+    el.classList.toggle("active",active);
+    el.classList.toggle("hidden",!syn);
+  });
+}
+
 function renderLive() {
+  renderExpedition();
   const enemy=currentEnemy(), enemyHpMax=enemyMaxHp(enemy);
   const hp=Math.max(0,state.heroHp), ehp=Math.max(0,state.enemyHp);
   document.querySelector("#coins").textContent=state.coins.toLocaleString();
@@ -2835,6 +2876,9 @@ function activateRelic(name) {
   const relic=relicPowerData[name];
   if (!relic || !(state.inventory[name]>0)) return;
   if (state.relicsActivated[name]) return toast(`${relic.name} is already active`);
+  const craftUses=[...productionSkills.flatMap(id=>skillData[id]?.actions||[]),...craftingRecipes].filter(recipe=>recipe.costs?.[name]).map(recipe=>recipe.name);
+  if (craftUses.length && (state.inventory[name]||0)<=1 &&
+    !window.confirm(`${name} is also a crafting material for ${craftUses.slice(0,3).join(", ")}. Attuning permanently consumes this trophy. Continue?`)) return;
   addItem(name,-1);
   state.relicsActivated[name]=true;
   activity(`Relic attuned: ${relic.name}`,"rare");

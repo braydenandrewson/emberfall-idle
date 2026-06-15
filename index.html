@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=12">
+  <link rel="stylesheet" href="styles.css?v=13">
 </head>
 <body>
   <div class="app-shell">
@@ -137,6 +137,7 @@
               <span>Crit <strong id="combat-crit">5%</strong></span>
               <span title="Each consecutive kill adds 1% coins, up to 25%. Retreating or changing targets resets the chain.">Chain <strong id="combat-chain">0</strong></span>
             </div>
+            <div id="expedition-synergy" class="expedition-synergy hidden"></div>
             <p id="combat-note">Defeat enemies to train Attack, Strength, Defence, and Hitpoints.</p>
           </div>
 
@@ -250,6 +251,7 @@
             <div class="panel-heading"><div><span class="eyebrow">Choose a task</span><h3>Available Actions</h3></div><span id="active-skill-label">Not training</span></div>
             <div id="action-list" class="action-list"></div>
             <div id="skill-synergy" class="skill-synergy"></div>
+            <div id="skill-expedition" class="expedition-synergy hidden"></div>
             <div class="production-queue-panel">
               <div class="panel-heading"><div><span class="eyebrow">Cross-skill automation</span><h3>Production Queue</h3></div><span id="queue-status">Idle</span></div>
               <div id="production-queue" class="production-queue"></div>
@@ -442,6 +444,6 @@
       document.documentElement.dataset.emberfallError = `${event.message} (${event.lineno}:${event.colno})`;
     });
   </script>
-  <script src="game.js?v=12"></script>
+  <script src="game.js?v=13"></script>
 </body>
 </html>

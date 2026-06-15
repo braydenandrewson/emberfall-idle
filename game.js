@@ -12,6 +12,31 @@ const productionSkills = ["mining","woodcutting","fishing","smithing","cooking",
 const POTION_ITEM = "Health Potion";
 const POTION_COST = 25;
 const POTION_HEAL = 40;
+const MOMENTUM_FULL_MS = 60000;
+const Sound = (() => {
+  let ctx=null;
+  const ensure=()=>{ if(!ctx){ try{ ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ ctx=null; } } return ctx; };
+  const enabled=()=>typeof state==="undefined" || state?.settings?.sound!==false;
+  function tone(freq,dur,{type="sine",gain=.12,delay=0,sweep=0}={}) {
+    const ac=ensure(); if(!ac||!enabled()) return;
+    const t=ac.currentTime+delay;
+    const osc=ac.createOscillator(), g=ac.createGain();
+    osc.type=type; osc.frequency.setValueAtTime(freq,t);
+    if(sweep) osc.frequency.exponentialRampToValueAtTime(Math.max(40,freq+sweep),t+dur);
+    g.gain.setValueAtTime(.0001,t); g.gain.linearRampToValueAtTime(gain,t+.01);
+    g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    osc.connect(g).connect(ac.destination); osc.start(t); osc.stop(t+dur+.02);
+  }
+  return {
+    resume(){ const ac=ensure(); if(ac&&ac.state==="suspended") ac.resume(); },
+    hit(){ tone(170,.07,{type:"square",gain:.05}); },
+    crit(){ tone(340,.13,{type:"sawtooth",gain:.13,sweep:-180}); tone(170,.15,{type:"square",gain:.07,delay:.02}); },
+    levelUp(){ [523,659,784].forEach((f,i)=>tone(f,.16,{type:"triangle",gain:.12,delay:i*.09})); },
+    boss(){ [392,523,659,880].forEach((f,i)=>tone(f,.24,{type:"triangle",gain:.14,delay:i*.12})); tone(196,.5,{type:"sine",gain:.1}); },
+    overcharge(){ tone(300,.32,{type:"sawtooth",gain:.13,sweep:380}); },
+    click(){ tone(440,.04,{type:"sine",gain:.035}); }
+  };
+})();
 const combatStyles = {
   balanced:{name:"Balanced",description:"Steady strikes train all three melee disciplines together.",attackSpeed:1,maxHit:1,damageTaken:.95,accuracy:1,crit:0,primary:"attack",xp:{attack:1.3,strength:1.3,defence:1.3,hitpoints:.4}},
   accurate:{name:"Accurate",description:"Measured attacks land more often and focus on Attack.",attackSpeed:.92,maxHit:.92,damageTaken:1,accuracy:1.18,crit:.03,primary:"attack",xp:{attack:4,hitpoints:.4}},
@@ -663,6 +688,7 @@ const defaultState = () => ({
   blueprints:[],
   craftPity:{}, craftingUi:{filter:"available",search:"",pinned:[],collapsed:{}},
   stats:{actions:0,crafts:0,contracts:0,sold:0,abilities:0,overcharges:0,rareGear:0,salvaged:0,reforged:0},
+  settings:{sound:true},
   inventoryUi:{search:"",category:"all",sort:"name"},
   actionElapsed:0, combat:false, attackElapsed:0, enemyAttackElapsed:0, heroHp:100, enemyHp:32, bossPhase:1,
   kills:0, currentZone:0, unlockedZones:1, zoneKills:Array(zoneData.length).fill(0), fightingBoss:false,
@@ -676,6 +702,8 @@ let currentView = "combat";
 let currentSkill = "mining";
 let lastTick = performance.now();
 let lastLiveRender = 0;
+let momentumMs = 0;
+["pointerdown","keydown","touchstart"].forEach(evt=>window.addEventListener(evt,()=>Sound.resume(),{once:true}));
 
 function xpForLevel(level) {
   let total = 0;
@@ -770,7 +798,7 @@ function actionTime(skill, action=getAction(skill)) {
 function actionQuantity(skill, action=getAction(skill)) {
   let quantity = action.qty + state.upgrades[skill].yield;
   if (isBuffActive("prospector") && ["mining","woodcutting","fishing"].includes(skill)) quantity++;
-  if (zoneSynergyYieldMatch(skill,action)) quantity++;
+  if (zoneSynergyYieldMatch(skill,action)) quantity += momentumLevel()>=1 ? 2 : 1;
   if (masteryBonus(skill,25)) quantity++;
   if (masteryBonus(skill,75)) quantity++;
   if (isOvercharged()) quantity++;
@@ -875,6 +903,7 @@ function zoneSynergyYieldMatch(skill,action) {
   const syn=zoneSynergy();
   return Boolean(state.combat && syn && skill===syn.skill && action && syn.actions.includes(action.id));
 }
+function momentumLevel() { return Math.min(1, momentumMs/MOMENTUM_FULL_MS); }
 function maxThreatRank(index=state.currentZone) {
   if (!state.bossDefeated[index]) return 0;
   const clears=Math.floor((state.zoneKills[index]||0)/Math.max(1,zoneData[index].requiredKills));
@@ -895,7 +924,7 @@ function combatDamageMultiplier() {
   const venom=isBuffActive("venom") ? .08 : 0;
   const feast=isBuffActive("leviathanmeal") ? .10 : 0;
   const shrine=isOvercharged() && townBranch("shrine","surge") ? (state.town.shrine||0)*.02 : 0;
-  const expedition=synergyActive() ? .10 : 0;
+  const expedition=synergyActive() ? .10+.15*momentumLevel() : 0;
   return 1+relic+branch+venom+feast+shrine+expedition;
 }
 function playerAttackTime() {
@@ -1201,6 +1230,7 @@ function activateOvercharge() {
   state.resonance.current-=25;
   state.resonance.overchargeUntil=Date.now()+60000+achievementBonus("overchargeSeconds")*1000;
   state.stats.overcharges=(state.stats.overcharges||0)+1;
+  Sound.overcharge();
   activity("Ember Overcharge activated","resonance");
   checkAchievements(); saveState(); render();
 }
@@ -1292,6 +1322,7 @@ function normalizeState(parsed={}) {
     productionQueue:[...(parsed.productionQueue||[])].slice(0,MAX_PRODUCTION_QUEUE),
     blueprints:[...(parsed.blueprints||[])],
     stats:{...base.stats,...parsed.stats},
+    settings:{...base.settings,...parsed.settings},
     inventoryUi:{...base.inventoryUi,...parsed.inventoryUi},
     actionMastery:{...base.actionMastery,...parsed.actionMastery},
     achievements:[...(parsed.achievements||[])],
@@ -1592,22 +1623,28 @@ function applyOfflineCombat(away) {
   bestiaryDrop(enemy.bonusItem,bonusQty);
   const damageXp=enemyMaxHp(enemy)*kills;
   const combatXpMultiplier=1+achievementBonus("allXp")+achievementBonus("combatXp",{zone:state.currentZone,enemy:enemy.name});
+  let totalXp=0;
   Object.entries(style.xp).forEach(([skill,multiplier])=>{
-    state.skills[skill].xp+=Math.max(1,Math.round(damageXp*multiplier*combatXpMultiplier));
+    const gain=Math.max(1,Math.round(damageXp*multiplier*combatXpMultiplier));
+    state.skills[skill].xp+=gain; totalXp+=gain;
   });
   gainResonance(kills*2);
   recordProgress("kills",{zone:state.currentZone},kills);
   const gearDrops=Math.min(20,Math.floor(kills*threatGearChance()));
+  const rarityOrder=Object.keys(rarityData);
+  let bestGear=null;
   for (let index=0;index<gearDrops;index++) {
     const table=currentZone().gearTiers.flatMap(tier=>equipmentTierData[tier]?.gear||[]);
-    if (table.length) createGear(table[index%table.length],rollRarity(zoneThreatRank()*3));
+    if (!table.length) continue;
+    const gear=createGear(table[index%table.length],rollRarity(zoneThreatRank()*3));
+    if (!bestGear || rarityOrder.indexOf(gear.rarity)>rarityOrder.indexOf(bestGear.rarity)) bestGear=gear;
   }
   const damageTaken=enemyDps*activeSeconds;
   state.heroHp=Math.max(1,Math.min(maxHp(),Math.round(maxHp()+food.healed-damageTaken)));
   const stopped=activeSeconds<away/1000 || (state.combatAutomation.stopAfter>0 && kills>=state.combatAutomation.stopAfter);
   if (stopped) state.combat=false;
   state.combatAutomation.killsRun=(state.combatAutomation.killsRun||0)+kills;
-  return {kills,coins,food:food.consumed,item:enemy.item,itemQty:materialQty,bonusItem:enemy.bonusItem,bonusQty,gearDrops};
+  return {kills,coins,food:food.consumed,item:enemy.item,itemQty:materialQty,bonusItem:enemy.bonusItem,bonusQty,gearDrops,totalXp,bestGear:bestGear?{name:gearDisplayName(bestGear),rarity:bestGear.rarity}:null};
 }
 
 function applyOfflineProgress(elapsed=Date.now()-(state.lastSeen||Date.now())) {
@@ -1617,11 +1654,23 @@ function applyOfflineProgress(elapsed=Date.now()-(state.lastSeen||Date.now())) {
   const combatResult=applyOfflineCombat(away);
   const productionResult=combatResult ? null : applyOfflineProduction(away);
   if (!combatResult && !productionResult) return false;
-  document.querySelector("#offline-time").textContent = `You were away for ${formatDuration(away)}.`;
+  document.querySelector("#offline-time").textContent = `You were away for ${formatDuration(away)}. Here is what your adventurer accomplished:`;
   if (combatResult) {
-    document.querySelector("#offline-loot").innerHTML = `<div><span>Enemies defeated</span><strong>${combatResult.kills}</strong></div><div><span>Coins</span><strong>+${combatResult.coins.toLocaleString()}</strong></div><div><span>${combatResult.item}</span><strong>+${combatResult.itemQty}</strong></div>${combatResult.bonusQty?`<div><span>${combatResult.bonusItem}</span><strong>+${combatResult.bonusQty}</strong></div>`:""}<div><span>Food consumed</span><strong>${combatResult.food}</strong></div><div><span>Equipment found</span><strong>${combatResult.gearDrops||0}</strong></div>`;
+    const cards=[
+      `<div><span>Enemies defeated</span><strong>${combatResult.kills.toLocaleString()}</strong></div>`,
+      `<div class="reward-highlight"><span>Coins</span><strong>+${combatResult.coins.toLocaleString()}</strong></div>`,
+      `<div><span>Combat XP</span><strong>+${(combatResult.totalXp||0).toLocaleString()}</strong></div>`,
+      `<div><span>${combatResult.item}</span><strong>+${(combatResult.itemQty||0).toLocaleString()}</strong></div>`,
+      combatResult.bonusQty?`<div><span>${combatResult.bonusItem}</span><strong>+${combatResult.bonusQty.toLocaleString()}</strong></div>`:"",
+      combatResult.gearDrops?`<div><span>Equipment found</span><strong>${combatResult.gearDrops}</strong></div>`:"",
+      combatResult.food?`<div><span>Food consumed</span><strong>${combatResult.food}</strong></div>`:""
+    ].join("");
+    const featured=combatResult.bestGear?`<div class="offline-featured rarity-${combatResult.bestGear.rarity}" style="--rarity-color:${rarityData[combatResult.bestGear.rarity].color}"><span class="eyebrow">Best find</span><strong>${rarityData[combatResult.bestGear.rarity].name} ${combatResult.bestGear.name}</strong></div>`:"";
+    document.querySelector("#offline-loot").innerHTML=featured+`<div class="offline-cards">${cards}</div>`;
   } else {
-    document.querySelector("#offline-loot").innerHTML = Object.entries(productionResult.items).map(([item,qty])=>`<div><span>${item}</span><strong>+${qty.toLocaleString()}</strong></div>`).join("")+Object.entries(productionResult.xp).map(([skill,xp])=>`<div><span>${skillData[skill].name} XP</span><strong>+${xp.toLocaleString()}</strong></div>`).join("")+`<div><span>Mastery XP</span><strong>+${productionResult.mastery.toLocaleString()}</strong></div>`;
+    const itemCards=Object.entries(productionResult.items).map(([item,qty])=>`<div><span>${item}</span><strong>+${qty.toLocaleString()}</strong></div>`).join("");
+    const xpCards=Object.entries(productionResult.xp).map(([skill,xp])=>`<div><span>${skillData[skill].name} XP</span><strong>+${xp.toLocaleString()}</strong></div>`).join("");
+    document.querySelector("#offline-loot").innerHTML=`<div class="offline-cards">${itemCards}${xpCards}<div class="reward-highlight"><span>Mastery XP</span><strong>+${productionResult.mastery.toLocaleString()}</strong></div></div>`;
   }
   document.querySelector("#offline-modal").classList.remove("hidden");
   return true;
@@ -1632,6 +1681,7 @@ function tick(now) {
   lastTick = now;
   if (!document.hidden && state.activeSkill) updateSkill(dt);
   if (!document.hidden && state.combat) updateCombat(dt);
+  if (synergyActive()) momentumMs=Math.min(MOMENTUM_FULL_MS,momentumMs+dt); else momentumMs=0;
   if ((state.activeSkill||state.combat||isOvercharged()) && now-lastLiveRender>=100) {
     renderLive();
     lastLiveRender=now;
@@ -1938,6 +1988,7 @@ function defeatEnemy() {
     addLog(`${enemy.name} defeated. Hunt progress: ${state.zoneKills[state.currentZone]}/${currentZone().requiredKills}.`);
     if (state.zoneKills[state.currentZone]===currentZone().requiredKills) toast(`${currentZone().boss.name} revealed`);
   }
+  if (wasBoss) { Sound.boss(); showBossBanner(enemy.name); } else Sound.hit();
   resetCombatStatuses();
   state.enemyHp=enemyMaxHp(); state.attackElapsed=0; state.enemyAttackElapsed=0;
   state.combatAutomation.killsRun=(state.combatAutomation.killsRun||0)+1;
@@ -1961,8 +2012,24 @@ function popDamage(target,amount,label="") {
   const stage=document.querySelector(`#${target}-image`).parentElement;
   const number=document.querySelector(`#${target}-damage`);
   number.textContent=amount ? `${label?`${label} `:""}-${amount}` : label||"Block";
+  const crit=label==="Crit";
+  number.classList.toggle("crit-pop",crit);
   stage.classList.remove("hit"); number.classList.remove("pop");
   void stage.offsetWidth; stage.classList.add("hit"); number.classList.add("pop");
+  if (crit) { Sound.crit(); shakeCombat(); }
+  else if (label==="Heavy" && amount>0) Sound.hit();
+}
+function shakeCombat() {
+  const layout=document.querySelector(".combat-layout");
+  if (!layout) return;
+  layout.classList.remove("shake"); void layout.offsetWidth; layout.classList.add("shake");
+}
+function showBossBanner(name) {
+  const el=document.getElementById("boss-banner");
+  if (!el) return;
+  el.textContent=`${name} defeated!`;
+  el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
+  setTimeout(()=>el.classList.remove("show"),2600);
 }
 
 function navigate(view) {
@@ -2034,9 +2101,11 @@ function renderExpedition() {
   const active=synergyActive();
   const zoneName=currentZone().name;
   const skillName=syn ? skillData[syn.skill].name : "";
+  const lvl=momentumLevel();
+  const meter=`<div class="expedition-meter"><i style="width:${Math.round(lvl*100)}%"></i></div>`;
   const html=!syn ? "" : active
-    ? `<strong>⚡ Expedition Synergy active</strong><span>+10% combat damage in ${zoneName} and +1 ${skillName} output while you fight and gather as one.</span>`
-    : `<strong>Expedition Synergy</strong><span>Fight in ${zoneName} while gathering ${syn.label} (${skillName}) to earn +10% damage here and +1 output.</span>`;
+    ? `<strong>⚡ Expedition Synergy${lvl>=1?" · MAX":""}</strong><span>+${Math.round(10+15*lvl)}% combat damage in ${zoneName} · +${lvl>=1?2:1} ${skillName} output</span>${meter}<span class="expedition-momentum">Momentum ramps the bonus the longer you fight and gather as one.</span>`
+    : `<strong>Expedition Synergy</strong><span>Fight in ${zoneName} while gathering ${syn.label} (${skillName}) to start a +10% damage / +1 output bonus that ramps to +25% / +2.</span>`;
   ["expedition-synergy","skill-expedition"].forEach(id=>{
     const el=document.getElementById(id);
     if (!el) return;
@@ -2051,7 +2120,7 @@ function renderLive() {
   const enemy=currentEnemy(), enemyHpMax=enemyMaxHp(enemy);
   const hp=Math.max(0,state.heroHp), ehp=Math.max(0,state.enemyHp);
   document.querySelector("#coins").textContent=state.coins.toLocaleString();
-  document.querySelector("#resonance-count").textContent=`${Math.floor(state.resonance.current)} / ${resonanceMax()}`;
+  renderResonancePill();
   renderProgressSummary();
   document.querySelector("#hero-level").textContent=combatLevel();
   document.querySelector("#hero-hp-text").textContent=`${Math.ceil(hp)} / ${maxHp()}`;
@@ -2390,6 +2459,7 @@ function renderProductionQueue() {
 
 function renderSettings() {
   document.querySelector("#hero-name-input").value=state.characterName;
+  const sound=document.querySelector("#sound-toggle"); if (sound) sound.checked=state.settings?.sound!==false;
 }
 
 function renderSkillProgress() {
@@ -2419,6 +2489,17 @@ function renderProgressSummary() {
   document.querySelector("#total-level").textContent=ids.reduce((total,id)=>total+skillLevel(id),0);
   document.querySelector("#combat-level").textContent=combatLevel();
   productionSkills.forEach(id=>document.querySelector(`#nav-${id}`).textContent=skillLevel(id));
+  renderResonancePill();
+}
+function renderResonancePill() {
+  const pill=document.getElementById("resonance-pill"); if (!pill) return;
+  const count=document.getElementById("resonance-count");
+  const cur=Math.floor(state.resonance.current), max=resonanceMax();
+  const over=isOvercharged(), ready=!over && cur>=25;
+  pill.classList.toggle("ready",ready);
+  pill.classList.toggle("overcharged",over);
+  pill.querySelector("span").textContent=over?"Overcharged":ready?"Overcharge Ready":"Resonance";
+  count.textContent=over?`⚡ ${formatDuration(state.resonance.overchargeUntil-Date.now())}`:`${cur} / ${max}`;
 }
 
 function renderMarketplace() {
@@ -3050,6 +3131,8 @@ function grantCombatXp(id,amount) {
 }
 
 function activity(message,type="item") {
+  if (type==="level") Sound.levelUp();
+  else if (type==="rare") Sound.crit();
   const feed=document.querySelector("#activity-feed");
   const entry=document.createElement("div");
   entry.className=`activity-entry ${type}`;
@@ -3142,6 +3225,7 @@ document.querySelector("#auto-eat-toggle").onclick=()=>{
 };
 document.querySelector("#combat-overcharge").onclick=activateOvercharge;
 document.querySelector("#board-overcharge").onclick=activateOvercharge;
+document.querySelector("#resonance-pill").onclick=activateOvercharge;
 document.querySelector("#combat-stop-hp").onchange=event=>{
   state.combatAutomation.stopHp=Math.max(1,Math.min(80,Number(event.currentTarget.value)||15));
   saveState(); renderCombatSetup();
@@ -3194,6 +3278,11 @@ document.querySelector("#export-save").onclick=exportSave;
 document.querySelector("#import-save").onclick=()=>document.querySelector("#import-save-file").click();
 document.querySelector("#import-save-file").onchange=importSave;
 document.querySelector("#settings-reset").onclick=resetProgress;
+document.querySelector("#sound-toggle").onchange=event=>{
+  state.settings.sound=event.target.checked;
+  if (event.target.checked) { Sound.resume(); Sound.levelUp(); }
+  saveState();
+};
 
 function exportSave() {
   saveState();

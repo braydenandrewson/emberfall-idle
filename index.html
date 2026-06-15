@@ -30,7 +30,7 @@
         <div><span>Combat</span><strong id="combat-level">1</strong></div>
         <div><span>Total Level</span><strong id="total-level">6</strong></div>
         <div><span>Coins</span><strong id="coins">0</strong></div>
-        <div><span>Resonance</span><strong id="resonance-count">0 / 100</strong></div>
+        <button class="resonance-pill" id="resonance-pill" title="Spend 25 Resonance to Overcharge"><span>Resonance</span><strong id="resonance-count">0 / 100</strong></button>
       </div>
       <div class="live-skill-hud" id="live-skill-hud">
         <img id="live-skill-icon" src="assets/skills/mining-v2.png" alt="">
@@ -411,6 +411,12 @@
             </div>
           </article>
           <article class="settings-card">
+            <span class="eyebrow">Audio</span>
+            <h3>Sound Effects</h3>
+            <p>Combat hits, level-up chimes, and boss fanfares. Generated in your browser — no downloads.</p>
+            <label class="check-row"><input id="sound-toggle" type="checkbox" checked> Enable sound effects</label>
+          </article>
+          <article class="settings-card">
             <span class="eyebrow">Local progress</span>
             <h3>Save Management</h3>
             <p>Your progress is stored under Emberfall's stable localhost address with a second automatic browser backup.</p>
@@ -428,6 +434,7 @@
   </div>
 
   <div id="toast" class="toast"></div>
+  <div id="boss-banner" class="boss-banner"></div>
   <div id="activity-feed" class="activity-feed" aria-live="polite"></div>
   <div id="offline-modal" class="modal hidden">
     <div class="modal-card">

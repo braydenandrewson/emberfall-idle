@@ -220,6 +220,23 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .expedition-synergy.active span { color:#e7dcc2; }
 .expedition-synergy.hidden { display:none; }
 @keyframes expeditionPulse { 0%,100%{box-shadow:inset 2px 0 var(--gold-2),0 0 14px rgba(244,208,131,.14);} 50%{box-shadow:inset 2px 0 var(--gold-2),0 0 22px rgba(244,208,131,.30);} }
+.expedition-meter { height:5px; background:rgba(0,0,0,.35); border:1px solid var(--line); margin:3px 0; overflow:hidden; }
+.expedition-meter i { display:block; height:100%; width:0; background:linear-gradient(90deg,var(--gold),var(--gold-2)); transition:width .2s linear; }
+.expedition-momentum { color:var(--gold) !important; font-size:8px !important; text-transform:uppercase; letter-spacing:.6px; }
+/* Combat juice */
+.damage-number.crit-pop { color:#ff7a4d; font-size:40px; text-shadow:0 0 16px rgba(255,120,70,.7),0 2px 4px #000; }
+.combat-layout.shake { animation:combatShake .3s ease; }
+@keyframes combatShake { 0%,100%{transform:translateX(0);} 20%{transform:translateX(-6px);} 40%{transform:translateX(6px);} 60%{transform:translateX(-4px);} 80%{transform:translateX(4px);} }
+/* Boss-defeat banner */
+.boss-banner { position:fixed; top:34%; left:50%; transform:translate(-50%,-50%) scale(.8); z-index:60; pointer-events:none; opacity:0; font:700 38px Cinzel,serif; color:var(--gold-2); text-align:center; text-shadow:0 0 24px rgba(244,208,131,.6),0 4px 10px #000; padding:18px 40px; }
+.boss-banner.show { animation:bossBanner 2.6s ease forwards; }
+@keyframes bossBanner { 0%{opacity:0;transform:translate(-50%,-50%) scale(.7);} 15%{opacity:1;transform:translate(-50%,-50%) scale(1.06);} 80%{opacity:1;transform:translate(-50%,-50%) scale(1);} 100%{opacity:0;transform:translate(-50%,-62%) scale(1);} }
+/* Resonance topbar pill */
+.resonance-pill { display:grid; gap:2px; background:transparent; border:1px solid transparent; padding:4px 10px; border-radius:5px; cursor:pointer; text-align:left; font:inherit; transition:border-color .2s,background .2s,box-shadow .2s; }
+.resonance-pill.ready { border-color:var(--gold); background:rgba(215,169,79,.14); animation:resonancePulse 1.6s ease-in-out infinite; }
+.resonance-pill.ready span { color:var(--gold-2); }
+.resonance-pill.overcharged { border-color:var(--gold-2); background:linear-gradient(90deg,rgba(215,169,79,.3),rgba(20,27,22,.4)); }
+@keyframes resonancePulse { 0%,100%{box-shadow:0 0 12px rgba(244,208,131,.2);} 50%{box-shadow:0 0 20px rgba(244,208,131,.42);} }
 .action-progress { display:grid; grid-template-columns:1fr 36px; gap:8px; align-items:center; margin:19px 0; font-size:10px; }
 .panel-heading { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
 .panel-heading h3 { margin:4px 0; }
@@ -437,8 +454,14 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .secondary-button:hover { border-color:var(--gold); color:var(--gold-2); }
 .hidden-file-input { display:none; }
 .danger-button { border:1px solid #74433a; background:#261816; color:#e78370; padding:11px 14px; text-transform:uppercase; letter-spacing:1px; cursor:pointer; font-size:8px; }
-.offline-loot { display:grid; gap:6px; margin:18px 0; }
-.offline-loot div { display:flex; justify-content:space-between; border-bottom:1px solid var(--line); padding:7px 0; font-size:11px; }
+.offline-loot { margin:18px 0; }
+.offline-cards { display:grid; gap:6px; }
+.offline-cards > div { display:flex; justify-content:space-between; border-bottom:1px solid var(--line); padding:7px 0; font-size:11px; }
+.offline-cards > .reward-highlight { border-bottom:0; border:1px solid var(--gold); background:rgba(215,169,79,.12); padding:9px 11px; margin-top:5px; }
+.offline-cards > .reward-highlight strong { color:var(--gold-2); }
+.offline-featured { display:grid; gap:3px; padding:12px 14px; margin-bottom:10px; border:1px solid var(--rarity-color,var(--gold)); background:rgba(20,27,22,.55); box-shadow:inset 3px 0 var(--rarity-color,var(--gold)),0 0 20px -8px var(--rarity-color,var(--gold)); }
+.offline-featured .eyebrow { color:var(--rarity-color,var(--gold)); }
+.offline-featured strong { color:#fff; font-size:14px; }
 .mobile-more-toggle,.mobile-more-menu { display:none; }
 .progression-director { max-width:1320px; margin:0 auto 18px; padding:12px 14px; display:grid; grid-template-columns:210px 1fr; gap:14px; align-items:center; background:linear-gradient(100deg,rgba(215,169,79,.12),rgba(20,27,22,.86)); box-shadow:inset 3px 0 var(--gold),0 8px 24px rgba(0,0,0,.12); }
 .progression-director > div:first-child { display:grid; gap:4px; }

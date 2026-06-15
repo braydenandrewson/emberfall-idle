@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=12">
 </head>
 <body>
   <div class="app-shell">
@@ -30,28 +30,52 @@
         <div><span>Combat</span><strong id="combat-level">1</strong></div>
         <div><span>Total Level</span><strong id="total-level">6</strong></div>
         <div><span>Coins</span><strong id="coins">0</strong></div>
+        <div><span>Resonance</span><strong id="resonance-count">0 / 100</strong></div>
+      </div>
+      <div class="live-skill-hud" id="live-skill-hud">
+        <img id="live-skill-icon" src="assets/skills/mining-v2.png" alt="">
+        <div class="live-skill-body">
+          <div class="live-skill-heading"><span id="live-skill-name">Skills idle</span><strong id="live-action-name">Choose a skill</strong></div>
+          <div class="live-progress-track action"><i id="live-action-bar"></i></div>
+          <div class="live-skill-meta"><span id="live-skill-level">No active training</span><span id="live-skill-xp">0 XP</span></div>
+          <div class="live-progress-track xp"><i id="live-skill-xp-bar"></i></div>
+        </div>
       </div>
       <div class="save-state" id="save-state">Saved locally</div>
-      <button class="account-button" id="account-button">Account</button>
     </header>
 
     <aside class="sidebar">
       <p class="nav-label">Adventure</p>
-      <button class="nav-item active" data-view="combat" aria-label="Combat"><span class="nav-icon">X</span><span class="nav-text">Combat</span></button>
+      <button class="nav-item active" data-view="combat" data-mobile-primary aria-label="Combat"><span class="nav-icon nav-combat"><img src="assets/skills/combat-v2.png" alt=""></span><span class="nav-text">Combat</span></button>
       <p class="nav-label">Gathering</p>
-      <button class="nav-item" data-view="mining" aria-label="Mining"><span class="nav-icon">M</span><span class="nav-text">Mining</span> <b id="nav-mining">1</b></button>
-      <button class="nav-item" data-view="woodcutting" aria-label="Woodcutting"><span class="nav-icon">W</span><span class="nav-text">Woodcutting</span> <b id="nav-woodcutting">1</b></button>
-      <button class="nav-item" data-view="fishing" aria-label="Fishing"><span class="nav-icon">F</span><span class="nav-text">Fishing</span> <b id="nav-fishing">1</b></button>
+      <button class="nav-item" data-view="mining" data-mobile-primary aria-label="Skills"><span class="nav-icon nav-mining"><img src="assets/skills/mining-v2.png" alt=""></span><span class="nav-text">Skills</span> <b id="nav-mining">1</b></button>
+      <button class="nav-item" data-view="woodcutting" aria-label="Woodcutting"><span class="nav-icon nav-woodcutting"><img src="assets/skills/woodcutting-v2.png" alt=""></span><span class="nav-text">Woodcutting</span> <b id="nav-woodcutting">1</b></button>
+      <button class="nav-item" data-view="fishing" aria-label="Fishing"><span class="nav-icon nav-fishing"><img src="assets/skills/fishing-v2.png" alt=""></span><span class="nav-text">Fishing</span> <b id="nav-fishing">1</b></button>
       <p class="nav-label">Crafting</p>
-      <button class="nav-item" data-view="smithing" aria-label="Smithing"><span class="nav-icon">S</span><span class="nav-text">Smithing</span> <b id="nav-smithing">1</b></button>
-      <button class="nav-item" data-view="crafting" aria-label="Crafting"><span class="nav-icon">C</span><span class="nav-text">Crafting</span></button>
+      <button class="nav-item" data-view="smithing" aria-label="Smithing"><span class="nav-icon nav-smithing"><img src="assets/skills/smithing-v2.png" alt=""></span><span class="nav-text">Smithing</span> <b id="nav-smithing">1</b></button>
+      <button class="nav-item" data-view="cooking" aria-label="Cooking"><span class="nav-icon nav-cooking"><img src="assets/skills/cooking-v2.png" alt=""></span><span class="nav-text">Cooking</span> <b id="nav-cooking">1</b></button>
+      <button class="nav-item" data-view="alchemy" aria-label="Alchemy"><span class="nav-icon nav-alchemy"><img src="assets/skills/alchemy-v2.png" alt=""></span><span class="nav-text">Alchemy</span> <b id="nav-alchemy">1</b></button>
+      <button class="nav-item" data-view="crafting" data-mobile-primary aria-label="Crafting"><span class="nav-icon nav-crafting"><img src="assets/navigation/crafting-v2.png" alt=""></span><span class="nav-text">Crafting</span></button>
       <p class="nav-label">Character</p>
-      <button class="nav-item" data-view="inventory" aria-label="Inventory"><span class="nav-icon">I</span><span class="nav-text">Inventory</span></button>
-      <button class="nav-item" data-view="marketplace" aria-label="Marketplace"><span class="nav-icon">$</span><span class="nav-text">Marketplace</span></button>
-      <button class="nav-item" data-view="mastery" aria-label="All Skills"><span class="nav-icon">A</span><span class="nav-text">All Skills</span></button>
+      <button class="nav-item" data-view="inventory" data-mobile-primary aria-label="Inventory"><span class="nav-icon nav-inventory"><img src="assets/navigation/inventory-v2.png" alt=""></span><span class="nav-text">Inventory</span></button>
+      <button class="nav-item" data-view="marketplace" aria-label="Marketplace"><span class="nav-icon nav-market"><img src="assets/navigation/marketplace-v2.png" alt=""></span><span class="nav-text">Marketplace</span></button>
+      <button class="nav-item" data-view="adventure" data-mobile-primary aria-label="Adventure Board"><span class="nav-icon nav-adventure"><img src="assets/navigation/adventure-v2.png" alt=""></span><span class="nav-text">Adventure</span></button>
+      <button class="nav-item" data-view="mastery" aria-label="All Skills"><span class="nav-icon nav-mastery"><img src="assets/navigation/mastery-v2.png" alt=""></span><span class="nav-text">All Skills</span></button>
+      <button class="nav-item" data-view="settings" aria-label="Settings"><span class="nav-icon nav-settings"><img src="assets/navigation/settings-v2.png" alt=""></span><span class="nav-text">Settings</span></button>
       <div class="sidebar-footer">
         <button id="save-button">Save game</button>
         <button id="reset-button">Reset</button>
+      </div>
+      <button class="mobile-more-toggle" id="mobile-more-toggle" aria-expanded="false"><span class="nav-icon">+</span><span>More</span></button>
+      <div class="mobile-more-menu" id="mobile-more-menu">
+        <button data-view="woodcutting">Woodcutting</button>
+        <button data-view="fishing">Fishing</button>
+        <button data-view="smithing">Smithing</button>
+        <button data-view="cooking">Cooking</button>
+        <button data-view="alchemy">Alchemy</button>
+        <button data-view="marketplace">Marketplace</button>
+        <button data-view="mastery">All Skills</button>
+        <button data-view="settings">Settings</button>
       </div>
     </aside>
 
@@ -60,16 +84,27 @@
         <span>On iPhone, tap Share, then <strong>Add to Home Screen</strong>.</span>
         <button id="ios-install-close" aria-label="Dismiss installation tip">Close</button>
       </div>
+      <aside class="progression-director" id="progression-director">
+        <div><span class="eyebrow">Recommended next</span><strong id="director-title">Choose your next objective</strong></div>
+        <div id="director-goals" class="director-goals"></div>
+      </aside>
       <section id="view-combat" class="view active">
         <div class="section-heading">
-          <div><span class="eyebrow">Whisperwood Outskirts</span><h2>Combat Grounds</h2></div>
+          <div><span class="eyebrow" id="combat-eyebrow">Whisperwood frontier</span><h2>Combat Grounds</h2></div>
           <div class="zone-selector"><span id="zone-number">Zone 1</span><strong id="zone-name">Greenveil Trail</strong></div>
         </div>
         <div id="zone-list" class="zone-list"></div>
+        <div class="zone-profile">
+          <div><span>Biome</span><strong id="zone-biome">Whisperwood frontier</strong></div>
+          <div><span>Recommended</span><strong id="zone-recommended">Combat 1-10</strong></div>
+          <div class="threat-control"><span>Threat Rank</span><select id="zone-threat" aria-label="Select zone threat"><option value="0">0</option></select><small id="zone-threat-reward">Base rewards</small></div>
+          <div class="zone-environment"><span id="zone-environment-name">Sheltered Trail</span><strong id="zone-environment-description">No environmental penalty.</strong></div>
+          <div><span>Gear Drops</span><strong id="zone-gear-tiers">Bronze</strong></div>
+        </div>
         <div class="combat-layout">
           <article class="fighter-card hero-card">
             <div class="fighter-heading">
-              <div><span>Your adventurer</span><h3>Rowan</h3></div>
+              <div><span>Your adventurer</span><h3 id="hero-name">Rowan</h3></div>
               <strong class="level-badge">Lv. <span id="hero-level">1</span></strong>
             </div>
             <div class="portrait-stage">
@@ -96,6 +131,12 @@
             </div>
             <button class="primary-button" id="combat-toggle">Start Combat</button>
             <button class="potion-button" id="use-potion">Use Potion <strong id="potion-count">0</strong></button>
+            <button class="auto-eat-button" id="auto-eat-toggle" title="Automatically consumes cooked food at or below 35% health.">Auto-Eat: Off</button>
+            <div class="combat-readout">
+              <span>Hit <strong id="combat-accuracy">75%</strong></span>
+              <span>Crit <strong id="combat-crit">5%</strong></span>
+              <span title="Each consecutive kill adds 1% coins, up to 25%. Retreating or changing targets resets the chain.">Chain <strong id="combat-chain">0</strong></span>
+            </div>
             <p id="combat-note">Defeat enemies to train Attack, Strength, Defence, and Hitpoints.</p>
           </div>
 
@@ -111,12 +152,52 @@
             </div>
             <div class="bar-label"><span>Health</span><strong id="enemy-hp-text">32 / 32</strong></div>
             <div class="meter health enemy-health"><i id="enemy-hp-bar"></i></div>
+            <div class="enemy-intent">
+              <span>Enemy attack</span>
+              <div class="timer-track"><i id="enemy-attack-timer-bar"></i></div>
+              <strong id="enemy-attack-timer-text">3.0s</strong>
+            </div>
+            <div id="combat-status-list" class="combat-status-list"></div>
+            <div id="boss-phase" class="boss-phase hidden">Boss Phase 1</div>
+            <div class="enemy-trait">
+              <strong id="enemy-trait-name">Scavenger</strong>
+              <span id="enemy-trait-description">No special combat modifier.</span>
+            </div>
             <div class="loot-preview">
               <span>Possible loot</span>
               <div id="enemy-loot"><b>Coins</b><b>Copper ore</b><b>Goblin scrap</b></div>
             </div>
             <button class="boss-button" id="boss-toggle">Challenge Boss</button>
             <p class="hunt-progress" id="hunt-progress">Defeat 10 enemies to reveal the boss.</p>
+          </article>
+        </div>
+        <div class="combat-options">
+          <article>
+            <div class="panel-heading"><div><span class="eyebrow">Choose your discipline</span><h3>Combat Style</h3></div><span id="combat-style-label">Balanced</span></div>
+            <div id="combat-style-list" class="combat-style-list"></div>
+          </article>
+          <article>
+            <div class="panel-heading"><div><span class="eyebrow">Choose your quarry</span><h3>Zone Enemies</h3></div><span id="enemy-count-label">3 available</span></div>
+            <div id="enemy-list" class="enemy-list"></div>
+          </article>
+        </div>
+        <div class="combat-expansion">
+          <article class="ability-panel">
+            <div class="panel-heading"><div><span class="eyebrow">Active techniques</span><h3>Combat Abilities</h3></div><span>Equip 3 and configure auto-cast</span></div>
+            <div id="ability-list" class="ability-list"></div>
+          </article>
+          <article class="resonance-panel">
+            <div class="panel-heading"><div><span class="eyebrow">Ember energy</span><h3>Resonance Overcharge</h3></div><strong id="combat-resonance">0 / 100</strong></div>
+            <p>Spend 25 Resonance for at least 60 seconds of increased combat damage, skill speed, and production. Achievement milestones extend the duration.</p>
+            <div class="meter resonance-meter"><i id="combat-resonance-bar"></i></div>
+            <button class="primary-button" id="combat-overcharge">Activate Overcharge</button>
+          </article>
+          <article class="automation-panel">
+            <div class="panel-heading"><div><span class="eyebrow">Idle safety</span><h3>Combat Automation</h3></div><span>Saved per character</span></div>
+            <label>Retreat below <input id="combat-stop-hp" type="number" min="1" max="80" value="15"> % health</label>
+            <label>Stop after <input id="combat-stop-kills" type="number" min="0" max="10000" value="0"> kills <small>0 = unlimited</small></label>
+            <label class="check-row"><input id="combat-stop-food" type="checkbox"> Stop when automatic food runs out</label>
+            <label class="check-row"><input id="combat-offline" type="checkbox" checked> Continue safe combat while offline</label>
           </article>
         </div>
         <div class="combat-log-panel">
@@ -133,25 +214,47 @@
         <div class="skill-workspace">
           <article class="current-action">
             <span class="eyebrow">Current action</span>
-            <div class="action-illustration"><span id="action-monogram">M</span></div>
+            <div class="action-illustration" id="action-illustration"></div>
             <h3 id="action-name">Copper Vein</h3>
             <p id="action-description">Mine useful ore from the shallow hills.</p>
             <div class="xp-row"><span id="skill-xp-text">0 / 83 XP</span><strong id="skill-xp-rate">+10 XP</strong></div>
             <div class="meter xp"><i id="skill-xp-bar"></i></div>
             <div class="mastery-summary">
-              <div class="xp-row"><span>Mastery <b id="mastery-level">1</b></span><strong id="mastery-xp-rate">+10 MXP</strong></div>
+              <div class="xp-row"><span title="Skill Mastery improves every action in this skill and unlocks permanent milestones.">Skill Mastery <b id="mastery-level">1</b></span><strong id="mastery-xp-rate">+10 MXP</strong></div>
               <div class="meter mastery-meter"><i id="mastery-xp-bar"></i></div>
               <span id="mastery-xp-text">0 / 83 Mastery XP</span>
+            </div>
+            <div class="action-mastery-summary">
+              <div class="xp-row"><span title="Action Expertise improves only the selected action, increasing speed and bonus output chance.">Action Expertise <b id="action-mastery-level">1</b></span><strong id="action-mastery-bonus">No bonus</strong></div>
+              <div class="meter action-mastery-meter"><i id="action-mastery-bar"></i></div>
+              <span id="action-mastery-text">0 / 166 Action MXP</span>
             </div>
             <div class="action-progress">
               <div class="timer-track"><i id="skill-timer-bar"></i></div>
               <strong id="skill-timer-text">3.0s</strong>
             </div>
             <button class="primary-button" id="skill-toggle">Begin</button>
+            <div class="queue-add">
+              <label>Queue output target
+                <select id="queue-target">
+                  <option value="50">50 items</option>
+                  <option value="100" selected>100 items</option>
+                  <option value="500">500 items</option>
+                  <option value="1000">1,000 items</option>
+                </select>
+              </label>
+              <button class="secondary-button" id="queue-add-button">Add Current Action</button>
+            </div>
           </article>
           <div>
             <div class="panel-heading"><div><span class="eyebrow">Choose a task</span><h3>Available Actions</h3></div><span id="active-skill-label">Not training</span></div>
             <div id="action-list" class="action-list"></div>
+            <div id="skill-synergy" class="skill-synergy"></div>
+            <div class="production-queue-panel">
+              <div class="panel-heading"><div><span class="eyebrow">Cross-skill automation</span><h3>Production Queue</h3></div><span id="queue-status">Idle</span></div>
+              <div id="production-queue" class="production-queue"></div>
+              <div class="queue-actions"><button class="primary-button" id="queue-start">Run Queue</button><button class="secondary-button" id="queue-clear">Clear</button></div>
+            </div>
             <div class="milestone-panel">
               <div class="panel-heading"><div><span class="eyebrow">Permanent bonuses</span><h3>Mastery Milestones</h3></div></div>
               <div id="milestone-list" class="milestone-list"></div>
@@ -161,7 +264,7 @@
       </section>
 
       <section id="view-inventory" class="view">
-        <div class="section-heading"><div><span class="eyebrow">Everything you have earned</span><h2>Inventory & Equipment</h2></div><div class="zone-selector"><span>Used slots</span><strong id="used-slots">0 / 30</strong></div></div>
+        <div class="section-heading"><div><span class="eyebrow">Everything you have earned</span><h2>Inventory & Equipment</h2></div><div class="zone-selector"><span>Item types</span><strong id="used-slots">0</strong></div></div>
         <div class="inventory-layout">
           <article class="equipment-panel">
             <div class="panel-heading"><div><span class="eyebrow">Currently equipped</span><h3>Adventurer</h3></div></div>
@@ -169,7 +272,25 @@
             <div id="equipment-slots" class="equipment-slots"></div>
           </article>
           <article>
-            <div class="panel-heading"><div><span class="eyebrow">Resources and spoils</span><h3>Backpack</h3></div></div>
+            <div class="panel-heading"><div><span class="eyebrow">Resources and spoils</span><h3>Backpack</h3></div><span>Every item has value</span></div>
+            <div class="inventory-guide">Select usable supplies for immediate benefits, equip forged gear, or sell spare materials. Item cards show where each resource fits into Emberfall's progression.</div>
+            <div class="inventory-toolbar">
+              <input id="inventory-search" type="search" placeholder="Search items" aria-label="Search inventory">
+              <select id="inventory-category" aria-label="Filter inventory category">
+                <option value="all">All categories</option>
+                <option value="equipment">Equipment</option>
+                <option value="food">Food and tonics</option>
+                <option value="resource">Resources</option>
+                <option value="combat">Combat loot</option>
+              </select>
+              <select id="inventory-sort" aria-label="Sort inventory">
+                <option value="name">Name</option>
+                <option value="quantity">Quantity</option>
+                <option value="value">Value</option>
+                <option value="rarity">Rarity</option>
+              </select>
+              <button class="secondary-button" id="sell-all-unlocked">Sell All Unlocked</button>
+            </div>
             <div id="inventory-grid" class="inventory-grid"></div>
           </article>
         </div>
@@ -181,8 +302,19 @@
           <div class="zone-selector"><span>Smithing Level</span><strong id="crafting-level">1</strong></div>
         </div>
         <div class="crafting-intro">
-          <div><span class="eyebrow">Equipment forge</span><h3>Turn bars into permanent power</h3></div>
-          <p>Craft weapons and armor from smelted bars. Higher tiers require stronger Smithing levels and improve combat statistics.</p>
+          <img class="feature-art" src="assets/navigation/crafting-v2.png" alt="">
+          <div class="feature-copy"><div><span class="eyebrow">Ten equipment tiers</span><h3>Turn every mined metal into a complete armor set</h3></div>
+          <p>Each metal tier spans ten Smithing levels. Weapons unlock first, followed by shields, helms, and plate armor. Late tiers also require materials recovered from matching combat environments.</p></div>
+        </div>
+        <div class="crafting-toolbar">
+          <input id="crafting-search" type="search" placeholder="Search equipment" aria-label="Search crafting recipes">
+          <select id="crafting-filter" aria-label="Filter crafting recipes">
+            <option value="available">Unlocked</option>
+            <option value="affordable">Affordable now</option>
+            <option value="pinned">Pinned</option>
+            <option value="all">All recipes</option>
+          </select>
+          <button class="secondary-button" id="crafting-collapse">Collapse All</button>
         </div>
         <div id="crafting-grid" class="crafting-grid"></div>
       </section>
@@ -193,8 +325,9 @@
           <div class="zone-selector"><span>Available coins</span><strong id="market-coins">0</strong></div>
         </div>
         <div class="market-intro">
-          <div><span class="eyebrow">Permanent upgrades</span><h3>Tools of the Trade</h3></div>
-          <p>Purchase upgrades for individual skills. Tool speed shortens every action; gathering kits increase the amount produced.</p>
+          <img class="feature-art" src="assets/navigation/marketplace-v2.png" alt="">
+          <div class="feature-copy"><div><span class="eyebrow">Permanent upgrades</span><h3>Tools of the Trade</h3></div>
+          <p>Purchase upgrades for individual skills. Tool speed shortens every action; gathering kits increase the amount produced.</p></div>
         </div>
         <article class="potion-shop">
           <div>
@@ -207,33 +340,93 @@
             <button class="primary-button" id="buy-potion">25 coins</button>
           </div>
         </article>
+        <article class="merchant-panel">
+          <div class="panel-heading"><div><span class="eyebrow">Daily stock</span><h3>Traveling Quartermaster</h3></div><span id="market-refresh">Daily rotation</span></div>
+          <div id="merchant-stock" class="merchant-stock"></div>
+        </article>
+        <article class="guild-services">
+          <div><span class="eyebrow">Guild service</span><h3>Contract Reroll</h3><p>Replace today's unclaimed contracts with a new set.</p></div>
+          <button class="secondary-button" id="market-contract-reroll">Reroll Contracts</button>
+        </article>
         <div id="market-grid" class="market-grid"></div>
       </section>
 
       <section id="view-mastery" class="view">
         <div class="section-heading"><div><span class="eyebrow">A life of many talents</span><h2>All Skills</h2></div><div class="zone-selector"><span>Total XP</span><strong id="total-xp">0</strong></div></div>
+        <div class="progression-legend">
+          <div><strong>Skill Level</strong><span>Unlocks actions and recipes.</span></div>
+          <div><strong>Skill Mastery</strong><span>Slow, skill-wide permanent bonuses.</span></div>
+          <div><strong>Action Expertise</strong><span>Speed and output specialization for one action.</span></div>
+        </div>
         <div id="mastery-grid" class="mastery-grid"></div>
+      </section>
+
+      <section id="view-adventure" class="view">
+        <div class="section-heading">
+          <div><span class="eyebrow">Long-term progression</span><h2>Adventure Board</h2></div>
+          <div class="zone-selector"><span>Ember Resonance</span><strong id="board-resonance">0 / 100</strong></div>
+        </div>
+        <div class="board-hero">
+          <img class="feature-art" src="assets/navigation/adventure-v2.png" alt="">
+          <div class="feature-copy">
+            <span class="eyebrow">Ember Resonance</span>
+            <h3>Overcharge your current pursuit</h3>
+            <p>Actions and victories generate Resonance. Spend 25 to gain 20% faster skills, +1 output, and 20% combat damage for at least 60 seconds.</p>
+          </div>
+          <button class="primary-button" id="board-overcharge">Activate Overcharge</button>
+        </div>
+        <div class="adventure-grid">
+          <article class="board-panel">
+            <div class="panel-heading"><div><span class="eyebrow">Rotating objectives</span><h3>Guild Contracts</h3></div><button class="text-button" id="contract-reroll">Reroll</button></div>
+            <span class="panel-subtitle" id="contract-refresh">Daily rotation</span>
+            <div id="contract-list" class="contract-list"></div>
+          </article>
+          <article class="board-panel">
+            <div class="panel-heading"><div><span class="eyebrow">Permanent development</span><h3>Emberfall Township</h3></div><span>Resource sinks</span></div>
+            <div id="town-projects" class="town-projects"></div>
+          </article>
+        </div>
+        <article class="board-panel achievement-panel">
+          <div class="panel-heading"><div><span class="eyebrow">Escalating account milestones</span><h3>Achievement Tracks</h3></div><span id="achievement-count">0 milestones</span></div>
+          <div id="achievement-grid" class="achievement-grid"></div>
+        </article>
+        <article class="board-panel bestiary-panel">
+          <div class="panel-heading"><div><span class="eyebrow">Field knowledge</span><h3>Bestiary & Relics</h3></div><span>Exact drop information</span></div>
+          <div id="bestiary-grid" class="bestiary-grid"></div>
+        </article>
+      </section>
+
+      <section id="view-settings" class="view">
+        <div class="section-heading"><div><span class="eyebrow">Personalize your adventure</span><h2>Settings</h2></div></div>
+        <div class="settings-grid">
+          <article class="settings-card">
+            <span class="eyebrow">Character identity</span>
+            <h3>Adventurer Name</h3>
+            <p>This name appears throughout combat, activity reports, and your character card.</p>
+            <div class="settings-control">
+              <input id="hero-name-input" type="text" maxlength="18" aria-label="Character name" placeholder="Character name">
+              <button class="primary-button" id="save-name">Save Name</button>
+            </div>
+          </article>
+          <article class="settings-card">
+            <span class="eyebrow">Local progress</span>
+            <h3>Save Management</h3>
+            <p>Your progress is stored under Emberfall's stable localhost address with a second automatic browser backup.</p>
+            <div class="settings-actions">
+              <button class="primary-button" id="settings-save">Save Game</button>
+              <button class="secondary-button" id="export-save">Export Backup</button>
+              <button class="secondary-button" id="import-save">Import Backup</button>
+              <button class="danger-button" id="settings-reset">Reset Progress</button>
+            </div>
+            <input id="import-save-file" class="hidden-file-input" type="file" accept="application/json,.json">
+          </article>
+        </div>
       </section>
     </main>
   </div>
 
   <div id="toast" class="toast"></div>
   <div id="activity-feed" class="activity-feed" aria-live="polite"></div>
-  <div id="auth-modal" class="modal auth-modal hidden">
-    <div class="modal-card auth-card">
-      <span class="eyebrow">Cloud adventure</span>
-      <h2 id="auth-title">Create your account</h2>
-      <p id="auth-copy">Your progress will be saved securely and available on your other devices.</p>
-      <form id="auth-form">
-        <label>Email<input id="auth-email" type="email" autocomplete="email" required></label>
-        <label>Password<input id="auth-password" type="password" autocomplete="current-password" minlength="8" required></label>
-        <p id="auth-error" class="auth-error"></p>
-        <button class="primary-button" id="auth-submit" type="submit">Create Account</button>
-      </form>
-      <button class="auth-switch" id="auth-switch" type="button">Already have an account? Log in</button>
-      <p class="auth-note" id="auth-note">Create an account once, then use it on any device.</p>
-    </div>
-  </div>
   <div id="offline-modal" class="modal hidden">
     <div class="modal-card">
       <span class="eyebrow">Welcome back</span>
@@ -243,6 +436,12 @@
       <button class="primary-button" id="offline-close">Collect</button>
     </div>
   </div>
-  <script src="game.js"></script>
+  <script src="recovery-save.js?v=1"></script>
+  <script>
+    window.addEventListener("error", event => {
+      document.documentElement.dataset.emberfallError = `${event.message} (${event.lineno}:${event.colno})`;
+    });
+  </script>
+  <script src="game.js?v=12"></script>
 </body>
 </html>

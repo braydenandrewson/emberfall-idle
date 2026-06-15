@@ -2,9 +2,6 @@
 preview*.png
 .tunnel-*.txt
 
-# Netlify local state
-.netlify/
-
 # Temporary local tooling
 node_modules/
 test-results/

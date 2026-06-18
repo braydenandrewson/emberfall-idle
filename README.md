@@ -3,21 +3,25 @@
 A browser-based dark-fantasy **idle/incremental RPG**. Train your skills, forge a full
 armory, and fight through escalating zones and bosses — even while you're away.
 
-Its twist on the genre: you **gather and fight at the same time**, and aligning the two
-(Expedition Synergy) builds momentum that powers up both.
+Its twist on the genre: you **gather, craft, and fight in parallel**, using each system to feed the next without needing a separate prestige-resource layer.
 
 > **Play in your browser:** https://braydenandrewson.github.io/emberfall-idle/
 > *(Update this link after enabling GitHub Pages — see below.)*
 
+For iPhone home-screen installs, open the GitHub Pages game URL above before using
+**Share -> Add to Home Screen**. Installing from the `github.com/.../emberfall-idle`
+repository page will launch GitHub, not the playable web app.
+
 ## Features
 
 - **Dual-track idle** — run a gathering/crafting skill and combat simultaneously
-- **Expedition Synergy & Momentum** — fight a zone while gathering its native resource for a ramping bonus
 - **6 skills** — Mining, Woodcutting, Fishing, Smithing, Cooking, Alchemy, each feeding the others
-- **8 combat zones** with bosses, selectable Threat ranks, enemy traits, and combat abilities
+- **8 combat zones** with bosses, selectable Threat ranks, enemy traits, and combat stances
 - **10 equipment tiers** with rarity, affixes, upgrading, enchanting, reforging, and set bonuses
-- **Mastery & Action Expertise**, a cross-skill **production queue**, and **Ember Resonance / Overcharge**
-- **Adventure Board** — guild contracts, township projects, achievement tracks, and a bestiary
+- **Mastery & Action Expertise**, a cross-skill **production queue**, and practical achievement rewards
+- **Adventure Board** — starter quests, guild contracts, repeatable zone bounties, township contributions, achievement tracks, and a bestiary
+- **Progressive township funding** — contribute materials over time instead of needing every project cost upfront
+- **Smithing components** — forged gear now uses bars, matching wood, and component prep such as grips, shield frames, and armor lining
 - **Offline progression** (up to 12 hours), a satisfying welcome-back recap
 - **Procedural ambient soundtrack** synthesized live in-browser (no audio files)
 - Installable **PWA**, 100% client-side — saves live in your browser via `localStorage`

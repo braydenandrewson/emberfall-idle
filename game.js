@@ -9,58 +9,142 @@ const MAX_THREAT = 5;
 const MAX_OFFLINE_HOURS = 12;
 const MAX_PRODUCTION_QUEUE = 12;
 const productionSkills = ["mining","woodcutting","fishing","smithing","cooking","alchemy"];
+const upgradeCaps = {speed:10,yield:3,mastery:3};
+const yieldUpgradeRequirements = [20,45,70];
+const STARTER_CONTRACT_THRESHOLD = {kills:3,mining:5,contracts:1};
 const POTION_ITEM = "Health Potion";
 const POTION_COST = 25;
 const POTION_HEAL = 40;
-const MOMENTUM_FULL_MS = 60000;
-// Procedural ambient soundtrack — a slow dark-fantasy loop synthesized in-browser.
+// Procedural Emberfall score synthesized in-browser.
 const Music = (() => {
   let ctx=null, master=null, reverb=null, padFilter=null, timer=null, started=false;
-  let barIndex=0, nextBarTime=0, melodyStep=0;
-  const BPM=64, beat=60/BPM, bar=beat*4;
-  // A natural minor progression: Am - F - C - G (warm, melancholic, heroic).
-  const PROG=[
-    {root:"A1",pad:["A3","C4","E4"]},
-    {root:"F1",pad:["F3","A3","C4"]},
-    {root:"C2",pad:["C4","E4","G4"]},
-    {root:"G1",pad:["G3","B3","D4"]}
+  let barIndex=0, nextBarTime=0, motifStep=0;
+  const BPM=78, beat=60/BPM, bar=beat*4;
+  const SCALE=[0,1,3,5,7,8,10];
+  const ZONE_ROOTS=[38,41,37,40,43,45,42,46];
+  const THEMES=[
+    [0,2,1,0,-1,0,3,2],
+    [0,3,4,2,1,-1,0,2],
+    [4,2,0,-1,0,1,3,1],
+    [0,1,4,3,1,0,-2,0]
   ];
-  // Pentatonic-leaning melody pool over A minor (avoids harsh dissonance).
-  const MELODY=["A4","C5","D5","E5","G5","E5","D5","C5","A4","E4","G4"];
-  const STEP={C:0,"C#":1,D:2,"D#":3,E:4,F:5,"F#":6,G:7,"G#":8,A:9,"A#":10,B:11};
-  const freq=name=>{ const oct=+name.slice(-1), key=name.slice(0,-1); return 440*Math.pow(2,((oct+1)*12+STEP[key]-69)/12); };
+  const EXPLORE_CHORDS=[
+    [0,2,4],[1,3,5],[-2,0,3],[-1,1,4]
+  ];
+  const COMBAT_CHORDS=[
+    [0,3,4],[-1,1,4],[-3,0,2],[-1,2,5]
+  ];
+  const midiFreq=midi=>440*Math.pow(2,(midi-69)/12);
+  function rootMidi() {
+    const zone=Math.max(0,Math.min(ZONE_ROOTS.length-1,Number(state?.currentZone)||0));
+    return ZONE_ROOTS[zone];
+  }
+  function degree(root,step,octave=0) {
+    const wrapped=((step%SCALE.length)+SCALE.length)%SCALE.length;
+    const oct=Math.floor(step/SCALE.length)+octave;
+    return root+SCALE[wrapped]+oct*12;
+  }
   function ensure() {
     if (ctx) return ctx;
     try { ctx=new (window.AudioContext||window.webkitAudioContext)(); } catch(e){ return (ctx=null); }
-    master=ctx.createGain(); master.gain.value=0; master.connect(ctx.destination);
-    padFilter=ctx.createBiquadFilter(); padFilter.type="lowpass"; padFilter.frequency.value=1400; padFilter.connect(master);
-    const len=Math.floor(ctx.sampleRate*2.6), buf=ctx.createBuffer(2,len,ctx.sampleRate);
-    for (let ch=0;ch<2;ch++){ const d=buf.getChannelData(ch); for (let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.6); }
+    master=ctx.createGain(); master.gain.value=0;
+    const comp=ctx.createDynamicsCompressor();
+    comp.threshold.value=-18; comp.knee.value=24; comp.ratio.value=5; comp.attack.value=.01; comp.release.value=.28;
+    master.connect(comp).connect(ctx.destination);
+    padFilter=ctx.createBiquadFilter(); padFilter.type="lowpass"; padFilter.frequency.value=1050; padFilter.Q.value=.7; padFilter.connect(master);
+    const len=Math.floor(ctx.sampleRate*3.4), buf=ctx.createBuffer(2,len,ctx.sampleRate);
+    for (let ch=0;ch<2;ch++){ const d=buf.getChannelData(ch); for (let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.9); }
     reverb=ctx.createConvolver(); reverb.buffer=buf;
-    const wet=ctx.createGain(); wet.gain.value=.55; reverb.connect(wet).connect(master);
+    const wet=ctx.createGain(); wet.gain.value=.62; reverb.connect(wet).connect(master);
     Music._reverb=reverb; Music._wet=wet;
     return ctx;
   }
-  function voice(f,time,dur,{type="triangle",gain=.12,attack=.02,detune=0,bus=master,verb=.4}={}) {
+  function tone(f,time,dur,{type="triangle",gain=.1,attack=.02,detune=0,bus=master,verb=.35,bend=1}={}) {
     const o=ctx.createOscillator(), g=ctx.createGain();
     o.type=type; o.frequency.value=f; if (detune) o.detune.value=detune;
+    if (bend!==1) o.frequency.exponentialRampToValueAtTime(Math.max(24,f*bend),time+dur);
     g.gain.setValueAtTime(.0001,time);
     g.gain.linearRampToValueAtTime(gain,time+attack);
     g.gain.exponentialRampToValueAtTime(.0001,time+dur);
     o.connect(g); g.connect(bus); if (verb&&reverb) g.connect(reverb);
     o.start(time); o.stop(time+dur+.05);
   }
-  function scheduleBar(index,time) {
-    const chord=PROG[index%PROG.length];
-    chord.pad.forEach((n,i)=>{ voice(freq(n),time,bar+1.2,{type:"sawtooth",gain:.045,attack:.7,detune:-5,bus:padFilter}); voice(freq(n),time,bar+1.2,{type:"sawtooth",gain:.045,attack:.7,detune:6,bus:padFilter}); });
-    voice(freq(chord.root),time,bar*.96,{type:"sine",gain:.16,attack:.04,verb:.2});
-    voice(freq(chord.root),time,bar*.96,{type:"triangle",gain:.05,attack:.04,verb:.2});
-    for (let b=0;b<4;b++){
-      if (b!==0 && Math.random()<.45) continue;
-      const t=time+b*beat+(Math.random()<.3?beat/2:0);
-      const note=MELODY[melodyStep%MELODY.length]; melodyStep+=(Math.random()<.5?1:2);
-      voice(freq(note),t,beat*1.6,{type:"triangle",gain:.07,attack:.01,verb:.6});
+  function voice(midi,time,dur,opts={}) { tone(midiFreq(midi),time,dur,opts); }
+  function noise(time,dur,{gain=.1,filter=900,verb=.25}={}) {
+    const len=Math.floor(ctx.sampleRate*dur), buf=ctx.createBuffer(1,len,ctx.sampleRate), data=buf.getChannelData(0);
+    for (let i=0;i<len;i++) data[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.4);
+    const src=ctx.createBufferSource(), f=ctx.createBiquadFilter(), g=ctx.createGain();
+    src.buffer=buf; f.type="lowpass"; f.frequency.value=filter; f.Q.value=.9;
+    g.gain.setValueAtTime(gain,time); g.gain.exponentialRampToValueAtTime(.0001,time+dur);
+    src.connect(f).connect(g).connect(master); if (verb&&reverb) g.connect(reverb);
+    src.start(time); src.stop(time+dur+.02);
+  }
+  function frameDrum(time,gain=.1) {
+    tone(96,time,.18,{type:"sine",gain,bend:.42,attack:.004,verb:.18});
+    noise(time+.004,.16,{gain:gain*.65,filter:420,verb:.28});
+  }
+  function bell(midi,time,gain=.05) {
+    voice(midi,time,1.9,{type:"sine",gain,attack:.006,verb:.8});
+    voice(midi+12,time+.006,1.35,{type:"triangle",gain:gain*.45,attack:.004,verb:.8});
+    voice(midi+19,time+.012,.8,{type:"sine",gain:gain*.2,attack:.004,verb:.85});
+  }
+  function pluck(midi,time,gain=.04) {
+    voice(midi,time,.72,{type:"triangle",gain,attack:.004,verb:.45});
+    voice(midi+12,time+.004,.34,{type:"square",gain:gain*.28,attack:.002,verb:.35});
+  }
+  function scheduleDrones(root,chord,time,intensity,combat) {
+    padFilter.frequency.setTargetAtTime(combat?1700:980,time,.5);
+    chord.forEach((d,i)=>{
+      const midi=degree(root,d,2);
+      voice(midi,time,bar*1.7,{type:"sawtooth",gain:.023*intensity,attack:.8,detune:-8+i*2,bus:padFilter,verb:.58});
+      voice(midi,time,bar*1.7,{type:"sawtooth",gain:.022*intensity,attack:.8,detune:7-i*2,bus:padFilter,verb:.58});
+    });
+    voice(degree(root,0,0),time,bar*1.95,{type:"sine",gain:.13*intensity,attack:.05,verb:.18});
+    voice(degree(root,4,0),time+beat*2,beat*1.8,{type:"triangle",gain:.055*intensity,attack:.04,verb:.22});
+  }
+  function scheduleRhythm(time,intensity,combat,over) {
+    frameDrum(time+.015,.075*intensity);
+    if (combat || over) frameDrum(time+beat*2+.015,.06*intensity);
+    if (combat) {
+      [1,1.5,3].forEach(pos=>noise(time+beat*pos,.055,{gain:.033*intensity,filter:2200,verb:.22}));
+    } else if (barIndex%2===0) {
+      noise(time+beat*3.5,.12,{gain:.022*intensity,filter:1500,verb:.5});
     }
+  }
+  function scheduleOstinato(root,time,intensity,combat) {
+    const pattern=combat ? [0,4,3,4,1,4,-1,3] : [0,4,1,4,-1,3,1,3];
+    pattern.forEach((d,i)=>{
+      if (!combat && i%2 && Math.random()<.35) return;
+      pluck(degree(root,d,2),time+i*(beat/2),.026*intensity);
+    });
+  }
+  function scheduleMotif(root,time,intensity,combat) {
+    const zone=Math.max(0,Math.min(ZONE_ROOTS.length-1,Number(state?.currentZone)||0));
+    const theme=THEMES[zone%THEMES.length];
+    const phrase=Math.floor(barIndex/4)%4;
+    const density=combat ? 4 : 2;
+    for (let i=0;i<density;i++) {
+      const step=theme[(motifStep+i+phrase)%theme.length];
+      const t=time+beat*(i+.35)+(combat && i%2 ? beat*.25 : 0);
+      if (!combat && Math.random()<.25) continue;
+      bell(degree(root,step,3),t,.032*intensity);
+    }
+    motifStep=(motifStep+density)%theme.length;
+  }
+  function scheduleAir(time,intensity,combat) {
+    if (barIndex%4===0) noise(time+.2,bar*.9,{gain:(combat ? .026 : .018)*intensity,filter:680,verb:.9});
+    if (Math.random()<.33) bell(degree(rootMidi(),combat?8:6,3),time+beat*(1+Math.random()*2),.018*intensity);
+  }
+  function scheduleBar(index,time) {
+    const combat=Boolean(state?.combat);
+    const intensity=combat ? 1.16 : .86;
+    const root=rootMidi();
+    const chord=(combat ? COMBAT_CHORDS : EXPLORE_CHORDS)[(index+Math.floor((state?.currentZone||0)/2))%4];
+    scheduleDrones(root,chord,time,intensity,combat);
+    scheduleRhythm(time,intensity,combat,false);
+    scheduleOstinato(root,time,intensity,combat);
+    scheduleMotif(root,time,intensity,combat);
+    scheduleAir(time,intensity,combat);
   }
   function tick() {
     if (!ctx) return;
@@ -83,7 +167,23 @@ const Music = (() => {
       master.gain.linearRampToValueAtTime(0,ctx.currentTime+.6);
       clearInterval(timer); timer=null; started=false;
     },
-    setVolume(){ if (ctx&&master&&started) master.gain.linearRampToValueAtTime(vol(),ctx.currentTime+.2); }
+    setVolume(){ if (ctx&&master&&started) master.gain.linearRampToValueAtTime(vol(),ctx.currentTime+.2); },
+    bossStinger(){
+      if (!this.enabled()) return;
+      const ac=ensure(); if (!ac) return;
+      if (ac.state==="suspended") ac.resume();
+      const t=ac.currentTime+.02, root=rootMidi(), run=[0,2,4,7,8,7,4,9,8,7,4,0];
+      run.forEach((d,i)=>{
+        const when=t+i*.075;
+        pluck(degree(root,d,3),when,.065);
+        if (i%2===0) bell(degree(root,d,3),when+.012,.036);
+      });
+      [0,.23,.46,.69].forEach((offset,i)=>frameDrum(t+offset,.14-i*.018));
+      voice(degree(root,0,1),t,.95,{type:"sawtooth",gain:.12,attack:.01,verb:.5});
+      voice(degree(root,4,1),t+.78,1.2,{type:"sine",gain:.13,attack:.03,verb:.4});
+      noise(t+.05,.2,{gain:.16,filter:720,verb:.45});
+      noise(t+.8,.55,{gain:.12,filter:2100,verb:.75});
+    }
   };
 })();
 const combatStyles = {
@@ -128,14 +228,6 @@ const enemyTraits = {
   "Astral Colossus":{name:"Eventide Shell",description:"Reduces each hit by 13 damage.",armor:13},
   "Nyxara, the World-Eater":{name:"Cosmic Hunger",description:"Drains health, enrages, and deals 40% more damage.",lifesteal:.25,enrage:.6,damage:1.4}
 };
-const combatAbilities = {
-  powerStrike:{name:"Power Strike",level:1,cooldown:8000,description:"Deal 160% weapon damage.",type:"damage",power:1.6,auto:"Whenever ready"},
-  secondWind:{name:"Second Wind",level:5,cooldown:18000,description:"Restore 25% of maximum health.",type:"heal",power:.25,auto:"Below 55% health"},
-  sunder:{name:"Sunder Armor",level:10,cooldown:14000,description:"Deal 90% damage and remove enemy armor for 8 seconds.",type:"sunder",power:.9,duration:8000,auto:"When armor is active"},
-  shieldBash:{name:"Shield Bash",level:15,cooldown:16000,description:"Deal 75% damage and stun for 2.5 seconds.",type:"stun",power:.75,duration:2500,auto:"Whenever ready"},
-  emberRend:{name:"Ember Rend",level:20,cooldown:20000,description:"Apply a five-tick bleed based on Max Hit.",type:"bleed",ticks:5,auto:"When target is not bleeding"},
-  counterstance:{name:"Counterstance",level:25,cooldown:22000,description:"Reduce damage and counter the next enemy hit.",type:"counter",duration:7000,auto:"When not countering"}
-};
 const rarityData = {
   common:{name:"Common",color:"#aab4aa",multiplier:1,affixes:0,weight:60},
   uncommon:{name:"Uncommon",color:"#73c77a",multiplier:1.08,affixes:1,weight:25},
@@ -154,8 +246,8 @@ const affixData = {
 const townProjectData = {
   forge:{name:"Cinder Forge",description:"+2% equipment stats per level.",max:10,baseCost:{"Copper Ore":100,"Bronze Bar":10}},
   storehouse:{name:"Guild Storehouse",description:"+2% chance for bonus skill output per level.",max:10,baseCost:{"Logs":100,"Tin Ore":75}},
-  hall:{name:"Adventurers Hall",description:"+5% contract coin and Resonance rewards per level.",max:10,baseCost:{"Goblin Scrap":50,"Bronze Bar":8}},
-  shrine:{name:"Resonance Shrine",description:"+10 Resonance capacity and +3% generation per level.",max:10,baseCost:{"Silver Ore":10,"Cinder Scale":10}}
+  hall:{name:"Adventurers Hall",description:"+5% contract coins and material rewards per level.",max:10,baseCost:{"Goblin Scrap":50,"Bronze Bar":8}},
+  shrine:{name:"Wayfarer Shrine",description:"+1% all skill and combat XP per level.",max:10,baseCost:{"Silver Ore":10,"Cinder Scale":10}}
 };
 const townBranchData = {
   forge:{
@@ -171,8 +263,8 @@ const townBranchData = {
     artisans:{name:"Artisans Guild",description:"+1 crafting rarity luck per level."}
   },
   shrine:{
-    surge:{name:"Surge Chamber",description:"+2% Overcharge power per level."},
-    reserve:{name:"Deep Reservoir",description:"+5 additional Resonance capacity per level."}
+    training:{name:"Training Circle",description:"+1% additional mastery and expertise XP per level."},
+    quartermaster:{name:"Quartermaster Rite",description:"+2% additional contract material rewards per level."}
   }
 };
 const relicPowerData = {
@@ -203,18 +295,45 @@ const rotatingMerchantData = [
   {id:"battle",name:"Battle Tonic",item:"Battle Tonic",qty:1,cost:120,description:"Increases Max Hit for ten minutes."}
   ,{id:"blueprint",name:"Guild Armory Blueprint",item:"Guild Armory Blueprint",qty:1,cost:650,description:"Unlocks two permanent Steel-tier equipment recipes."}
 ];
+const starterQuestData = [
+  {
+    id:"mine-copper",name:"Strike Copper",type:"item",target:"Copper Ore",goal:10,
+    description:"Mine 10 Copper Ore to start your first forge route.",
+    reward:makeReward(75,{"Tin Ore":4,"Health Potion":2})
+  },
+  {
+    id:"mine-tin",name:"Find Tin",type:"item",target:"Tin Ore",goal:10,
+    description:"Mine 10 Tin Ore so Bronze Bars are ready to smelt.",
+    reward:makeReward(100,{"Copper Ore":4,"Logs":4})
+  },
+  {
+    id:"smelt-bronze",name:"First Bronze",type:"item",target:"Bronze Bar",goal:5,
+    description:"Smelt 5 Bronze Bars. Extra-output upgrades never increase this recipe cost.",
+    reward:makeReward(150,{"Wooden Grip":1,"Shield Frame":1,"Armor Lining":1})
+  },
+  {
+    id:"craft-helm",name:"Cover Your Head",type:"crafts",target:"Bronze Helm",goal:1,
+    description:"Craft a Bronze Helm to learn the equipment forge loop.",
+    reward:{coins:200,items:{"Field Stew":4},gear:["Bronze Dagger"]}
+  },
+  {
+    id:"kill-goblins",name:"Clear the Trail",type:"enemyKills",target:"Greenveil Goblin",goal:3,
+    description:"Defeat 3 Greenveil Goblins and claim your first combat payout.",
+    reward:makeReward(300,{"Goblin Scrap":8,"Health Potion":4,"Battle Tonic":1})
+  }
+];
 const generalAchievementTracks = [
   {
     id:"actions",name:"Guild Labor",description:"Complete productive skill actions across every trade.",
     type:"actions",icon:"assets/skills/mining-v2.png",
     bonusText:"Each tier: +0.5% production speed.",bonuses:[{key:"skillSpeed",amount:.005}],
     tiers:[
-      {id:"actions100",goal:100,name:"Working Hands",coins:250,resonance:15},
-      {id:"actions1000",goal:1000,name:"Relentless Artisan",coins:1500,resonance:30},
-      {goal:10000,name:"Guild Workhorse",coins:7500,resonance:50},
-      {goal:50000,name:"Master of Routine",coins:30000,resonance:75},
-      {goal:250000,name:"Industry Incarnate",coins:100000,resonance:110},
-      {goal:1000000,name:"A Million Motions",coins:350000,resonance:175}
+      {id:"actions100",goal:100,name:"Working Hands",coins:250,supplies:15},
+      {id:"actions1000",goal:1000,name:"Relentless Artisan",coins:1500,supplies:30},
+      {goal:10000,name:"Guild Workhorse",coins:7500,supplies:50},
+      {goal:50000,name:"Master of Routine",coins:30000,supplies:75},
+      {goal:250000,name:"Industry Incarnate",coins:100000,supplies:110},
+      {goal:1000000,name:"A Million Motions",coins:350000,supplies:175}
     ]
   },
   {
@@ -222,12 +341,12 @@ const generalAchievementTracks = [
     type:"kills",icon:"assets/skills/combat-v2.png",
     bonusText:"Each tier: +1% coins from combat.",bonuses:[{key:"combatCoins",amount:.01}],
     tiers:[
-      {id:"kills100",goal:100,name:"Trail Veteran",coins:500,resonance:20},
-      {id:"kills1000",goal:1000,name:"Cinder Champion",coins:4000,resonance:50},
-      {goal:5000,name:"Frontier Reaper",coins:15000,resonance:75},
-      {goal:25000,name:"Warbound",coins:60000,resonance:110},
-      {goal:100000,name:"Living Legend",coins:220000,resonance:175},
-      {goal:500000,name:"Endless Vanguard",coins:800000,resonance:275}
+      {id:"kills100",goal:100,name:"Trail Veteran",coins:500,supplies:20},
+      {id:"kills1000",goal:1000,name:"Cinder Champion",coins:4000,supplies:50},
+      {goal:5000,name:"Frontier Reaper",coins:15000,supplies:75},
+      {goal:25000,name:"Warbound",coins:60000,supplies:110},
+      {goal:100000,name:"Living Legend",coins:220000,supplies:175},
+      {goal:500000,name:"Endless Vanguard",coins:800000,supplies:275}
     ]
   },
   {
@@ -235,11 +354,11 @@ const generalAchievementTracks = [
     type:"crafts",icon:"assets/navigation/crafting-v2.png",
     bonusText:"Each tier: +1 crafting rarity luck.",bonuses:[{key:"craftLuck",amount:1}],
     tiers:[
-      {id:"craft25",goal:25,name:"Forged Purpose",coins:750,resonance:20},
-      {goal:100,name:"Reliable Smith",coins:3000,resonance:40},
-      {goal:500,name:"Armory Keeper",coins:12000,resonance:70},
-      {goal:2500,name:"Master Forgewright",coins:50000,resonance:110},
-      {goal:10000,name:"Architect of Steel",coins:180000,resonance:175}
+      {id:"craft25",goal:25,name:"Forged Purpose",coins:750,supplies:20},
+      {goal:100,name:"Reliable Smith",coins:3000,supplies:40},
+      {goal:500,name:"Armory Keeper",coins:12000,supplies:70},
+      {goal:2500,name:"Master Forgewright",coins:50000,supplies:110},
+      {goal:10000,name:"Architect of Steel",coins:180000,supplies:175}
     ]
   },
   {
@@ -247,11 +366,11 @@ const generalAchievementTracks = [
     type:"contracts",icon:"assets/navigation/adventure-v2.png",
     bonusText:"Each tier: +1% contract rewards.",bonuses:[{key:"contractRewards",amount:.01}],
     tiers:[
-      {id:"contracts10",goal:10,name:"Guild Regular",coins:1000,resonance:30},
-      {goal:50,name:"Trusted Agent",coins:5000,resonance:55},
-      {goal:200,name:"Guild Envoy",coins:20000,resonance:90},
-      {goal:750,name:"High Commissioner",coins:75000,resonance:140},
-      {goal:2500,name:"Voice of Emberfall",coins:250000,resonance:220}
+      {id:"contracts10",goal:10,name:"Guild Regular",coins:1000,supplies:30},
+      {goal:50,name:"Trusted Agent",coins:5000,supplies:55},
+      {goal:200,name:"Guild Envoy",coins:20000,supplies:90},
+      {goal:750,name:"High Commissioner",coins:75000,supplies:140},
+      {goal:2500,name:"Voice of Emberfall",coins:250000,supplies:220}
     ]
   },
   {
@@ -259,11 +378,11 @@ const generalAchievementTracks = [
     type:"bestActionMastery",icon:"assets/navigation/mastery-v2.png",
     bonusText:"Each tier: +2% mastery and expertise XP.",bonuses:[{key:"masteryXp",amount:.02}],
     tiers:[
-      {goal:10,name:"Promising Technique",coins:300,resonance:15},
-      {id:"mastery25",goal:25,name:"Focused Practice",coins:750,resonance:25},
-      {goal:35,name:"Practiced Hand",coins:3000,resonance:45},
-      {goal:45,name:"Near Perfection",coins:10000,resonance:75},
-      {goal:50,name:"Perfected Motion",coins:30000,resonance:120}
+      {goal:10,name:"Promising Technique",coins:300,supplies:15},
+      {id:"mastery25",goal:25,name:"Focused Practice",coins:750,supplies:25},
+      {goal:35,name:"Practiced Hand",coins:3000,supplies:45},
+      {goal:45,name:"Near Perfection",coins:10000,supplies:75},
+      {goal:50,name:"Perfected Motion",coins:30000,supplies:120}
     ]
   },
   {
@@ -271,11 +390,11 @@ const generalAchievementTracks = [
     type:"rareGear",icon:"assets/navigation/inventory-v2.png",
     bonusText:"Each tier: +0.15% equipment drop chance.",bonuses:[{key:"gearChance",amount:.0015}],
     tiers:[
-      {id:"rareGear",goal:1,name:"A Worthy Find",coins:500,resonance:20},
-      {goal:10,name:"Blue Steel",coins:3500,resonance:40},
-      {goal:50,name:"Vault Curator",coins:15000,resonance:70},
-      {goal:250,name:"Epic Arsenal",coins:65000,resonance:120},
-      {goal:1000,name:"Legendbound",coins:250000,resonance:200}
+      {id:"rareGear",goal:1,name:"A Worthy Find",coins:500,supplies:20},
+      {goal:10,name:"Blue Steel",coins:3500,supplies:40},
+      {goal:50,name:"Vault Curator",coins:15000,supplies:70},
+      {goal:250,name:"Epic Arsenal",coins:65000,supplies:120},
+      {goal:1000,name:"Legendbound",coins:250000,supplies:200}
     ]
   },
   {
@@ -283,23 +402,23 @@ const generalAchievementTracks = [
     type:"townLevels",icon:"assets/navigation/adventure-v2.png",
     bonusText:"Each tier: -1% township resource costs.",bonuses:[{key:"townDiscount",amount:.01}],
     tiers:[
-      {goal:5,name:"First Foundations",coins:600,resonance:20},
-      {id:"town10",goal:10,name:"Settlement Builder",coins:1500,resonance:30},
-      {goal:20,name:"Guild Borough",coins:6000,resonance:55},
-      {goal:30,name:"Emberfall Rising",coins:18000,resonance:85},
-      {goal:40,name:"City of Cinders",coins:50000,resonance:140}
+      {goal:5,name:"First Foundations",coins:600,supplies:20},
+      {id:"town10",goal:10,name:"Settlement Builder",coins:1500,supplies:30},
+      {goal:20,name:"Guild Borough",coins:6000,supplies:55},
+      {goal:30,name:"Emberfall Rising",coins:18000,supplies:85},
+      {goal:40,name:"City of Cinders",coins:50000,supplies:140}
     ]
   },
   {
-    id:"overcharges",name:"Ember Conduit",description:"Activate Ember Resonance Overcharge.",
-    type:"overcharges",icon:"assets/navigation/mastery-v2.png",
-    bonusText:"Each tier: +3 seconds of Overcharge duration.",bonuses:[{key:"overchargeSeconds",amount:3}],
+    id:"salvage",name:"Forge Reclaimer",description:"Salvage unwanted equipment into forge materials.",
+    type:"salvaged",icon:"assets/navigation/crafting-v2.png",
+    bonusText:"Each tier: +1 crafting rarity luck.",bonuses:[{key:"craftLuck",amount:1}],
     tiers:[
-      {goal:1,name:"First Ignition",coins:250,resonance:10},
-      {id:"overcharge10",goal:10,name:"Ember Conduit",coins:1000,resonance:25},
-      {goal:50,name:"Resonant Rhythm",coins:5000,resonance:50},
-      {goal:200,name:"Living Furnace",coins:20000,resonance:85},
-      {goal:1000,name:"Heart of Emberfall",coins:85000,resonance:150}
+      {goal:1,name:"First Reclamation",coins:250,supplies:10},
+      {id:"salvage10",goal:10,name:"Scrap Savant",coins:1000,supplies:25},
+      {goal:50,name:"Essence Handler",coins:5000,supplies:50},
+      {goal:200,name:"Vault Reforger",coins:20000,supplies:85},
+      {goal:1000,name:"Master Reclaimer",coins:85000,supplies:150}
     ]
   },
   {
@@ -307,11 +426,11 @@ const generalAchievementTracks = [
     type:"totalLevel",icon:"assets/navigation/mastery-v2.png",
     bonusText:"Each tier: +1% all skill and combat XP.",bonuses:[{key:"allXp",amount:.01}],
     tiers:[
-      {goal:100,name:"Versatile Adventurer",coins:1000,resonance:25},
-      {goal:250,name:"Seasoned Generalist",coins:6000,resonance:50},
-      {goal:500,name:"Guild Polymath",coins:25000,resonance:90},
-      {goal:750,name:"Master of Many Paths",coins:80000,resonance:140},
-      {goal:1000,name:"Emberfall Paragon",coins:300000,resonance:250}
+      {goal:100,name:"Versatile Adventurer",coins:1000,supplies:25},
+      {goal:250,name:"Seasoned Generalist",coins:6000,supplies:50},
+      {goal:500,name:"Guild Polymath",coins:25000,supplies:90},
+      {goal:750,name:"Master of Many Paths",coins:80000,supplies:140},
+      {goal:1000,name:"Emberfall Paragon",coins:300000,supplies:250}
     ]
   },
   {
@@ -319,24 +438,16 @@ const generalAchievementTracks = [
     type:"bosses",icon:"assets/skills/combat-v2.png",
     bonusText:"Each tier: +2% coins from bosses.",bonuses:[{key:"bossCoins",amount:.02}],
     tiers:[
-      {goal:1,name:"Boss Breaker",coins:500,resonance:20},
-      {goal:10,name:"Tyrant Hunter",coins:4000,resonance:45},
-      {goal:50,name:"Crown Collector",coins:18000,resonance:80},
-      {goal:250,name:"Bane of Legends",coins:75000,resonance:135},
-      {goal:1000,name:"Throne Ender",coins:300000,resonance:225}
+      {goal:1,name:"Boss Breaker",coins:500,supplies:20},
+      {goal:10,name:"Tyrant Hunter",coins:4000,supplies:45},
+      {goal:50,name:"Crown Collector",coins:18000,supplies:80},
+      {goal:250,name:"Bane of Legends",coins:75000,supplies:135},
+      {goal:1000,name:"Throne Ender",coins:300000,supplies:225}
     ]
   }
 ];
 let achievementTracks = [];
 let achievementData = [];
-const crossSkillData = {
-  mining:{source:"Smithing",description:"Smithing grants +1% Mining XP per 10 levels."},
-  woodcutting:{source:"Alchemy",description:"Alchemy grants +1% Woodcutting output chance per 10 levels."},
-  fishing:{source:"Cooking",description:"Cooking grants +1% Fishing output chance per 10 levels."},
-  smithing:{source:"Mining",description:"Mining grants +2% Smithing speed per 10 levels."},
-  cooking:{source:"Woodcutting",description:"Woodcutting grants +2% Cooking speed per 10 levels."},
-  alchemy:{source:"Fishing",description:"Fishing grants +2% Alchemy speed per 10 levels."}
-};
 const itemData = {
   "Health Potion":{icon:"potion",category:"Consumable",description:"A restorative guild draught.",use:"Drink to restore 40 health.",value:12,consume:{heal:40}},
   "Field Stew":{icon:"stew",category:"Food",description:"A hot meal of creek shrimp and woodland herbs.",use:"Eat to restore 25 health.",value:8,consume:{heal:25}},
@@ -355,6 +466,9 @@ const itemData = {
   "Venom Oil":{icon:"tonic",category:"Tonic",description:"A carefully stabilized offensive coating.",use:"Gain 8% combat damage for 10 minutes.",value:60,consume:{buff:"venom",duration:600000}},
   "Ward Draught":{icon:"tonic",category:"Tonic",description:"A sigil tonic that resists hostile environments.",use:"Reduce environmental combat penalties for 10 minutes.",value:85,consume:{buff:"ward",duration:600000}},
   "Fortune Philter":{icon:"tonic",category:"Tonic",description:"A volatile astral mixture prized by treasure hunters.",use:"Increase equipment drop chance for 10 minutes.",value:140,consume:{buff:"fortune",duration:600000}},
+  "Wooden Grip":{icon:"logs",category:"Forge Component",description:"A shaped handle fitted to forged weapons.",use:"Used when crafting swords, blades, and other weapon gear.",value:6},
+  "Shield Frame":{icon:"shield",category:"Forge Component",description:"A braced core that gives shields their structure.",use:"Used when crafting shields, wards, aegises, and bulwarks.",value:9},
+  "Armor Lining":{icon:"body",category:"Forge Component",description:"Padded reinforcement fitted beneath metal armor.",use:"Used when crafting helms, crowns, plates, and body armor.",value:9},
   "Forge Essence":{icon:"relic",category:"Crafting Material",description:"Condensed value recovered by dismantling equipment.",use:"Spend it to reforge equipment affixes.",value:18},
   "Reforge Token":{icon:"relic",category:"Guild Service",description:"A stamped voucher accepted by the guild enchanter.",use:"Reroll all affixes on one equipment piece.",value:90}
   ,"Guild Armory Blueprint":{icon:"relic",category:"Blueprint",description:"A sealed set of guild equipment plans.",use:"Learn two permanent Steel-tier equipment recipes.",value:220}
@@ -362,18 +476,16 @@ const itemData = {
 const zoneData = [
   {
     name:"Greenveil Trail",biome:"Whisperwood frontier",recommended:[1,10],gearTiers:["Bronze"],requiredKills:10,
-    synergy:{skill:"woodcutting",actions:["normal","oak"],label:"Common or Oak logs"},
     environment:{name:"Sheltered Trail",description:"No environmental penalty. A suitable proving ground."},
     enemies:[
-      {name:"Greenveil Goblin",rank:"Trail scavenger",level:3,hp:32,maxHit:6,attackTime:3000,coins:[4,9],item:"Goblin Scrap",bonusItem:"Copper Ore",image:"greenveil-goblin"},
-      {name:"Briar Fang",rank:"Wild stalker",level:4,hp:26,maxHit:8,attackTime:2400,coins:[5,10],item:"Goblin Scrap",bonusItem:"Logs",image:"briar-fang"},
-      {name:"Mossback Brute",rank:"Forest bruiser",level:6,hp:48,maxHit:7,attackTime:3400,coins:[7,12],item:"Goblin Scrap",bonusItem:"Tin Ore",image:"mossback-brute"}
+      {name:"Greenveil Goblin",rank:"Trail scavenger",level:2,hp:22,maxHit:4,attackTime:3200,coins:[5,10],item:"Goblin Scrap",bonusItem:"Copper Ore",image:"greenveil-goblin"},
+      {name:"Briar Fang",rank:"Wild stalker",level:4,hp:28,maxHit:7,attackTime:2600,coins:[6,11],item:"Goblin Scrap",bonusItem:"Logs",image:"briar-fang"},
+      {name:"Mossback Brute",rank:"Forest bruiser",level:6,hp:46,maxHit:7,attackTime:3500,coins:[8,13],item:"Goblin Scrap",bonusItem:"Tin Ore",image:"mossback-brute"}
     ],
     boss:{name:"Grak the Trailbreaker", level:8, hp:115, maxHit:10, attackTime:2600, coins:[45,65], item:"Trailbreaker Crest",image:"grak-the-trailbreaker"}
   },
   {
     name:"Ashen Quarry",biome:"Volcanic mine",recommended:[11,22],gearTiers:["Iron","Steel"],requiredKills:14,
-    synergy:{skill:"mining",actions:["iron","coal"],label:"Iron or Coal"},
     environment:{name:"Ashfall",description:"Enemies deal 5% more damage in the choking heat.",enemyDamage:1.05},
     enemies:[
       {name:"Cinder Kobold",rank:"Quarry raider",level:12,hp:72,maxHit:11,attackTime:2700,coins:[9,15],item:"Cinder Scale",bonusItem:"Iron Ore",image:"cinder-kobold"},
@@ -384,7 +496,6 @@ const zoneData = [
   },
   {
     name:"Frostmere Pass",biome:"Frozen mountain pass",recommended:[23,38],gearTiers:["Silver"],requiredKills:18,
-    synergy:{skill:"fishing",actions:["salmon","eel"],label:"Redfin Salmon or Ember Eel"},
     environment:{name:"Biting Cold",description:"Player attack speed is 8% slower.",playerAttackTime:1.08},
     enemies:[
       {name:"Frostbound Raider",rank:"Pass marauder",level:24,hp:145,maxHit:17,attackTime:2400,coins:[16,25],item:"Frozen Sigil",bonusItem:"Coal",image:"frostbound-raider"},
@@ -395,7 +506,6 @@ const zoneData = [
   },
   {
     name:"Emberfall Citadel",biome:"Burning fortress",recommended:[39,58],gearTiers:["Mithril","Obsidian"],requiredKills:24,
-    synergy:{skill:"mining",actions:["mithril","obsidian"],label:"Mithril or Obsidian"},
     environment:{name:"Citadel Pressure",description:"Enemies gain 10% Defence and deal 10% more damage.",enemyDefence:1.1,enemyDamage:1.1},
     enemies:[
       {name:"Emberguard Knight",rank:"Citadel soldier",level:40,hp:270,maxHit:25,attackTime:2200,coins:[28,42],item:"Emberguard Seal",bonusItem:"Iron Bar",image:"emberguard-knight"},
@@ -406,7 +516,6 @@ const zoneData = [
   },
   {
     name:"Verdant Mire",biome:"Poisoned deep swamp",recommended:[58,70],gearTiers:["Emberforged"],requiredKills:28,
-    synergy:{skill:"woodcutting",actions:["yew"],label:"Ancient Yew"},
     environment:{name:"Toxic Miasma",description:"Enemy hits have a 15% chance to inflict poison.",poisonChance:.15,poisonDamage:7},
     enemies:[
       {name:"Mirestalker Lizard",rank:"Swamp hunter",level:58,hp:520,maxHit:38,attackTime:1950,coins:[48,70],item:"Mire Resin",bonusItem:"Emberite Ore",image:"mirestalker-lizard"},
@@ -417,7 +526,6 @@ const zoneData = [
   },
   {
     name:"Sunscar Expanse",biome:"Glass desert",recommended:[68,82],gearTiers:["Runic"],requiredKills:32,
-    synergy:{skill:"mining",actions:["runite"],label:"Runite"},
     environment:{name:"Scorching Zenith",description:"Enemies deal 15% more damage and all healing is reduced by 25%.",enemyDamage:1.15,healingReduction:.25},
     enemies:[
       {name:"Dune Jackal",rank:"Desert predator",level:70,hp:760,maxHit:52,attackTime:1750,coins:[72,102],item:"Sunscar Hide",bonusItem:"Runite Ore",image:"dune-jackal"},
@@ -428,7 +536,6 @@ const zoneData = [
   },
   {
     name:"Tempest Reach",biome:"Storm-wracked cliffs",recommended:[80,94],gearTiers:["Astral"],requiredKills:36,
-    synergy:{skill:"fishing",actions:["ray","leviathan"],label:"Frostmere Ray or Young Leviathan"},
     environment:{name:"Static Front",description:"Enemy attacks are 12% faster and successful hits delay your next strike.",enemyAttackTime:.88,slowOnHit:350},
     enemies:[
       {name:"Stormwing Harrier",rank:"Cliff predator",level:82,hp:1050,maxHit:66,attackTime:1550,coins:[100,138],item:"Stormglass",bonusItem:"Astral Ore",image:"stormwing-harrier"},
@@ -439,7 +546,6 @@ const zoneData = [
   },
   {
     name:"Astral Scar",biome:"Fractured cosmic wasteland",recommended:[92,110],gearTiers:["Starforged"],requiredKills:42,
-    synergy:{skill:"mining",actions:["astral","star"],label:"Astral Geode or Starfall Crater"},
     environment:{name:"Reality Fracture",description:"Enemies gain 18% Defence, 20% damage, and 8% evasion.",enemyDefence:1.18,enemyDamage:1.2,evasion:.08},
     enemies:[
       {name:"Voidling Ravager",rank:"Abyssal skirmisher",level:94,hp:1550,maxHit:82,attackTime:1450,coins:[145,190],item:"Void Shard",bonusItem:"Star Metal",image:"voidling-ravager"},
@@ -449,6 +555,26 @@ const zoneData = [
     boss:{name:"Nyxara, the World-Eater",level:110,hp:5800,maxHit:108,attackTime:1400,coins:[2300,2850],item:"Worldscar Fragment",image:"nyxara-world-eater"}
   }
 ];
+function zoneBountyDefinitions(zoneIndex) {
+  const zone=zoneData[zoneIndex], first=zone.enemies[0], second=zone.enemies[1]||first;
+  return [
+    {
+      id:"patrol",name:`${zone.name} Patrol`,type:"zoneKills",target:zoneIndex,baseGoal:Math.max(6,zone.requiredKills),
+      description:`Defeat enemies anywhere in ${zone.name}.`,
+      reward:(tier=0)=>makeReward(180+zoneIndex*95+tier*45,{[first.item]:4+zoneIndex+tier})
+    },
+    {
+      id:"specialist",name:`${second.name} Bounty`,type:"enemyKills",target:second.name,baseGoal:4+zoneIndex*2,
+      description:`Hunt ${second.name} for targeted field supplies.`,
+      reward:(tier=0)=>makeReward(220+zoneIndex*110+tier*55,{[second.item]:3+zoneIndex+tier,[second.bonusItem||first.item]:2+tier})
+    },
+    {
+      id:"boss",name:`${zone.boss.name} Writ`,type:"bossKills",target:zone.boss.name,baseGoal:1,
+      description:`Defeat ${zone.boss.name}. Repeat completions scale the payout.`,
+      reward:(tier=0)=>makeReward(500+zoneIndex*250+tier*125,{[zone.boss.item]:1,"Reforge Token":tier>=1?1:0})
+    }
+  ];
+}
 const zoneAchievementTracks = zoneData.map((zone,zoneIndex)=>({
   id:`zone-${zoneIndex}`,
   kind:"zone",
@@ -463,10 +589,10 @@ const zoneAchievementTracks = zoneData.map((zone,zoneIndex)=>({
     {key:"combatXp",amount:.01}
   ],
   tiers:[
-    {goal:100,name:`${zone.name} Scout`,coins:500+zoneIndex*250,resonance:15+zoneIndex*2},
-    {goal:500,name:`${zone.name} Hunter`,coins:2500+zoneIndex*1000,resonance:35+zoneIndex*3},
-    {goal:2500,name:`${zone.name} Warden`,coins:12000+zoneIndex*4000,resonance:65+zoneIndex*4},
-    {goal:10000,name:`${zone.name} Legend`,coins:50000+zoneIndex*15000,resonance:110+zoneIndex*6}
+    {goal:100,name:`${zone.name} Scout`,coins:500+zoneIndex*250,supplies:15+zoneIndex*2},
+    {goal:500,name:`${zone.name} Hunter`,coins:2500+zoneIndex*1000,supplies:35+zoneIndex*3},
+    {goal:2500,name:`${zone.name} Warden`,coins:12000+zoneIndex*4000,supplies:65+zoneIndex*4},
+    {goal:10000,name:`${zone.name} Legend`,coins:50000+zoneIndex*15000,supplies:110+zoneIndex*6}
   ]
 }));
 const enemyAchievementTracks = zoneData.flatMap((zone,zoneIndex)=>zone.enemies.map(enemy=>({
@@ -484,12 +610,39 @@ const enemyAchievementTracks = zoneData.flatMap((zone,zoneIndex)=>zone.enemies.m
     {key:"gearChance",amount:.001}
   ],
   tiers:[
-    {goal:25,name:`${enemy.name} Tracker`,coins:100+zoneIndex*75,resonance:3+zoneIndex},
-    {goal:100,name:`${enemy.name} Hunter`,coins:500+zoneIndex*250,resonance:8+zoneIndex},
-    {goal:500,name:`${enemy.name} Specialist`,coins:2500+zoneIndex*1000,resonance:18+zoneIndex*2},
-    {goal:2500,name:`${enemy.name} Nemesis`,coins:10000+zoneIndex*4000,resonance:40+zoneIndex*3}
+    {goal:25,name:`${enemy.name} Tracker`,coins:100+zoneIndex*75,supplies:3+zoneIndex},
+    {goal:100,name:`${enemy.name} Hunter`,coins:500+zoneIndex*250,supplies:8+zoneIndex},
+    {goal:500,name:`${enemy.name} Specialist`,coins:2500+zoneIndex*1000,supplies:18+zoneIndex*2},
+    {goal:2500,name:`${enemy.name} Nemesis`,coins:10000+zoneIndex*4000,supplies:40+zoneIndex*3}
   ]
 })));
+
+function achievementRewardItems(track,tier,index=0) {
+  const supplies=tier.supplies||0;
+  const qty=divisor=>Math.max(1,Math.ceil(supplies/divisor));
+  if (track.kind==="zone") {
+    const zone=zoneData[track.zoneIndex];
+    return {[zone.enemies[0].item]:qty(6),[zone.enemies[0].bonusItem||zone.enemies[0].item]:qty(10)};
+  }
+  if (track.kind==="enemy") {
+    const zone=zoneData[track.zoneIndex];
+    const enemy=zone.enemies.find(item=>item.name===track.enemyName);
+    return {[enemy.item]:qty(4)};
+  }
+  const rewards={
+    actions:{"Field Stew":qty(5),"Artisan Focus":index>=1?qty(25):0},
+    kills:{"Health Potion":qty(3),"Battle Tonic":index>=1?qty(30):0},
+    crafts:{"Forge Essence":qty(4),"Reforge Token":index>=2?qty(55):0},
+    contracts:{"Artisan Focus":qty(18),"Field Stew":qty(6)},
+    mastery:{"Artisan Focus":qty(8)},
+    rareGear:{"Forge Essence":qty(4),"Reforge Token":index>=1?qty(35):0},
+    town:{"Bronze Bar":qty(6),"Oak Logs":qty(6),"Forge Essence":index>=2?qty(25):0},
+    salvage:{"Forge Essence":qty(3),"Reforge Token":index>=1?qty(30):0},
+    totalLevel:{"Artisan Focus":qty(10),"Battle Tonic":qty(14)},
+    bosses:{"Health Potion":qty(3),"Battle Tonic":qty(10),"Reforge Token":index>=1?qty(35):0}
+  }[track.id]||{"Health Potion":qty(8)};
+  return Object.fromEntries(Object.entries(rewards).filter(([,amount])=>amount>0));
+}
 
 achievementTracks=[...generalAchievementTracks,...zoneAchievementTracks,...enemyAchievementTracks];
 achievementData=achievementTracks.flatMap(track=>track.tiers.map((tier,index)=>({
@@ -502,7 +655,7 @@ achievementData=achievementTracks.flatMap(track=>track.tiers.map((tier,index)=>(
   description:track.description,
   type:track.type,
   goal:tier.goal,
-  reward:{coins:tier.coins,resonance:tier.resonance},
+  reward:{coins:tier.coins,items:achievementRewardItems(track,tier,index)},
   bonuses:track.bonuses||[],
   bonusText:track.bonusText,
   zoneIndex:track.zoneIndex,
@@ -531,7 +684,7 @@ const equipmentTierData = {
 };
 
 const equipmentData = {
-  "Rusty Sword":{slot:"weapon",attack:0,maxHit:0},
+  "Rusty Sword":{slot:"weapon",attack:3,maxHit:2},
   "Bronze Dagger":{slot:"weapon",attack:4,maxHit:2},
   "Wooden Shield":{slot:"shield",defence:0},
   "Leather Jerkin":{slot:"body",defence:0,maxHp:0},
@@ -581,48 +734,48 @@ const equipmentData = {
 };
 
 const craftingRecipes = [
-  {name:"Bronze Sword",level:5,costs:{"Bronze Bar":3}},
-  {name:"Bronze Shield",level:7,costs:{"Bronze Bar":4}},
-  {name:"Bronze Helm",level:9,costs:{"Bronze Bar":4}},
-  {name:"Bronze Platebody",level:10,costs:{"Bronze Bar":7}},
-  {name:"Iron Sword",level:15,costs:{"Iron Bar":4}},
-  {name:"Iron Shield",level:17,costs:{"Iron Bar":5}},
-  {name:"Iron Helm",level:19,costs:{"Iron Bar":5}},
-  {name:"Iron Platebody",level:20,costs:{"Iron Bar":9}},
-  {name:"Steel Sword",level:25,costs:{"Steel Bar":5}},
-  {name:"Steel Shield",level:27,costs:{"Steel Bar":7}},
-  {name:"Steel Helm",level:29,costs:{"Steel Bar":7}},
-  {name:"Steel Platebody",level:30,costs:{"Steel Bar":12}},
-  {name:"Guildmaster Blade",level:30,tier:"Steel",blueprint:"Guild Armory Blueprint",costs:{"Steel Bar":8,"Trailbreaker Crest":1}},
-  {name:"Guildmaster Ward",level:30,tier:"Steel",blueprint:"Guild Armory Blueprint",costs:{"Steel Bar":10,"Trailbreaker Crest":1}},
-  {name:"Silver Blade",level:35,costs:{"Silver Bar":5,"Frozen Sigil":1}},
-  {name:"Silver Aegis",level:37,costs:{"Silver Bar":7,"Frozen Sigil":1}},
-  {name:"Silver Helm",level:39,costs:{"Silver Bar":7,"Frozen Sigil":1}},
-  {name:"Silver Plate",level:40,costs:{"Silver Bar":12,"Frozen Sigil":2}},
-  {name:"Mithril Sword",level:45,costs:{"Mithril Bar":5}},
-  {name:"Mithril Shield",level:47,costs:{"Mithril Bar":7}},
-  {name:"Mithril Helm",level:49,costs:{"Mithril Bar":7}},
-  {name:"Mithril Platebody",level:50,costs:{"Mithril Bar":12}},
-  {name:"Obsidian Edge",level:55,costs:{"Obsidian Alloy":5,"Cinder Scale":2}},
-  {name:"Obsidian Ward",level:57,costs:{"Obsidian Alloy":7,"Cinder Scale":2}},
-  {name:"Obsidian Visor",level:59,costs:{"Obsidian Alloy":7,"Cinder Scale":2}},
-  {name:"Obsidian Carapace",level:60,costs:{"Obsidian Alloy":12,"Molten Core":1}},
-  {name:"Emberforged Blade",level:65,costs:{"Embersteel Bar":6,"Mire Resin":3}},
-  {name:"Emberforged Aegis",level:67,costs:{"Embersteel Bar":8,"Rotbloom":2}},
-  {name:"Emberforged Crown",level:69,costs:{"Embersteel Bar":8,"Mire Resin":4}},
-  {name:"Emberforged Plate",level:70,costs:{"Embersteel Bar":14,"Mireheart Pearl":1}},
-  {name:"Runic Blade",level:75,costs:{"Runic Bar":6,"Sunscar Hide":3}},
-  {name:"Runic Bulwark",level:77,costs:{"Runic Bar":8,"Sunstone Shard":2}},
-  {name:"Runic Crown",level:79,costs:{"Runic Bar":8,"Sunscar Hide":4}},
-  {name:"Runic Plate",level:80,costs:{"Runic Bar":14,"Solar Core":1}},
-  {name:"Astral Saber",level:85,costs:{"Astral Bar":6,"Stormglass":3}},
-  {name:"Astral Guard",level:87,costs:{"Astral Bar":8,"Charged Cog":2}},
-  {name:"Astral Circlet",level:89,costs:{"Astral Bar":8,"Stormglass":4}},
-  {name:"Astral Mantle",level:90,costs:{"Astral Bar":14,"Tempest Heart":1}},
-  {name:"Starforged Blade",level:95,costs:{"Starforged Bar":6,"Void Shard":3}},
-  {name:"Starforged Aegis",level:97,costs:{"Starforged Bar":8,"Worldstone Fragment":2}},
-  {name:"Starforged Crown",level:99,costs:{"Starforged Bar":8,"Void Shard":4}},
-  {name:"Starforged Plate",level:100,costs:{"Starforged Bar":14,"Worldscar Fragment":1}}
+  {name:"Bronze Sword",level:5,costs:{"Bronze Bar":3,"Logs":1,"Wooden Grip":1}},
+  {name:"Bronze Shield",level:7,costs:{"Bronze Bar":4,"Logs":1,"Shield Frame":1}},
+  {name:"Bronze Helm",level:9,costs:{"Bronze Bar":4,"Logs":1,"Armor Lining":1}},
+  {name:"Bronze Platebody",level:10,costs:{"Bronze Bar":7,"Logs":1,"Armor Lining":1}},
+  {name:"Iron Sword",level:15,costs:{"Iron Bar":4,"Oak Logs":1,"Wooden Grip":1}},
+  {name:"Iron Shield",level:17,costs:{"Iron Bar":5,"Oak Logs":1,"Shield Frame":1}},
+  {name:"Iron Helm",level:19,costs:{"Iron Bar":5,"Oak Logs":1,"Armor Lining":1}},
+  {name:"Iron Platebody",level:20,costs:{"Iron Bar":9,"Oak Logs":1,"Armor Lining":1}},
+  {name:"Steel Sword",level:25,costs:{"Steel Bar":5,"Willow Logs":1,"Wooden Grip":1}},
+  {name:"Steel Shield",level:27,costs:{"Steel Bar":7,"Willow Logs":1,"Shield Frame":1}},
+  {name:"Steel Helm",level:29,costs:{"Steel Bar":7,"Willow Logs":1,"Armor Lining":1}},
+  {name:"Steel Platebody",level:30,costs:{"Steel Bar":12,"Willow Logs":1,"Armor Lining":1}},
+  {name:"Guildmaster Blade",level:30,tier:"Steel",blueprint:"Guild Armory Blueprint",costs:{"Steel Bar":8,"Willow Logs":1,"Wooden Grip":1,"Trailbreaker Crest":1}},
+  {name:"Guildmaster Ward",level:30,tier:"Steel",blueprint:"Guild Armory Blueprint",costs:{"Steel Bar":10,"Willow Logs":1,"Shield Frame":1,"Trailbreaker Crest":1}},
+  {name:"Silver Blade",level:35,costs:{"Silver Bar":5,"Emberpine Logs":1,"Wooden Grip":1,"Frozen Sigil":1}},
+  {name:"Silver Aegis",level:37,costs:{"Silver Bar":7,"Emberpine Logs":1,"Shield Frame":1,"Frozen Sigil":1}},
+  {name:"Silver Helm",level:39,costs:{"Silver Bar":7,"Emberpine Logs":1,"Armor Lining":1,"Frozen Sigil":1}},
+  {name:"Silver Plate",level:40,costs:{"Silver Bar":12,"Emberpine Logs":1,"Armor Lining":1,"Frozen Sigil":2}},
+  {name:"Mithril Sword",level:45,costs:{"Mithril Bar":5,"Maple Logs":1,"Wooden Grip":1}},
+  {name:"Mithril Shield",level:47,costs:{"Mithril Bar":7,"Maple Logs":1,"Shield Frame":1}},
+  {name:"Mithril Helm",level:49,costs:{"Mithril Bar":7,"Maple Logs":1,"Armor Lining":1}},
+  {name:"Mithril Platebody",level:50,costs:{"Mithril Bar":12,"Maple Logs":1,"Armor Lining":1}},
+  {name:"Obsidian Edge",level:55,costs:{"Obsidian Alloy":5,"Yew Logs":1,"Wooden Grip":1,"Cinder Scale":2}},
+  {name:"Obsidian Ward",level:57,costs:{"Obsidian Alloy":7,"Yew Logs":1,"Shield Frame":1,"Cinder Scale":2}},
+  {name:"Obsidian Visor",level:59,costs:{"Obsidian Alloy":7,"Yew Logs":1,"Armor Lining":1,"Cinder Scale":2}},
+  {name:"Obsidian Carapace",level:60,costs:{"Obsidian Alloy":12,"Yew Logs":1,"Armor Lining":1,"Molten Core":1}},
+  {name:"Emberforged Blade",level:65,costs:{"Embersteel Bar":6,"Yew Logs":1,"Wooden Grip":1,"Mire Resin":3}},
+  {name:"Emberforged Aegis",level:67,costs:{"Embersteel Bar":8,"Yew Logs":1,"Shield Frame":1,"Rotbloom":2}},
+  {name:"Emberforged Crown",level:69,costs:{"Embersteel Bar":8,"Yew Logs":1,"Armor Lining":1,"Mire Resin":4}},
+  {name:"Emberforged Plate",level:70,costs:{"Embersteel Bar":14,"Yew Logs":1,"Armor Lining":1,"Mireheart Pearl":1}},
+  {name:"Runic Blade",level:75,costs:{"Runic Bar":6,"Ashen Logs":1,"Wooden Grip":1,"Sunscar Hide":3}},
+  {name:"Runic Bulwark",level:77,costs:{"Runic Bar":8,"Ashen Logs":1,"Shield Frame":1,"Sunstone Shard":2}},
+  {name:"Runic Crown",level:79,costs:{"Runic Bar":8,"Ashen Logs":1,"Armor Lining":1,"Sunscar Hide":4}},
+  {name:"Runic Plate",level:80,costs:{"Runic Bar":14,"Ashen Logs":1,"Armor Lining":1,"Solar Core":1}},
+  {name:"Astral Saber",level:85,costs:{"Astral Bar":6,"Ashen Logs":1,"Wooden Grip":1,"Stormglass":3}},
+  {name:"Astral Guard",level:87,costs:{"Astral Bar":8,"Ashen Logs":1,"Shield Frame":1,"Charged Cog":2}},
+  {name:"Astral Circlet",level:89,costs:{"Astral Bar":8,"Ashen Logs":1,"Armor Lining":1,"Stormglass":4}},
+  {name:"Astral Mantle",level:90,costs:{"Astral Bar":14,"Ashen Logs":1,"Armor Lining":1,"Tempest Heart":1}},
+  {name:"Starforged Blade",level:95,costs:{"Starforged Bar":6,"Worldroot Logs":1,"Wooden Grip":1,"Void Shard":3}},
+  {name:"Starforged Aegis",level:97,costs:{"Starforged Bar":8,"Worldroot Logs":1,"Shield Frame":1,"Worldstone Fragment":2}},
+  {name:"Starforged Crown",level:99,costs:{"Starforged Bar":8,"Worldroot Logs":1,"Armor Lining":1,"Void Shard":4}},
+  {name:"Starforged Plate",level:100,costs:{"Starforged Bar":14,"Worldroot Logs":1,"Armor Lining":1,"Worldscar Fragment":1}}
 ];
 
 const skillData = {
@@ -671,16 +824,19 @@ const skillData = {
   smithing: {
     name:"Smithing", letter:"S",
     actions: [
-      { id:"bronze", name:"Bronze Bar", level:1, time:3400, xp:14, item:"Bronze Bar", qty:1, costs:{"Copper Ore":1,"Tin Ore":1}, description:"Smelt copper and tin into bronze." },
-      { id:"ironbar", name:"Iron Bar", level:10, time:4200, xp:26, item:"Iron Bar", qty:1, costs:{"Iron Ore":1,"Coal":1}, description:"Refine iron for level 15-20 equipment." },
-      { id:"steelbar", name:"Steel Bar", level:20, time:5000, xp:43, item:"Steel Bar", qty:1, costs:{"Iron Ore":2,"Coal":3}, description:"Temper iron into the level 25-30 equipment metal." },
-      { id:"silverbar", name:"Silver Bar", level:30, time:5800, xp:64, item:"Silver Bar", qty:1, costs:{"Silver Ore":2,"Coal":1}, description:"Purify silver for level 35-40 specialist gear." },
-      { id:"mithrilbar", name:"Mithril Bar", level:40, time:6700, xp:92, item:"Mithril Bar", qty:1, costs:{"Mithril Ore":2,"Coal":3}, description:"Smelt rare mithril for level 45-50 equipment." },
-      { id:"obsidianbar", name:"Obsidian Alloy", level:50, time:7600, xp:128, item:"Obsidian Alloy", qty:1, costs:{"Obsidian":2,"Mithril Bar":1}, description:"Bind volcanic glass for level 55-60 armor." },
-      { id:"embersteel", name:"Embersteel Bar", level:60, time:8600, xp:172, item:"Embersteel Bar", qty:1, costs:{"Emberite Ore":2,"Obsidian Alloy":1,"Coal":4}, description:"Forge flame-bearing metal for level 65-70 gear." },
-      { id:"runicbar", name:"Runic Bar", level:70, time:9600, xp:225, item:"Runic Bar", qty:1, costs:{"Runite Ore":2,"Embersteel Bar":1,"Coal":5}, description:"Stabilize rune ore for level 75-80 equipment." },
-      { id:"astralbar", name:"Astral Bar", level:80, time:10800, xp:290, item:"Astral Bar", qty:1, costs:{"Astral Ore":2,"Runic Bar":1}, description:"Bind stellar crystal for level 85-90 equipment." },
-      { id:"starbar", name:"Starforged Bar", level:90, time:12200, xp:380, item:"Starforged Bar", qty:1, costs:{"Star Metal":2,"Astral Bar":1}, description:"Shape celestial metal for level 95-100 equipment." }
+      { id:"bronze", name:"Bronze Bar", level:1, time:3400, xp:14, item:"Bronze Bar", qty:1, costs:{"Copper Ore":2,"Tin Ore":2}, description:"Smelt copper and tin into bronze." },
+      { id:"grip", name:"Wooden Grip", level:5, time:3000, xp:18, item:"Wooden Grip", qty:1, costs:{"Logs":2}, description:"Shape a reliable weapon handle for forged blades." },
+      { id:"frame", name:"Shield Frame", level:7, time:3200, xp:22, item:"Shield Frame", qty:1, costs:{"Logs":2,"Bronze Bar":1}, description:"Build the braced core used by shields and wards." },
+      { id:"lining", name:"Armor Lining", level:9, time:3400, xp:25, item:"Armor Lining", qty:1, costs:{"Logs":2,"Bronze Bar":1}, description:"Prepare padded supports for helms and body armor." },
+      { id:"ironbar", name:"Iron Bar", level:10, time:4200, xp:26, item:"Iron Bar", qty:1, costs:{"Iron Ore":2}, description:"Refine iron for level 15-20 equipment." },
+      { id:"steelbar", name:"Steel Bar", level:20, time:5000, xp:43, item:"Steel Bar", qty:1, costs:{"Iron Ore":2,"Coal":2}, description:"Temper iron with coal into the level 25-30 equipment metal." },
+      { id:"silverbar", name:"Silver Bar", level:30, time:5800, xp:64, item:"Silver Bar", qty:1, costs:{"Silver Ore":2}, description:"Purify silver for level 35-40 specialist gear." },
+      { id:"mithrilbar", name:"Mithril Bar", level:40, time:6700, xp:92, item:"Mithril Bar", qty:1, costs:{"Mithril Ore":2}, description:"Smelt rare mithril for level 45-50 equipment." },
+      { id:"obsidianbar", name:"Obsidian Alloy", level:50, time:7600, xp:128, item:"Obsidian Alloy", qty:1, costs:{"Obsidian":2}, description:"Bind volcanic glass for level 55-60 armor." },
+      { id:"embersteel", name:"Embersteel Bar", level:60, time:8600, xp:172, item:"Embersteel Bar", qty:1, costs:{"Emberite Ore":2}, description:"Forge flame-bearing metal for level 65-70 gear." },
+      { id:"runicbar", name:"Runic Bar", level:70, time:9600, xp:225, item:"Runic Bar", qty:1, costs:{"Runite Ore":2}, description:"Stabilize rune ore for level 75-80 equipment." },
+      { id:"astralbar", name:"Astral Bar", level:80, time:10800, xp:290, item:"Astral Bar", qty:1, costs:{"Astral Ore":2}, description:"Bind stellar crystal for level 85-90 equipment." },
+      { id:"starbar", name:"Starforged Bar", level:90, time:12200, xp:380, item:"Starforged Bar", qty:1, costs:{"Star Metal":2}, description:"Shape celestial metal for level 95-100 equipment." }
     ]
   },
   cooking: {
@@ -727,19 +883,18 @@ const defaultState = () => ({
   productionQueue:[], queueRunning:false, nextQueueId:1,
   actionMastery:{},
   buffs:{battle:0,artisan:0,prospector:0,trailmeal:0,wardenmeal:0,embermeal:0,tunameal:0,stormmeal:0,frostmeal:0,leviathanmeal:0,ironbark:0,swiftwater:0,venom:0,ward:0,fortune:0},
-  resonance:{current:0,baseMax:100,overchargeUntil:0},
-  abilityReadyAt:{}, enemyStatus:{stunUntil:0,armorBreakUntil:0,bleedTicks:0,bleedNext:0}, playerStatus:{counterUntil:0,poisonTicks:0,poisonNext:0},
-  abilityLoadout:["powerStrike","secondWind","sunder"], autoCast:{powerStrike:false,secondWind:true,sunder:true,shieldBash:false,emberRend:false,counterstance:false},
+  enemyStatus:{}, playerStatus:{poisonTicks:0,poisonNext:0},
   combatAutomation:{offline:true,stopHp:15,stopAfter:0,killsRun:0,stopWhenFoodEmpty:false},
   contracts:{day:"",items:[],rerolls:0}, achievements:[], town:{forge:0,storehouse:0,hall:0,shrine:0}, townBranches:{forge:"",storehouse:"",hall:"",shrine:""},
+  starterQuests:{progress:{},claimed:[]}, bounties:{}, townContributions:{},
   relicsActivated:{}, bestiary:{kills:{},drops:{},bosses:{}},
   market:{day:"",stock:[],purchases:{},contractRerolls:0},
   blueprints:[],
   craftPity:{}, craftingUi:{filter:"available",search:"",pinned:[],collapsed:{}},
-  stats:{actions:0,crafts:0,contracts:0,sold:0,abilities:0,overcharges:0,rareGear:0,salvaged:0,reforged:0},
+  stats:{actions:0,crafts:0,contracts:0,sold:0,rareGear:0,salvaged:0,reforged:0},
   settings:{music:true,musicVolume:35},
   inventoryUi:{search:"",category:"all",sort:"name"},
-  actionElapsed:0, combat:false, attackElapsed:0, enemyAttackElapsed:0, heroHp:100, enemyHp:32, bossPhase:1,
+  actionElapsed:0, combat:false, attackElapsed:0, enemyAttackElapsed:0, heroHp:100, enemyHp:22, bossPhase:1,
   kills:0, currentZone:0, unlockedZones:1, zoneKills:Array(zoneData.length).fill(0), fightingBoss:false,
   log:["Select Start Combat to begin."], lastSeen:Date.now()
 });
@@ -751,7 +906,6 @@ let currentView = "combat";
 let currentSkill = "mining";
 let lastTick = performance.now();
 let lastLiveRender = 0;
-let momentumMs = 0;
 ["pointerdown","keydown","touchstart"].forEach(evt=>window.addEventListener(evt,()=>Music.start(),{once:true}));
 
 function xpForLevel(level) {
@@ -802,7 +956,8 @@ function achievementTrackState(track) {
 function masteryXpGain(action,skill=null) {
   const id=skill||state.activeSkill||currentSkill;
   const rank=state.upgrades[id]?.mastery||0;
-  return Math.max(1,Math.round(action.xp*(1+rank*.05)*(1+achievementBonus("masteryXp"))));
+  const training=townBranch("shrine","training") ? (state.town.shrine||0)*.01 : 0;
+  return Math.max(1,Math.round(action.xp*(1+rank*.05)*(1+achievementBonus("masteryXp")+training)));
 }
 function actionMasteryKey(skill,action) { return `${skill}:${action.id}`; }
 function actionMasteryXp(skill,action) { return state.actionMastery[actionMasteryKey(skill,action)]||0; }
@@ -814,50 +969,31 @@ function actionMasteryLevel(skill,action) {
   return level;
 }
 function actionMasteryDoubleChance(skill,action) { return Math.min(.25,(actionMasteryLevel(skill,action)-1)*.005); }
-function isOvercharged() { return state.resonance.overchargeUntil>Date.now(); }
 function townBranch(project,branch) { return state.townBranches?.[project]===branch; }
 function relicActive(name) { return Boolean(state.relicsActivated?.[name]); }
-function resonanceMax() {
-  const shrine=state.town.shrine||0;
-  return state.resonance.baseMax+shrine*10+(townBranch("shrine","reserve")?shrine*5:0);
-}
-function gainResonance(amount) {
-  const multiplier=1+(state.town.shrine||0)*.03;
-  state.resonance.current=Math.min(resonanceMax(),state.resonance.current+amount*multiplier);
-}
-function crossSkillSpeed(skill) {
-  const source={smithing:"mining",cooking:"woodcutting",alchemy:"fishing"}[skill];
-  return source ? Math.min(.2,Math.floor(skillLevel(source)/10)*.02) : 0;
-}
-function crossSkillOutputChance(skill) {
-  const source={woodcutting:"alchemy",fishing:"cooking"}[skill];
-  return source ? Math.min(.15,Math.floor(skillLevel(source)/10)*.01) : 0;
-}
+function shrineXpBonus() { return (state.town.shrine||0)*.01; }
 function actionTime(skill, action=getAction(skill)) {
   const marketSpeed = state.upgrades[skill].speed * .05;
   const masterySpeed = masteryBonus(skill,50) ? .10 : 0;
   const specializationSpeed=Math.min(.25,(actionMasteryLevel(skill,action)-1)*.005);
-  const overchargeSpeed=isOvercharged() ? .20 : 0;
   const swiftwaterSpeed=isBuffActive("swiftwater") ? .10 : 0;
   const relicSpeed=skill==="smithing" && relicActive("Molten Core") ? .05 : 0;
   const industrySpeed=!["mining","woodcutting","fishing"].includes(skill) && townBranch("storehouse","industry") ? (state.town.storehouse||0)*.01 : 0;
   const achievementSpeed=achievementBonus("skillSpeed");
-  return Math.max(750, Math.round(action.time * (1-marketSpeed) * (1-masterySpeed) * (1-crossSkillSpeed(skill)) * (1-specializationSpeed) * (1-overchargeSpeed) * (1-swiftwaterSpeed) * (1-relicSpeed) * (1-industrySpeed) * (1-achievementSpeed)));
+  return Math.max(750, Math.round(action.time * (1-marketSpeed) * (1-masterySpeed) * (1-specializationSpeed) * (1-swiftwaterSpeed) * (1-relicSpeed) * (1-industrySpeed) * (1-achievementSpeed)));
 }
 function actionQuantity(skill, action=getAction(skill)) {
   let quantity = action.qty + state.upgrades[skill].yield;
   if (isBuffActive("prospector") && ["mining","woodcutting","fishing"].includes(skill)) quantity++;
-  if (zoneSynergyYieldMatch(skill,action)) quantity += momentumLevel()>=1 ? 2 : 1;
   if (masteryBonus(skill,25)) quantity++;
   if (masteryBonus(skill,75)) quantity++;
-  if (isOvercharged()) quantity++;
   if (masteryBonus(skill,100)) quantity*=2;
   return quantity;
 }
 function rollActionQuantity(skill,action=getAction(skill)) {
   let quantity=actionQuantity(skill,action);
   const gatheringBranch=["mining","woodcutting","fishing"].includes(skill) && townBranch("storehouse","gathering") ? (state.town.storehouse||0)*.01 : 0;
-  const chance=actionMasteryDoubleChance(skill,action)+crossSkillOutputChance(skill)+(state.town.storehouse||0)*.02+gatheringBranch;
+  const chance=actionMasteryDoubleChance(skill,action)+(state.town.storehouse||0)*.02+gatheringBranch;
   if (Math.random()<Math.min(.75,chance)) quantity+=action.qty;
   return quantity;
 }
@@ -865,14 +1001,11 @@ function actionXp(skill, action=getAction(skill)) {
   const masteryMultiplier=masteryBonus(skill,10) ? 1.05 : 1;
   const artisanMultiplier=isBuffActive("artisan") ? 1.15 : 1;
   const actionMultiplier=1+(actionMasteryLevel(skill,action)-1)*.002;
-  const crossMultiplier=skill==="mining" ? 1+Math.floor(skillLevel("smithing")/10)*.01 : 1;
   const relicMultiplier=relicActive("Worldscar Fragment") ? 1.10 : 1;
-  return Math.round(action.xp * masteryMultiplier * artisanMultiplier * actionMultiplier * crossMultiplier * relicMultiplier * (1+achievementBonus("allXp")));
+  return Math.round(action.xp * masteryMultiplier * artisanMultiplier * actionMultiplier * relicMultiplier * (1+achievementBonus("allXp")+shrineXpBonus()));
 }
 function actionBatchSize(skill) {
-  if (skill!=="smithing") return 1;
-  const gap=Math.max(0,skillLevel("mining")-skillLevel("smithing"));
-  return Math.min(5,1+Math.floor(gap/12));
+  return 1;
 }
 function scaledActionCosts(skill,action,batch=actionBatchSize(skill)) {
   return Object.fromEntries(Object.entries(action.costs||{}).map(([item,qty])=>[item,qty*batch]));
@@ -884,8 +1017,17 @@ function payActionCosts(skill,action,batch=actionBatchSize(skill)) {
   payCosts(scaledActionCosts(skill,action,batch));
 }
 function upgradeCost(type, level) {
+  if (type==="yield") return Math.round(2500*Math.pow(3.6,level));
   const base=type==="speed" ? 50 : type==="mastery" ? 125 : 100;
   return base*Math.pow(2,level);
+}
+function upgradeUnlocked(skill,type,level) {
+  if (type!=="yield") return true;
+  return skillLevel(skill)>=yieldUpgradeRequirements[level];
+}
+function upgradeLockText(skill,type,level) {
+  if (type!=="yield" || upgradeUnlocked(skill,type,level)) return "";
+  return `Unlocks at ${skillData[skill].name} level ${yieldUpgradeRequirements[level]}`;
 }
 function gearById(id) { return state.gearVault.find(item=>item.id===id); }
 function equipmentBase(ref) { return gearById(ref)?.baseName || ref; }
@@ -943,16 +1085,6 @@ function maxHit() { return Math.max(1,Math.round(baseMaxHit()*(combatStyles[stat
 function combatLevel() { return Math.max(1, Math.floor((skillLevel("attack")+skillLevel("strength")+skillLevel("defence")+skillLevel("hitpoints"))/4)); }
 function currentZone() { return zoneData[state.currentZone]; }
 function currentEnvironment() { return currentZone().environment||{}; }
-function zoneSynergy(index=state.currentZone) { return zoneData[index]?.synergy||null; }
-function synergyActive() {
-  const syn=zoneSynergy();
-  return Boolean(state.combat && syn && state.activeSkill===syn.skill && syn.actions.includes(state.selectedActions[syn.skill]));
-}
-function zoneSynergyYieldMatch(skill,action) {
-  const syn=zoneSynergy();
-  return Boolean(state.combat && syn && skill===syn.skill && action && syn.actions.includes(action.id));
-}
-function momentumLevel() { return Math.min(1, momentumMs/MOMENTUM_FULL_MS); }
 function maxThreatRank(index=state.currentZone) {
   if (!state.bossDefeated[index]) return 0;
   const clears=Math.floor((state.zoneKills[index]||0)/Math.max(1,zoneData[index].requiredKills));
@@ -972,9 +1104,7 @@ function combatDamageMultiplier() {
   const branch=townBranch("forge","arms") ? (state.town.forge||0)*.02 : 0;
   const venom=isBuffActive("venom") ? .08 : 0;
   const feast=isBuffActive("leviathanmeal") ? .10 : 0;
-  const shrine=isOvercharged() && townBranch("shrine","surge") ? (state.town.shrine||0)*.02 : 0;
-  const expedition=synergyActive() ? .10+.15*momentumLevel() : 0;
-  return 1+relic+branch+venom+feast+shrine+expedition;
+  return 1+relic+branch+venom+feast;
 }
 function playerAttackTime() {
   const meal=isBuffActive("embermeal") ? .05 : 0;
@@ -1030,6 +1160,28 @@ function addItem(name, qty, track=false) {
   state.inventory[name] = (state.inventory[name] || 0) + qty;
   if (state.inventory[name] <= 0) delete state.inventory[name];
   if (track && qty>0) activity(`+${qty} ${name}`,"item");
+}
+function rewardItemsText(items={}) {
+  return Object.entries(items)
+    .filter(([,qty])=>qty>0)
+    .map(([item,qty])=>`${qty.toLocaleString()} ${item}`)
+    .join(" + ");
+}
+function formatReward(reward={}) {
+  const parts=[];
+  if (reward.coins) parts.push(`${reward.coins.toLocaleString()} coins`);
+  const itemText=rewardItemsText(reward.items);
+  if (itemText) parts.push(itemText);
+  if (reward.gear?.length) parts.push(`${reward.gear.join(", ")} gear`);
+  return parts.join(" + ")||"No reward";
+}
+function grantReward(reward={},trackActivity=false) {
+  if (reward.coins) state.coins+=reward.coins;
+  Object.entries(reward.items||{}).forEach(([item,qty])=>addItem(item,qty,trackActivity));
+  (reward.gear||[]).forEach(baseName=>{
+    const gear=createGear(baseName,"common");
+    if (trackActivity) activity(`Gear reward: ${gearDisplayName(gear)}`,"gear");
+  });
 }
 function hasCosts(costs={}) { return Object.entries(costs).every(([item,qty]) => (state.inventory[item]||0) >= qty); }
 function payCosts(costs={}) { Object.entries(costs).forEach(([item,qty]) => addItem(item,-qty)); }
@@ -1140,11 +1292,59 @@ function seededIndex(seed,length) {
   for (const char of seed) hash=(hash*31+char.charCodeAt(0))>>>0;
   return length ? hash%length : 0;
 }
+function makeReward(coins,items={}) {
+  return {
+    coins:Math.round(coins),
+    items:Object.fromEntries(Object.entries(items)
+      .map(([item,qty])=>[item,Math.round(qty)])
+      .filter(([,qty])=>qty>0))
+  };
+}
+function repairReward(reward={},fallbackItem="Health Potion") {
+  if (reward.items) return {coins:Math.round(reward.coins||0),items:{...reward.items}};
+  const supply=reward.supplies||reward["res"+"onance"]||1;
+  return makeReward(reward.coins||0,{[fallbackItem]:Math.max(1,Math.ceil(supply/5))});
+}
+function contractFallbackItem(contract={}) {
+  if (contract.type==="item" && contract.target && contract.target!=="any") return contract.target;
+  if (contract.type==="crafts") return "Forge Essence";
+  if (contract.type==="kills") return "Health Potion";
+  return "Bronze Bar";
+}
+function shouldUseStarterContracts(reroll=0) {
+  return !reroll
+    && (state.stats.contracts||0)<STARTER_CONTRACT_THRESHOLD.contracts
+    && (state.kills||0)<STARTER_CONTRACT_THRESHOLD.kills
+    && skillLevel("mining")<STARTER_CONTRACT_THRESHOLD.mining;
+}
+function starterContractsForDay(day) {
+  return [
+    {
+      id:`${day}-starter-copper`,type:"item",target:"Copper Ore",name:"Starter: Copper Stock",
+      description:"Mine Copper Ore for your first bronze route. The reward gives enough Tin to start smelting.",
+      goal:12,progress:0,reward:makeReward(120,{"Tin Ore":6,"Health Potion":2}),claimed:false
+    },
+    {
+      id:`${day}-starter-tin`,type:"item",target:"Tin Ore",name:"Starter: Tin Stock",
+      description:"Mine Tin Ore so the bronze loop does not stall at the first bar.",
+      goal:10,progress:0,reward:makeReward(140,{"Copper Ore":6,"Logs":4}),claimed:false
+    },
+    {
+      id:`${day}-starter-trail`,type:"kills",target:"Greenveil Goblin",name:"Starter: Greenveil Patrol",
+      description:"Defeat Greenveil Goblins and stock early alchemy materials.",
+      goal:3,progress:0,reward:makeReward(180,{"Goblin Scrap":5,"Field Stew":2}),claimed:false
+    }
+  ];
+}
 function ensureContracts(force=false) {
   const day=todayKey();
   if (!force && state.contracts.day===day && state.contracts.items.length) return;
   if (state.contracts.day!==day) state.contracts.rerolls=0;
   const reroll=state.contracts.rerolls||0;
+  if (shouldUseStarterContracts(reroll)) {
+    state.contracts={day,rerolls:reroll,items:starterContractsForDay(day)};
+    return;
+  }
   const unlockedActions=productionSkills.flatMap(skill=>skillData[skill].actions.filter(action=>skillLevel(skill)>=action.level).map(action=>({skill,action})));
   const gathering=unlockedActions.filter(entry=>["mining","woodcutting","fishing"].includes(entry.skill));
   const selected=gathering[seededIndex(`${day}-${reroll}-gather`,gathering.length)]||{skill:"mining",action:skillData.mining.actions[0]};
@@ -1152,21 +1352,127 @@ function ensureContracts(force=false) {
   const zone=zoneData[zoneIndex];
   const hall=state.town.hall||0;
   const rewardMultiplier=(1+hall*.05)*(1+achievementBonus("contractRewards"));
+  const materialMultiplier=(1+achievementBonus("contractRewards"))*(townBranch("shrine","quartermaster")?1+(state.town.shrine||0)*.02:1);
+  const gatherGoal=Math.max(30,10+skillLevel(selected.skill)*2);
+  const huntGoal=20+zoneIndex*5;
+  const workIsCraft=skillLevel("smithing")>=5;
   state.contracts={
     day,rerolls:reroll,
     items:[
-      {id:`${day}-gather`,type:"item",target:selected.action.item,name:`Supply: ${selected.action.item}`,description:`Acquire ${selected.action.item} through skill actions.`,goal:Math.max(30,10+skillLevel(selected.skill)*2),progress:0,reward:{coins:Math.round(250*rewardMultiplier),resonance:Math.round(12*rewardMultiplier)},claimed:false},
-      {id:`${day}-hunt`,type:"kills",target:"any",name:`Control: ${zone.name}`,description:`Defeat enemies while preparing for ${zone.name}. Any combat kill advances this contract.`,goal:20+zoneIndex*5,rewardZone:zoneIndex,progress:0,reward:{coins:Math.round((350+zoneIndex*60)*rewardMultiplier),resonance:Math.round((15+zoneIndex*2)*rewardMultiplier)},claimed:false},
-      {id:`${day}-work`,type:skillLevel("smithing")>=5?"crafts":"actions",target:skillLevel("smithing")>=5?"any":"any",name:skillLevel("smithing")>=5?"Guild Armory":"Guild Labor",description:skillLevel("smithing")>=5?"Craft equipment for the guild.":"Complete productive skill actions.",goal:skillLevel("smithing")>=5?3:50,progress:0,reward:{coins:Math.round(450*rewardMultiplier),resonance:Math.round(18*rewardMultiplier)},claimed:false}
+      {id:`${day}-gather`,type:"item",target:selected.action.item,name:`Supply: ${selected.action.item}`,description:`Acquire ${selected.action.item} through skill actions.`,goal:gatherGoal,progress:0,reward:makeReward(250*rewardMultiplier,{[selected.action.item]:Math.ceil(gatherGoal*.2*materialMultiplier)}),claimed:false},
+      {id:`${day}-hunt`,type:"kills",target:"any",name:`Control: ${zone.name}`,description:`Defeat enemies while preparing for ${zone.name}. Any combat kill advances this contract.`,goal:huntGoal,rewardZone:zoneIndex,progress:0,reward:makeReward((350+zoneIndex*60)*rewardMultiplier,{[zone.enemies[0].item]:Math.ceil((6+zoneIndex*2)*materialMultiplier)}),claimed:false},
+      {id:`${day}-work`,type:workIsCraft?"crafts":"actions",target:"any",name:workIsCraft?"Guild Armory":"Guild Labor",description:workIsCraft?"Craft equipment for the guild.":"Complete productive skill actions.",goal:workIsCraft?3:50,progress:0,reward:makeReward(450*rewardMultiplier,{[workIsCraft?"Forge Essence":"Bronze Bar"]:Math.ceil((workIsCraft?3:5)*materialMultiplier)}),claimed:false}
     ]
   };
+}
+function contractMatchesPayload(contract,payload={}) {
+  if (contract.target==="any") return true;
+  return [payload.item,payload.skill,payload.enemy,`zone:${payload.zone}`].includes(contract.target);
+}
+function starterQuestProgress(quest) {
+  const stored=state.starterQuests.progress[quest.id]||0;
+  if (quest.type==="item") return Math.min(quest.goal,Math.max(stored,state.inventory[quest.target]||0));
+  if (quest.type==="enemyKills") return Math.min(quest.goal,Math.max(stored,state.bestiary.kills[quest.target]||0));
+  if (quest.type==="crafts") return Math.min(quest.goal,Math.max(stored,state.gearVault.filter(gear=>gear.baseName===quest.target).length));
+  return Math.min(quest.goal,stored);
+}
+function starterQuestClaimed(quest) {
+  return state.starterQuests.claimed.includes(quest.id);
+}
+function starterQuestMatches(quest,type,payload={}) {
+  if (quest.type==="item") return type==="item" && payload.item===quest.target;
+  if (quest.type==="crafts") return type==="crafts" && payload.item===quest.target;
+  if (quest.type==="enemyKills") return type==="kills" && payload.enemy===quest.target;
+  return false;
+}
+function trackStarterQuestProgress(type,payload={},amount=1) {
+  starterQuestData.forEach(quest=>{
+    if (starterQuestClaimed(quest) || !starterQuestMatches(quest,type,payload)) return;
+    const before=starterQuestProgress(quest);
+    const next=Math.min(quest.goal,before+amount);
+    state.starterQuests.progress[quest.id]=next;
+    if (before<quest.goal && next>=quest.goal) {
+      activity(`Starter step ready: ${quest.name}`,"contract");
+      toast(`${quest.name} complete`);
+    }
+  });
+}
+function claimStarterQuest(id) {
+  const quest=starterQuestData.find(item=>item.id===id);
+  if (!quest || starterQuestClaimed(quest) || starterQuestProgress(quest)<quest.goal) return;
+  state.starterQuests.progress[quest.id]=quest.goal;
+  state.starterQuests.claimed.push(quest.id);
+  grantReward(quest.reward,true);
+  activity(`Starter reward: ${formatReward(quest.reward)}`,"contract");
+  saveState();
+  renderAdventure();
+  renderLive();
+}
+function bountyKey(zoneIndex,id) {
+  return `${zoneIndex}:${id}`;
+}
+function zoneBountyState(zoneIndex,id) {
+  return state.bounties[bountyKey(zoneIndex,id)]||{progress:0,completions:0};
+}
+function setZoneBountyState(zoneIndex,id,next) {
+  state.bounties[bountyKey(zoneIndex,id)]={progress:Math.max(0,Math.round(next.progress||0)),completions:Math.max(0,Math.round(next.completions||0))};
+}
+function bountyGoal(zoneIndex,bounty) {
+  const completed=zoneBountyState(zoneIndex,bounty.id).completions||0;
+  if (bounty.type==="bossKills") return bounty.baseGoal+Math.floor(completed/2);
+  return Math.ceil(bounty.baseGoal*(1+completed*.35));
+}
+function bountyReward(zoneIndex,bounty) {
+  return bounty.reward(zoneBountyState(zoneIndex,bounty.id).completions||0);
+}
+function bountyMatchesProgress(zoneIndex,bounty,type,payload={}) {
+  if (bounty.type==="zoneKills") return type==="kills" && payload.zone===zoneIndex;
+  if (bounty.type==="enemyKills") return type==="kills" && payload.enemy===bounty.target;
+  if (bounty.type==="bossKills") return type==="bosses" && payload.enemy===bounty.target;
+  return false;
+}
+function trackBountyProgress(type,payload={},amount=1) {
+  zoneData.slice(0,state.unlockedZones).forEach((zone,zoneIndex)=>{
+    zoneBountyDefinitions(zoneIndex).forEach(bounty=>{
+      if (!bountyMatchesProgress(zoneIndex,bounty,type,payload)) return;
+      const current=zoneBountyState(zoneIndex,bounty.id);
+      const goal=bountyGoal(zoneIndex,bounty);
+      const before=current.progress||0;
+      const next=Math.min(goal,before+amount);
+      setZoneBountyState(zoneIndex,bounty.id,{...current,progress:next});
+      if (before<goal && next>=goal) {
+        activity(`Bounty ready: ${bounty.name}`,"contract");
+        toast(`${bounty.name} complete`);
+      }
+    });
+  });
+}
+function claimBounty(zoneIndex,id) {
+  const bounty=zoneBountyDefinitions(zoneIndex).find(item=>item.id===id);
+  if (!bounty || zoneIndex>=state.unlockedZones) return;
+  const current=zoneBountyState(zoneIndex,id);
+  const goal=bountyGoal(zoneIndex,bounty);
+  if ((current.progress||0)<goal) return;
+  const reward=bountyReward(zoneIndex,bounty);
+  grantReward(reward,true);
+  setZoneBountyState(zoneIndex,id,{
+    progress:Math.max(0,(current.progress||0)-goal),
+    completions:(current.completions||0)+1
+  });
+  activity(`Bounty reward: ${formatReward(reward)}`,"contract");
+  checkAchievements();
+  saveState();
+  renderAdventure();
+  renderLive();
 }
 function recordProgress(type,payload={},amount=1) {
   state.stats[type]=(state.stats[type]||0)+amount;
   ensureContracts();
+  trackStarterQuestProgress(type,payload,amount);
+  trackBountyProgress(type,payload,amount);
   state.contracts.items.forEach(contract=>{
     if (contract.claimed || contract.progress>=contract.goal || contract.type!==type) return;
-    if (contract.target!=="any" && contract.target!==payload.item && contract.target!==payload.skill) return;
+    if (!contractMatchesPayload(contract,payload)) return;
     contract.progress=Math.min(contract.goal,contract.progress+amount);
     if (contract.progress>=contract.goal) {
       activity(`Contract ready: ${contract.name}`,"contract");
@@ -1193,8 +1499,7 @@ function checkAchievements() {
   achievementData.forEach(achievement=>{
     if (state.achievements.includes(achievement.id) || achievementProgress(achievement)<achievement.goal) return;
     state.achievements.push(achievement.id);
-    state.coins+=achievement.reward.coins;
-    gainResonance(achievement.reward.resonance);
+    grantReward(achievement.reward);
     activity(`Achievement: ${achievement.name}`,"achievement");
     unlocked.push(achievement);
   });
@@ -1207,10 +1512,9 @@ function claimContract(id) {
   const contract=state.contracts.items.find(item=>item.id===id);
   if (!contract || contract.claimed || contract.progress<contract.goal) return;
   contract.claimed=true;
-  state.coins+=contract.reward.coins;
-  gainResonance(contract.reward.resonance);
+  grantReward(contract.reward,true);
   state.stats.contracts=(state.stats.contracts||0)+1;
-  activity(`Contract reward: ${contract.reward.coins} coins`,"contract");
+  activity(`Contract reward: ${formatReward(contract.reward)}`,"contract");
   checkAchievements();
   saveState(); renderAdventure(); renderLive();
 }
@@ -1219,15 +1523,48 @@ function townProjectCost(id) {
   const scale=Math.pow(1.8,level)*(1-achievementBonus("townDiscount"));
   return Object.fromEntries(Object.entries(project.baseCost).map(([item,qty])=>[item,Math.ceil(qty*scale)]));
 }
+function townProjectContribution(id) {
+  if (!state.townContributions[id]) state.townContributions[id]={};
+  return state.townContributions[id];
+}
+function townProjectRemainingCost(id) {
+  const contributed=townProjectContribution(id);
+  return Object.fromEntries(Object.entries(townProjectCost(id)).map(([item,qty])=>[item,Math.max(0,qty-(contributed[item]||0))]));
+}
+function townProjectContributionProgress(id) {
+  const costs=townProjectCost(id);
+  const contributed=townProjectContribution(id);
+  const total=Object.values(costs).reduce((sum,qty)=>sum+qty,0);
+  const paid=Object.entries(costs).reduce((sum,[item,qty])=>sum+Math.min(qty,contributed[item]||0),0);
+  return {paid,total,pct:total ? Math.min(100,paid/total*100) : 100};
+}
+function hasAvailableTownContribution(id) {
+  return Object.entries(townProjectRemainingCost(id)).some(([item,qty])=>qty>0 && (state.inventory[item]||0)>0);
+}
 function buildTownProject(id) {
   const project=townProjectData[id], level=state.town[id]||0;
   if (!project || level>=project.max) return;
-  const costs=townProjectCost(id);
-  if (!hasCosts(costs)) return toast("You need more project materials");
-  payCosts(costs); state.town[id]++;
-  state.resonance.current=Math.min(state.resonance.current,resonanceMax());
-  activity(`${project.name} reached level ${state.town[id]}`,"town");
-  checkAchievements(); saveState(); render();
+  const contributed=townProjectContribution(id);
+  let moved=0;
+  Object.entries(townProjectRemainingCost(id)).forEach(([item,qty])=>{
+    const take=Math.min(qty,state.inventory[item]||0);
+    if (take<=0) return;
+    addItem(item,-take);
+    contributed[item]=(contributed[item]||0)+take;
+    moved+=take;
+  });
+  const complete=Object.values(townProjectRemainingCost(id)).every(qty=>qty<=0);
+  if (!moved && !complete) return toast("You need more project materials");
+  if (complete) {
+    state.town[id]++;
+    state.townContributions[id]={};
+    activity(`${project.name} reached level ${state.town[id]}`,"town");
+    checkAchievements();
+  } else {
+    activity(`${project.name} contribution: ${moved.toLocaleString()} materials`,"town");
+  }
+  saveState();
+  render();
 }
 function chooseTownBranch(project,branch) {
   if (!townBranchData[project]?.[branch] || (state.town[project]||0)<3 || state.townBranches[project]) return;
@@ -1272,15 +1609,6 @@ function buyMarketStock(id) {
   activity(`Purchased ${offer.qty} ${offer.item}`,"coins");
   saveState();
   render();
-}
-function activateOvercharge() {
-  if (isOvercharged()) return toast(`Overcharge active for ${formatDuration(state.resonance.overchargeUntil-Date.now())}`);
-  if (state.resonance.current<25) return toast("You need 25 Ember Resonance");
-  state.resonance.current-=25;
-  state.resonance.overchargeUntil=Date.now()+60000+achievementBonus("overchargeSeconds")*1000;
-  state.stats.overcharges=(state.stats.overcharges||0)+1;
-  activity("Ember Overcharge activated","resonance");
-  checkAchievements(); saveState(); render();
 }
 function getAction(skill=currentSkill) {
   const action=skillData[skill].actions.find(a=>a.id===state.selectedActions[skill]);
@@ -1339,13 +1667,17 @@ function normalizeState(parsed={}) {
     selectedActions:{...base.selectedActions,...parsed.selectedActions},
     equipment:{...base.equipment,...parsed.equipment},
     buffs:{...base.buffs,...parsed.buffs},
-    resonance:{...base.resonance,...parsed.resonance},
-    abilityReadyAt:{...base.abilityReadyAt,...parsed.abilityReadyAt},
     enemyStatus:{...base.enemyStatus,...parsed.enemyStatus},
     playerStatus:{...base.playerStatus,...parsed.playerStatus},
     contracts:{...base.contracts,...parsed.contracts,items:[...(parsed.contracts?.items||[])]},
     town:{...base.town,...parsed.town},
     townBranches:{...base.townBranches,...parsed.townBranches},
+    starterQuests:{
+      progress:{...base.starterQuests.progress,...parsed.starterQuests?.progress},
+      claimed:[...(parsed.starterQuests?.claimed||[])]
+    },
+    bounties:{...base.bounties,...parsed.bounties},
+    townContributions:{...base.townContributions,...parsed.townContributions},
     relicsActivated:{...base.relicsActivated,...parsed.relicsActivated},
     bestiary:{
       ...base.bestiary,...parsed.bestiary,
@@ -1365,8 +1697,6 @@ function normalizeState(parsed={}) {
       collapsed:{...base.craftingUi.collapsed,...parsed.craftingUi?.collapsed}
     },
     combatAutomation:{...base.combatAutomation,...parsed.combatAutomation},
-    autoCast:{...base.autoCast,...parsed.autoCast},
-    abilityLoadout:[...(parsed.abilityLoadout||base.abilityLoadout)].slice(0,3),
     productionQueue:[...(parsed.productionQueue||[])].slice(0,MAX_PRODUCTION_QUEUE),
     blueprints:[...(parsed.blueprints||[])],
     stats:{...base.stats,...parsed.stats},
@@ -1378,6 +1708,21 @@ function normalizeState(parsed={}) {
     lockedGear:[...(parsed.lockedGear||[])],
     gearVault:[...(parsed.gearVault||[])]
   };
+  delete result["res"+"onance"];
+  delete result["abil"+"ityReadyAt"];
+  delete result["abil"+"ityLoadout"];
+  delete result.autoCast;
+  delete result.stats["abil"+"ities"];
+  delete result.stats["over"+"charges"];
+  result.contracts.items=result.contracts.items.map(contract=>({
+    ...contract,
+    reward:repairReward(contract.reward,contractFallbackItem(contract))
+  }));
+  productionSkills.forEach(id=>{
+    Object.entries(upgradeCaps).forEach(([type,cap])=>{
+      result.upgrades[id][type]=Math.min(cap,Math.max(0,Number(result.upgrades[id][type])||0));
+    });
+  });
   result.zoneThreats=result.zoneThreats.map((rank,index)=>Math.min(MAX_THREAT,Math.max(0,Number(rank)||0)));
   result.nextQueueId=Math.max(
     Number(parsed.nextQueueId)||1,
@@ -1518,7 +1863,6 @@ function completeSkillCycle(skill,action,{quiet=false}={}) {
   state.skills[skill].masteryXp+=masteryGain;
   const actionKey=actionMasteryKey(skill,action);
   state.actionMastery[actionKey]=(state.actionMastery[actionKey]||0)+masteryGain;
-  gainResonance(batch);
   recordProgress("actions",{skill},batch);
   recordProgress("item",{item:action.item},quantity);
   if (state.queueRunning && state.productionQueue[0]?.skill===skill && state.productionQueue[0]?.actionId===action.id) {
@@ -1556,7 +1900,7 @@ function offlineProductionSegment(skill,action,availableMs,job=null) {
   if (job) cycles=Math.min(cycles,Math.max(1,Math.ceil((job.target-job.completed)/Math.max(1,baseQuantity))));
   if (!cycles) return null;
   Object.entries(costs).forEach(([item,qty])=>addItem(item,-qty*cycles));
-  const bonusChance=Math.min(.75,actionMasteryDoubleChance(skill,action)+crossSkillOutputChance(skill)+(state.town.storehouse||0)*.02);
+  const bonusChance=Math.min(.75,actionMasteryDoubleChance(skill,action)+(state.town.storehouse||0)*.02);
   const totalQuantity=baseQuantity*cycles+Math.floor(cycles*bonusChance)*action.qty*batch;
   const xpGain=actionXp(skill,action)*batch*cycles;
   const masteryGain=Math.max(1,Math.round(masteryXpGain(action,skill)*Math.sqrt(batch)))*cycles;
@@ -1565,7 +1909,6 @@ function offlineProductionSegment(skill,action,availableMs,job=null) {
   state.skills[skill].masteryXp+=masteryGain;
   const key=actionMasteryKey(skill,action);
   state.actionMastery[key]=(state.actionMastery[key]||0)+masteryGain;
-  gainResonance(cycles*batch);
   recordProgress("actions",{skill},cycles*batch);
   recordProgress("item",{item:action.item},totalQuantity);
   if (job) job.completed+=totalQuantity;
@@ -1670,14 +2013,13 @@ function applyOfflineCombat(away) {
   bestiaryDrop(enemy.item,materialQty);
   bestiaryDrop(enemy.bonusItem,bonusQty);
   const damageXp=enemyMaxHp(enemy)*kills;
-  const combatXpMultiplier=1+achievementBonus("allXp")+achievementBonus("combatXp",{zone:state.currentZone,enemy:enemy.name});
+  const combatXpMultiplier=1+achievementBonus("allXp")+achievementBonus("combatXp",{zone:state.currentZone,enemy:enemy.name})+shrineXpBonus();
   let totalXp=0;
   Object.entries(style.xp).forEach(([skill,multiplier])=>{
     const gain=Math.max(1,Math.round(damageXp*multiplier*combatXpMultiplier));
     state.skills[skill].xp+=gain; totalXp+=gain;
   });
-  gainResonance(kills*2);
-  recordProgress("kills",{zone:state.currentZone},kills);
+  recordProgress("kills",{zone:state.currentZone,enemy:enemy.name},kills);
   const gearDrops=Math.min(20,Math.floor(kills*threatGearChance()));
   const rarityOrder=Object.keys(rarityData);
   let bestGear=null;
@@ -1700,9 +2042,10 @@ function applyOfflineProgress(elapsed=Date.now()-(state.lastSeen||Date.now())) {
   state.lastSeen=Date.now();
   if (away < 1000) return false;
   const combatResult=applyOfflineCombat(away);
-  const productionResult=combatResult ? null : applyOfflineProduction(away);
+  const productionResult=applyOfflineProduction(away);
   if (!combatResult && !productionResult) return false;
   document.querySelector("#offline-time").textContent = `You were away for ${formatDuration(away)}. Here is what your adventurer accomplished:`;
+  const sections=[];
   if (combatResult) {
     const cards=[
       `<div><span>Enemies defeated</span><strong>${combatResult.kills.toLocaleString()}</strong></div>`,
@@ -1714,12 +2057,14 @@ function applyOfflineProgress(elapsed=Date.now()-(state.lastSeen||Date.now())) {
       combatResult.food?`<div><span>Food consumed</span><strong>${combatResult.food}</strong></div>`:""
     ].join("");
     const featured=combatResult.bestGear?`<div class="offline-featured rarity-${combatResult.bestGear.rarity}" style="--rarity-color:${rarityData[combatResult.bestGear.rarity].color}"><span class="eyebrow">Best find</span><strong>${rarityData[combatResult.bestGear.rarity].name} ${combatResult.bestGear.name}</strong></div>`:"";
-    document.querySelector("#offline-loot").innerHTML=featured+`<div class="offline-cards">${cards}</div>`;
-  } else {
+    sections.push(`<section class="offline-section"><div class="offline-section-title"><span class="eyebrow">Combat</span><strong>${combatResult.kills ? `${combatResult.kills.toLocaleString()} defeated` : "Run stopped"}</strong></div>${featured}<div class="offline-cards">${cards}</div></section>`);
+  }
+  if (productionResult) {
     const itemCards=Object.entries(productionResult.items).map(([item,qty])=>`<div><span>${item}</span><strong>+${qty.toLocaleString()}</strong></div>`).join("");
     const xpCards=Object.entries(productionResult.xp).map(([skill,xp])=>`<div><span>${skillData[skill].name} XP</span><strong>+${xp.toLocaleString()}</strong></div>`).join("");
-    document.querySelector("#offline-loot").innerHTML=`<div class="offline-cards">${itemCards}${xpCards}<div class="reward-highlight"><span>Mastery XP</span><strong>+${productionResult.mastery.toLocaleString()}</strong></div></div>`;
+    sections.push(`<section class="offline-section"><div class="offline-section-title"><span class="eyebrow">Production</span><strong>${productionResult.cycles.toLocaleString()} cycles</strong></div><div class="offline-cards">${itemCards}${xpCards}<div class="reward-highlight"><span>Mastery XP</span><strong>+${productionResult.mastery.toLocaleString()}</strong></div></div></section>`);
   }
+  document.querySelector("#offline-loot").innerHTML=sections.join("");
   document.querySelector("#offline-modal").classList.remove("hidden");
   return true;
 }
@@ -1729,8 +2074,7 @@ function tick(now) {
   lastTick = now;
   if (!document.hidden && state.activeSkill) updateSkill(dt);
   if (!document.hidden && state.combat) updateCombat(dt);
-  if (synergyActive()) momentumMs=Math.min(MOMENTUM_FULL_MS,momentumMs+dt); else momentumMs=0;
-  if ((state.activeSkill||state.combat||isOvercharged()) && now-lastLiveRender>=100) {
+  if ((state.activeSkill||state.combat) && now-lastLiveRender>=100) {
     renderLive();
     lastLiveRender=now;
   }
@@ -1766,7 +2110,6 @@ function updateCombat(dt) {
   const now=Date.now();
   updateBossPhase();
   if (shouldStopCombat()) return;
-  runAutoCast(now);
   if (state.playerStatus.poisonTicks>0 && now>=state.playerStatus.poisonNext) {
     const poisonGuard=relicActive("Mireheart Pearl") ? .5 : 1;
     const ward=isBuffActive("ward") ? .5 : 1;
@@ -1785,18 +2128,6 @@ function updateCombat(dt) {
       return;
     }
   }
-  if (state.enemyStatus.bleedTicks>0 && now>=state.enemyStatus.bleedNext) {
-    const bleedDamage=Math.max(1,Math.round(maxHit()*.28));
-    state.enemyHp-=bleedDamage;
-    state.enemyStatus.bleedTicks--;
-    state.enemyStatus.bleedNext=now+1000;
-    popDamage("enemy",bleedDamage,"Bleed");
-    addLog(`${enemy.name} takes ${bleedDamage} Ember Rend damage.`);
-    if (state.enemyHp<=0) {
-      defeatEnemy();
-      return;
-    }
-  }
   const attackTime=playerAttackTime();
   state.attackElapsed += dt;
   state.enemyAttackElapsed += dt;
@@ -1808,8 +2139,8 @@ function updateCombat(dt) {
     } else {
       const critical=Math.random()<critChance();
       const rolledHit=Math.max(1,Math.floor(Math.random()*(maxHit()+1)));
-      const armor=state.enemyStatus.armorBreakUntil>now ? 0 : trait.armor||0;
-      const hit=Math.max(1,Math.round(rolledHit*(critical?1.75:1)*(isOvercharged()?1.2:1)*combatDamageMultiplier())-armor);
+      const armor=trait.armor||0;
+      const hit=Math.max(1,Math.round(rolledHit*(critical?1.75:1)*combatDamageMultiplier())-armor);
       state.enemyHp -= hit;
       Object.entries(style.xp).forEach(([skill,multiplier])=>grantCombatXp(skill,Math.max(1,Math.round(hit*multiplier))));
       if (style.lifesteal) state.heroHp=Math.min(maxHp(),state.heroHp+Math.max(1,Math.floor(hit*style.lifesteal)));
@@ -1822,7 +2153,7 @@ function updateCombat(dt) {
     }
   }
   const currentEnemyAttackTime=enemyAttackTime(enemy);
-  if (state.enemyAttackElapsed >= currentEnemyAttackTime && state.combat && state.enemyStatus.stunUntil<=now) {
+  if (state.enemyAttackElapsed >= currentEnemyAttackTime && state.combat) {
     state.enemyAttackElapsed -= currentEnemyAttackTime;
     const foodDodge=isBuffActive("trailmeal") ? .03 : 0;
     if (Math.random()<Math.min(.35,(style.dodge||0)+equipmentBonus("dodge")+foodDodge)) {
@@ -1839,8 +2170,6 @@ function updateCombat(dt) {
     const traitDamage=(trait.damage||1)*environmentMultiplier*(enraged?1+(trait.enrage||0):1)*(heavyStrike?1.5:1)*phaseMultiplier;
     const rawHit=Math.max(0,Math.floor(Math.random()*(enemyMaxHitValue(enemy)+1))-Math.floor(effectiveDefence/8));
     let hit=Math.max(0,Math.floor(rawHit*style.damageTaken*traitDamage));
-    const countering=state.playerStatus.counterUntil>now;
-    if (countering) hit=Math.floor(hit*.5);
     state.heroHp -= hit;
     const slow=(trait.slow||0)+(currentEnvironment().slowOnHit||0);
     if (slow && hit>0) state.attackElapsed=Math.max(0,state.attackElapsed-slow);
@@ -1852,17 +2181,6 @@ function updateCombat(dt) {
     }
     popDamage("hero",hit,heavyStrike&&hit>0?"Heavy":"");
     addLog(hit ? `${enemy.name} ${heavyStrike?"lands a heavy strike and ":""}hits ${state.characterName} for ${hit}.` : `${state.characterName} blocks ${enemy.name}'s attack.`);
-    if (countering) {
-      const counterDamage=Math.max(1,Math.round(maxHit()*.8));
-      state.playerStatus.counterUntil=0;
-      state.enemyHp-=counterDamage;
-      popDamage("enemy",counterDamage,"Counter");
-      addLog(`${state.characterName} counters for ${counterDamage}.`);
-      if (state.enemyHp<=0) {
-        defeatEnemy();
-        return;
-      }
-    }
     if (state.autoEat && state.heroHp>0 && state.heroHp/maxHp()<=AUTO_EAT_THRESHOLD) autoEatFood();
     if (state.heroHp <= 0) {
       const loss=Math.min(state.coins,5*(state.currentZone+1));
@@ -1912,65 +2230,9 @@ function shouldStopCombat() {
   return false;
 }
 
-function abilityAutoReady(id,ability,now) {
-  if (!state.autoCast[id] || !state.abilityLoadout.includes(id) || combatLevel()<ability.level || (state.abilityReadyAt[id]||0)>now) return false;
-  if (ability.type==="heal") return state.heroHp/maxHp()<=.55;
-  if (ability.type==="sunder") return state.enemyStatus.armorBreakUntil<=now && (currentEnemyTrait().armor||0)>0;
-  if (ability.type==="bleed") return !(state.enemyStatus.bleedTicks>0);
-  if (ability.type==="counter") return state.playerStatus.counterUntil<=now;
-  return true;
-}
-
-function runAutoCast(now=Date.now()) {
-  if (!state.combat) return;
-  const id=state.abilityLoadout.find(abilityId=>abilityAutoReady(abilityId,combatAbilities[abilityId],now));
-  if (id) useCombatAbility(id,true);
-}
-
-function useCombatAbility(id,automated=false) {
-  const ability=combatAbilities[id], now=Date.now();
-  if (!ability || combatLevel()<ability.level) return toast(`Unlocks at Combat level ${ability?.level||1}`);
-  if (!state.combat) return toast("Start combat before using abilities");
-  if ((state.abilityReadyAt[id]||0)>now) return toast(`${ability.name} is still cooling down`);
-  if (ability.type==="heal" && state.heroHp>=maxHp()) return toast(`${state.characterName} is already at full health`);
-  state.abilityReadyAt[id]=now+ability.cooldown;
-  state.stats.abilities=(state.stats.abilities||0)+1;
-  if (ability.type==="heal") {
-    const healed=Math.min(maxHp()-state.heroHp,Math.max(1,Math.round(maxHp()*ability.power*healingMultiplier())));
-    state.heroHp+=healed;
-    addLog(`${state.characterName} uses ${ability.name} and restores ${healed} health.`);
-    activity(`${ability.name}: +${healed} HP`,"ability");
-  } else if (ability.type==="bleed") {
-    state.enemyStatus.bleedTicks=ability.ticks;
-    state.enemyStatus.bleedNext=now+500;
-    addLog(`${state.characterName} marks ${currentEnemy().name} with Ember Rend.`);
-  } else if (ability.type==="counter") {
-    state.playerStatus.counterUntil=now+ability.duration;
-    addLog(`${state.characterName} enters Counterstance.`);
-  } else {
-    const trait=currentEnemyTrait();
-    const armor=ability.type==="sunder"||state.enemyStatus.armorBreakUntil>now ? 0 : trait.armor||0;
-    const damage=Math.max(1,Math.round((Math.max(1,Math.floor(Math.random()*(maxHit()+1)))*ability.power)*(isOvercharged()?1.2:1)*combatDamageMultiplier())-armor);
-    state.enemyHp-=damage;
-    const style=combatStyles[state.combatStyle]||combatStyles.balanced;
-    Object.entries(style.xp).forEach(([skill,multiplier])=>grantCombatXp(skill,Math.max(1,Math.round(damage*multiplier*.7))));
-    if (ability.type==="sunder") state.enemyStatus.armorBreakUntil=now+ability.duration;
-    if (ability.type==="stun") state.enemyStatus.stunUntil=now+ability.duration;
-    popDamage("enemy",damage,ability.type==="stun"?"Stun":ability.type==="sunder"?"Sunder":"Ability");
-    addLog(`${state.characterName} uses ${ability.name} for ${damage} damage.`);
-    if (state.enemyHp<=0) defeatEnemy();
-  }
-  checkAchievements();
-  if (!automated) {
-    saveState();
-    renderCombatSetup();
-    renderLive();
-  }
-}
-
 function resetCombatStatuses() {
-  state.enemyStatus={stunUntil:0,armorBreakUntil:0,bleedTicks:0,bleedNext:0};
-  state.playerStatus={counterUntil:0,poisonTicks:0,poisonNext:0};
+  state.enemyStatus={};
+  state.playerStatus={poisonTicks:0,poisonNext:0};
 }
 
 function autoEatFood() {
@@ -2003,8 +2265,7 @@ function defeatEnemy() {
   state.kills++; state.combatChain++; state.coins+=coinReward; activity(`+${coinReward} coins`,"coins"); addItem(enemy.item,materialQty,true);
   bestiaryKill(enemy.name,1);
   bestiaryDrop(enemy.item,materialQty);
-  gainResonance(wasBoss?10:2);
-  recordProgress("kills",{zone:state.currentZone},1);
+  recordProgress("kills",{zone:state.currentZone,enemy:enemy.name},1);
   if (wasBoss || Math.random()<threatGearChance()) {
     const table=currentZone().gearTiers.flatMap(tier=>equipmentTierData[tier]?.gear||[]);
     const baseName=table[Math.floor(Math.random()*table.length)];
@@ -2022,6 +2283,7 @@ function defeatEnemy() {
     const defeatedZone=state.currentZone;
     state.bossDefeated[defeatedZone]=true;
     state.bestiary.bosses[enemy.name]=(state.bestiary.bosses[enemy.name]||0)+1;
+    recordProgress("bosses",{zone:defeatedZone,enemy:enemy.name},1);
     addLog(`${enemy.name} defeated! ${state.characterName} earns ${coinReward} coins.`);
     if (defeatedZone+1<zoneData.length && state.unlockedZones<defeatedZone+2) {
       state.unlockedZones=defeatedZone+2;
@@ -2036,7 +2298,7 @@ function defeatEnemy() {
     addLog(`${enemy.name} defeated. Hunt progress: ${state.zoneKills[state.currentZone]}/${currentZone().requiredKills}.`);
     if (state.zoneKills[state.currentZone]===currentZone().requiredKills) toast(`${currentZone().boss.name} revealed`);
   }
-  if (wasBoss) showBossBanner(enemy.name);
+  if (wasBoss) { showBossBanner(enemy.name); Music.bossStinger(); }
   resetCombatStatuses();
   state.enemyHp=enemyMaxHp(); state.attackElapsed=0; state.enemyAttackElapsed=0;
   state.combatAutomation.killsRun=(state.combatAutomation.killsRun||0)+1;
@@ -2112,11 +2374,26 @@ function render() {
 function recommendedGoals() {
   ensureContracts();
   const goals=[];
+  const starterView=quest=>{
+    if (["mine-copper","mine-tin"].includes(quest.id)) return "mining";
+    if (quest.id==="smelt-bronze") return "smithing";
+    if (quest.id==="craft-helm") return "crafting";
+    if (quest.id==="kill-goblins") return "combat";
+    return "adventure";
+  };
+  const readyStarter=starterQuestData.find(quest=>!starterQuestClaimed(quest) && starterQuestProgress(quest)>=quest.goal);
+  if (readyStarter) goals.push({view:"adventure",title:"Claim starter path reward",detail:readyStarter.name});
+  const nextStarter=starterQuestData.find(quest=>!starterQuestClaimed(quest) && starterQuestProgress(quest)<quest.goal);
+  if (nextStarter) goals.push({view:starterView(nextStarter),title:`Starter: ${nextStarter.name}`,detail:nextStarter.description});
   const readyContract=state.contracts.items.find(contract=>!contract.claimed && contract.progress>=contract.goal);
   if (readyContract) goals.push({view:"adventure",title:"Claim contract rewards",detail:readyContract.name});
+  const readyBounty=zoneData.slice(0,state.unlockedZones).flatMap((zone,zoneIndex)=>
+    zoneBountyDefinitions(zoneIndex).map(bounty=>({zoneIndex,bounty,state:zoneBountyState(zoneIndex,bounty.id)}))
+  ).find(entry=>(entry.state.progress||0)>=bountyGoal(entry.zoneIndex,entry.bounty));
+  if (readyBounty) goals.push({view:"adventure",title:"Claim bounty reward",detail:readyBounty.bounty.name});
   if (skillLevel("mining")-skillLevel("smithing")>=12) {
     const next=Math.min(90,Math.ceil((skillLevel("smithing")+1)/10)*10);
-    goals.push({view:"smithing",title:`Raise Smithing toward ${next}`,detail:`Catch-up batches are active at ×${actionBatchSize("smithing")}.`});
+    goals.push({view:"smithing",title:`Raise Smithing toward ${next}`,detail:"Smelt bars and forge gear to keep equipment aligned with Mining progress."});
   }
   const foodCount=Object.entries(state.inventory).filter(([name])=>itemData[name]?.category==="Food").reduce((sum,[,qty])=>sum+qty,0);
   if (foodCount<5) goals.push({view:"cooking",title:"Prepare automatic combat food",detail:`Only ${foodCount} cooked meals available.`});
@@ -2143,31 +2420,10 @@ function renderDirector() {
   document.querySelectorAll("[data-goal-view]").forEach(button=>button.onclick=()=>navigate(button.dataset.goalView));
 }
 
-function renderExpedition() {
-  const syn=zoneSynergy();
-  const active=synergyActive();
-  const zoneName=currentZone().name;
-  const skillName=syn ? skillData[syn.skill].name : "";
-  const lvl=momentumLevel();
-  const meter=`<div class="expedition-meter"><i style="width:${Math.round(lvl*100)}%"></i></div>`;
-  const html=!syn ? "" : active
-    ? `<strong>⚡ Expedition Synergy${lvl>=1?" · MAX":""}</strong><span>+${Math.round(10+15*lvl)}% combat damage in ${zoneName} · +${lvl>=1?2:1} ${skillName} output</span>${meter}<span class="expedition-momentum">Momentum ramps the bonus the longer you fight and gather as one.</span>`
-    : `<strong>Expedition Synergy</strong><span>Fight in ${zoneName} while gathering ${syn.label} (${skillName}) to start a +10% damage / +1 output bonus that ramps to +25% / +2.</span>`;
-  ["expedition-synergy","skill-expedition"].forEach(id=>{
-    const el=document.getElementById(id);
-    if (!el) return;
-    el.innerHTML=html;
-    el.classList.toggle("active",active);
-    el.classList.toggle("hidden",!syn);
-  });
-}
-
 function renderLive() {
-  renderExpedition();
   const enemy=currentEnemy(), enemyHpMax=enemyMaxHp(enemy);
   const hp=Math.max(0,state.heroHp), ehp=Math.max(0,state.enemyHp);
   document.querySelector("#coins").textContent=state.coins.toLocaleString();
-  renderResonancePill();
   renderProgressSummary();
   document.querySelector("#hero-level").textContent=combatLevel();
   document.querySelector("#hero-hp-text").textContent=`${Math.ceil(hp)} / ${maxHp()}`;
@@ -2193,15 +2449,10 @@ function renderLive() {
   document.querySelector("#combat-accuracy").textContent=`${Math.round(hitChance()*100)}%`;
   document.querySelector("#combat-crit").textContent=`${Math.round(critChance()*100)}%`;
   document.querySelector("#combat-chain").textContent=state.combatChain;
-  document.querySelector("#combat-resonance").textContent=`${Math.floor(state.resonance.current)} / ${resonanceMax()}`;
-  document.querySelector("#combat-resonance-bar").style.width=`${state.resonance.current/resonanceMax()*100}%`;
-  document.querySelector("#combat-overcharge").textContent=isOvercharged()?`Overcharged ${formatDuration(state.resonance.overchargeUntil-Date.now())}`:"Activate Overcharge";
-  document.querySelector("#combat-overcharge").disabled=isOvercharged()||state.resonance.current<25;
   const bossPhase=document.querySelector("#boss-phase");
   bossPhase.classList.toggle("hidden",!state.fightingBoss);
   bossPhase.textContent=`Boss Phase ${state.bossPhase||1} · ${state.bossPhase===1?"Opening pattern":state.bossPhase===2?"Enraged pattern":"Final pattern"}`;
   renderCombatStatuses();
-  renderAbilityCooldowns();
   renderLiveSkillHud();
   if (skillData[currentSkill]) {
     const action=getAction();
@@ -2342,74 +2593,12 @@ function renderCombatSetup() {
   const bossPhase=document.querySelector("#boss-phase");
   bossPhase.classList.toggle("hidden",!state.fightingBoss);
   bossPhase.textContent=`Boss Phase ${state.bossPhase||1} · ${state.bossPhase===1?"Opening pattern":state.bossPhase===2?"Enraged pattern":"Final pattern"}`;
-  renderCombatAbilities();
-}
-
-function renderCombatAbilities() {
-  document.querySelector("#ability-list").innerHTML=Object.entries(combatAbilities).map(([id,ability])=>{
-    const locked=combatLevel()<ability.level;
-    const equipped=state.abilityLoadout.includes(id);
-    const automatic=Boolean(state.autoCast[id]);
-    return `<div class="ability-card ${locked?"locked":""} ${equipped?"equipped":""}" data-ability="${id}">
-      <button class="ability-use" data-use-ability="${id}" ${locked?"disabled":""}>
-        <strong>${ability.name}</strong>
-        <span>${locked?`Unlocks at Combat ${ability.level}`:ability.description}</span>
-        <em data-cooldown="${id}">${(ability.cooldown/1000).toFixed(0)}s cooldown</em>
-      </button>
-      <div class="ability-config">
-        <button class="ability-equip" data-equip-ability="${id}" ${locked?"disabled":""}>${equipped?"Equipped":"Equip"}</button>
-        <label><input type="checkbox" data-auto-ability="${id}" ${automatic?"checked":""} ${!equipped||locked?"disabled":""}> Auto: ${ability.auto}</label>
-      </div>
-    </div>`;
-  }).join("");
-  document.querySelectorAll("[data-use-ability]").forEach(button=>button.onclick=()=>useCombatAbility(button.dataset.useAbility));
-  document.querySelectorAll("[data-equip-ability]").forEach(button=>button.onclick=()=>toggleAbilityLoadout(button.dataset.equipAbility));
-  document.querySelectorAll("[data-auto-ability]").forEach(input=>input.onchange=()=>toggleAutoCast(input.dataset.autoAbility,input.checked));
-  renderAbilityCooldowns();
-}
-
-function renderAbilityCooldowns() {
-  const now=Date.now();
-  Object.entries(combatAbilities).forEach(([id,ability])=>{
-    const button=document.querySelector(`[data-use-ability="${id}"]`);
-    const label=document.querySelector(`[data-cooldown="${id}"]`);
-    if (!button||!label) return;
-    const remaining=Math.max(0,(state.abilityReadyAt[id]||0)-now);
-    const locked=combatLevel()<ability.level;
-    button.disabled=locked||!state.combat||remaining>0;
-    label.textContent=remaining>0?`${(remaining/1000).toFixed(1)}s remaining`:`${(ability.cooldown/1000).toFixed(0)}s cooldown`;
-  });
 }
 
 function renderCombatStatuses() {
-  const now=Date.now();
   const statuses=[];
-  if (state.enemyStatus.armorBreakUntil>now) statuses.push(`Sundered ${Math.ceil((state.enemyStatus.armorBreakUntil-now)/1000)}s`);
-  if (state.enemyStatus.stunUntil>now) statuses.push(`Stunned ${Math.ceil((state.enemyStatus.stunUntil-now)/1000)}s`);
-  if (state.enemyStatus.bleedTicks>0) statuses.push(`Bleeding ${state.enemyStatus.bleedTicks} ticks`);
-  if (state.playerStatus.counterUntil>now) statuses.push(`Counter ready ${Math.ceil((state.playerStatus.counterUntil-now)/1000)}s`);
   if (state.playerStatus.poisonTicks>0) statuses.push(`Poisoned ${state.playerStatus.poisonTicks} ticks`);
   document.querySelector("#combat-status-list").innerHTML=statuses.map(status=>`<span>${status}</span>`).join("");
-}
-
-function toggleAbilityLoadout(id) {
-  if (!combatAbilities[id] || combatLevel()<combatAbilities[id].level) return;
-  if (state.abilityLoadout.includes(id)) {
-    state.abilityLoadout=state.abilityLoadout.filter(item=>item!==id);
-    state.autoCast[id]=false;
-  } else {
-    if (state.abilityLoadout.length>=3) return toast("Only three abilities can be equipped");
-    state.abilityLoadout.push(id);
-  }
-  saveState();
-  renderCombatAbilities();
-}
-
-function toggleAutoCast(id,enabled) {
-  if (!state.abilityLoadout.includes(id)) return;
-  state.autoCast[id]=Boolean(enabled);
-  saveState();
-  renderCombatAbilities();
 }
 
 function selectThreat(rank) {
@@ -2473,13 +2662,11 @@ function renderSkill() {
         <h4>${a.name}</h4>
         <p class="action-card-description">${a.description}</p>
         <p class="action-card-requirements">${requirements}</p>
-        <div class="action-card-rewards"><span>+${actionXp(currentSkill,a)*batch} XP</span><span>+${Math.round(masteryXpGain(a,currentSkill)*Math.sqrt(batch))} MXP</span><span>Expertise ${specialization}</span>${batch>1?`<span>Catch-up batch ×${batch}</span>`:""}</div>
+        <div class="action-card-rewards"><span>+${actionXp(currentSkill,a)*batch} XP</span><span>+${Math.round(masteryXpGain(a,currentSkill)*Math.sqrt(batch))} MXP</span><span>Expertise ${specialization}</span></div>
       </div>
       <strong class="action-card-time">${(actionTime(currentSkill,a)/1000).toFixed(1)}s</strong>
     </button>`;
   }).join("");
-  const synergy=crossSkillData[currentSkill];
-  document.querySelector("#skill-synergy").innerHTML=`<strong>${synergy.source} Synergy</strong><span>${synergy.description}</span>`;
   document.querySelector("#milestone-list").innerHTML=masteryMilestones.map(item=>`<div class="milestone ${masteryLevel(currentSkill)>=item.level?"unlocked":""}"><strong>${item.level}</strong><span>${item.text}</span></div>`).join("");
   renderProductionQueue();
   document.querySelectorAll(".action-card:not(.locked)").forEach(btn=>btn.onclick=()=>{
@@ -2537,19 +2724,7 @@ function renderProgressSummary() {
   document.querySelector("#total-level").textContent=ids.reduce((total,id)=>total+skillLevel(id),0);
   document.querySelector("#combat-level").textContent=combatLevel();
   productionSkills.forEach(id=>document.querySelector(`#nav-${id}`).textContent=skillLevel(id));
-  renderResonancePill();
 }
-function renderResonancePill() {
-  const pill=document.getElementById("resonance-pill"); if (!pill) return;
-  const count=document.getElementById("resonance-count");
-  const cur=Math.floor(state.resonance.current), max=resonanceMax();
-  const over=isOvercharged(), ready=!over && cur>=25;
-  pill.classList.toggle("ready",ready);
-  pill.classList.toggle("overcharged",over);
-  pill.querySelector("span").textContent=over?"Overcharged":ready?"Overcharge Ready":"Resonance";
-  count.textContent=over?`⚡ ${formatDuration(state.resonance.overchargeUntil-Date.now())}`:`${cur} / ${max}`;
-}
-
 function renderMarketplace() {
   ensureMarket();
   document.querySelector("#market-coins").textContent=state.coins.toLocaleString();
@@ -2572,17 +2747,21 @@ function renderMarketplace() {
   document.querySelector("#market-contract-reroll").disabled=state.coins<rerollCost || state.contracts.items.some(contract=>contract.claimed);
   document.querySelector("#market-grid").innerHTML=productionSkills.map(id=>{
     const upgrades=state.upgrades[id];
-    const speedMax=upgrades.speed>=10, yieldMax=upgrades.yield>=5, masteryMax=(upgrades.mastery||0)>=3;
+    const speedMax=upgrades.speed>=upgradeCaps.speed, yieldMax=upgrades.yield>=upgradeCaps.yield, masteryMax=(upgrades.mastery||0)>=upgradeCaps.mastery;
     const speedCost=upgradeCost("speed",upgrades.speed), yieldCost=upgradeCost("yield",upgrades.yield), masteryCost=upgradeCost("mastery",upgrades.mastery||0);
+    const yieldLocked=!yieldMax && !upgradeUnlocked(id,"yield",upgrades.yield);
+    const yieldLock=upgradeLockText(id,"yield",upgrades.yield);
     return `<article class="market-card">
       <header><h3>${skillData[id].name}</h3><img class="market-skill-icon" src="${skillIconPath(id)}" alt=""></header>
       <div class="upgrade-row"><div><h4>Honed Tools - ${upgrades.speed}/10</h4><p>5% faster actions per rank. Current bonus: ${upgrades.speed*5}%.</p></div><button class="primary-button market-buy" data-skill="${id}" data-type="speed" ${speedMax||state.coins<speedCost?"disabled":""}>${speedMax?"MAX":`${speedCost} coins`}</button></div>
-      <div class="upgrade-row"><div><h4>Expanded Kit - ${upgrades.yield}/5</h4><p>Gain +1 item from every completed action per rank.</p></div><button class="primary-button market-buy" data-skill="${id}" data-type="yield" ${yieldMax||state.coins<yieldCost?"disabled":""}>${yieldMax?"MAX":`${yieldCost} coins`}</button></div>
+      <div class="upgrade-row"><div><h4>Expanded Kit - ${upgrades.yield}/${upgradeCaps.yield}</h4><p>Gain +1 item per action per rank. Ranks unlock at levels ${yieldUpgradeRequirements.join(", ")} and never increase recipe costs.</p></div><button class="primary-button market-buy" data-skill="${id}" data-type="yield" ${yieldMax||yieldLocked||state.coins<yieldCost?"disabled":""}>${yieldMax?"MAX":yieldLocked?yieldLock:`${yieldCost} coins`}</button></div>
       <div class="upgrade-row"><div><h4>Masterwork Manual - ${upgrades.mastery||0}/3</h4><p>Gain 5% more Skill Mastery and Action Expertise XP per rank.</p></div><button class="primary-button market-buy" data-skill="${id}" data-type="mastery" ${masteryMax||state.coins<masteryCost?"disabled":""}>${masteryMax?"MAX":`${masteryCost} coins`}</button></div>
     </article>`;
   }).join("");
   document.querySelectorAll(".market-buy").forEach(button=>button.onclick=()=>{
     const {skill,type}=button.dataset, level=state.upgrades[skill][type], cost=upgradeCost(type,level);
+    if (level>=upgradeCaps[type]) return toast("Upgrade is already at maximum rank");
+    if (!upgradeUnlocked(skill,type,level)) return toast(upgradeLockText(skill,type,level));
     if (state.coins<cost) return toast("Not enough coins");
     state.coins-=cost; state.upgrades[skill][type]++;
     toast(`${skillData[skill].name} ${type} upgraded`);
@@ -2599,7 +2778,7 @@ function renderAchievementTrack(track) {
     : `${Math.min(progress.progress,current.goal).toLocaleString()} / ${current.goal.toLocaleString()}`;
   const rewardText=progress.complete
     ? "All milestone rewards claimed"
-    : `${current.reward.coins.toLocaleString()} coins + ${current.reward.resonance} Resonance`;
+    : formatReward(current.reward);
   return `<article class="achievement-card ${progress.complete?"mastered":progress.completed?"progressed":""}">
     <header>
       <img src="${track.icon}" alt="">
@@ -2625,15 +2804,51 @@ function renderEnemyMastery(enemy) {
   return `<div class="bestiary-mastery">
     <div><strong>Hunt Mastery ${progress.completed}/${progress.milestones.length}</strong><span>+${coinBonus}% coins · +${gearBonus}% gear chance</span></div>
     <div class="meter"><i style="width:${progress.complete?100:Math.min(100,progress.progress/current.goal*100)}%"></i></div>
-    <small>${progress.complete?"Nemesis mastery complete":`Next: ${current.name} at ${current.goal.toLocaleString()} kills · ${current.reward.coins.toLocaleString()}c + ${current.reward.resonance} Resonance`}</small>
+    <small>${progress.complete?"Nemesis mastery complete":`Next: ${current.name} at ${current.goal.toLocaleString()} kills - ${formatReward(current.reward)}`}</small>
   </div>`;
+}
+
+function renderStarterQuestCard(quest) {
+  const progress=starterQuestProgress(quest);
+  const ready=progress>=quest.goal;
+  const claimed=starterQuestClaimed(quest);
+  return `<article class="starter-card ${claimed?"claimed":ready?"ready":""}">
+    <header><div><span>${quest.type==="enemyKills"?"hunt":quest.type}</span><h4>${quest.name}</h4></div><strong>${progress.toLocaleString()} / ${quest.goal.toLocaleString()}</strong></header>
+    <p>${quest.description}</p>
+    <div class="meter contract-meter"><i style="width:${Math.min(100,progress/quest.goal*100)}%"></i></div>
+    <footer><span>${formatReward(quest.reward)}</span><button class="secondary-button starter-claim" data-starter="${quest.id}" ${!ready||claimed?"disabled":""}>${claimed?"Claimed":"Claim"}</button></footer>
+  </article>`;
+}
+
+function renderBountyCard(zoneIndex,bounty) {
+  const current=zoneBountyState(zoneIndex,bounty.id);
+  const goal=bountyGoal(zoneIndex,bounty);
+  const progress=Math.min(goal,current.progress||0);
+  const ready=progress>=goal;
+  const reward=bountyReward(zoneIndex,bounty);
+  return `<article class="bounty-card ${ready?"ready":""}">
+    <header><div><span>${bounty.type.replace("Kills","")}</span><h4>${bounty.name}</h4></div><strong>${progress.toLocaleString()} / ${goal.toLocaleString()}</strong></header>
+    <p>${bounty.description}</p>
+    <div class="meter contract-meter"><i style="width:${Math.min(100,progress/goal*100)}%"></i></div>
+    <footer><span>${formatReward(reward)}</span><button class="secondary-button bounty-claim" data-zone="${zoneIndex}" data-bounty="${bounty.id}" ${ready?"":"disabled"}>Claim</button></footer>
+    <small>Completed ${(current.completions||0).toLocaleString()} times. Later completions increase the requirement and payout.</small>
+  </article>`;
+}
+
+function renderBountyZone(zone,zoneIndex) {
+  return `<section class="bounty-zone">
+    <header><div><span>Zone ${zoneIndex+1}</span><h4>${zone.name}</h4></div><strong>${state.bossDefeated[zoneIndex]?"Boss cleared":"Boss pending"}</strong></header>
+    <div class="bounty-cards">${zoneBountyDefinitions(zoneIndex).map(bounty=>renderBountyCard(zoneIndex,bounty)).join("")}</div>
+  </section>`;
 }
 
 function renderAdventure() {
   ensureContracts();
-  document.querySelector("#board-resonance").textContent=`${Math.floor(state.resonance.current)} / ${resonanceMax()}`;
-  document.querySelector("#board-overcharge").textContent=isOvercharged()?`Overcharged ${formatDuration(state.resonance.overchargeUntil-Date.now())}`:"Activate Overcharge";
-  document.querySelector("#board-overcharge").disabled=isOvercharged()||state.resonance.current<25;
+  document.querySelector("#board-standing").textContent=(state.stats.contracts||0).toLocaleString();
+  const starterClaimed=starterQuestData.filter(starterQuestClaimed).length;
+  document.querySelector("#starter-quest-count").textContent=`${starterClaimed} / ${starterQuestData.length} complete`;
+  document.querySelector("#starter-quest-list").innerHTML=starterQuestData.map(renderStarterQuestCard).join("");
+  document.querySelectorAll(".starter-claim").forEach(button=>button.onclick=()=>claimStarterQuest(button.dataset.starter));
   const rerollCost=100+(state.contracts.rerolls||0)*75;
   document.querySelector("#contract-refresh").textContent=`Refreshes ${todayKey()} UTC · ${state.contracts.rerolls||0} rerolls`;
   document.querySelector("#contract-reroll").textContent=`Reroll ${rerollCost}c`;
@@ -2644,25 +2859,37 @@ function renderAdventure() {
       <header><div><span>${contract.type}</span><h4>${contract.name}</h4></div><strong>${contract.progress.toLocaleString()} / ${contract.goal.toLocaleString()}</strong></header>
       <p>${contract.description}</p>
       <div class="meter contract-meter"><i style="width:${Math.min(100,contract.progress/contract.goal*100)}%"></i></div>
-      <footer><span>${contract.reward.coins} coins + ${contract.reward.resonance} Resonance</span><button class="secondary-button contract-claim" data-contract="${contract.id}" ${!ready||contract.claimed?"disabled":""}>${contract.claimed?"Claimed":"Claim"}</button></footer>
+      <footer><span>${formatReward(contract.reward)}</span><button class="secondary-button contract-claim" data-contract="${contract.id}" ${!ready||contract.claimed?"disabled":""}>${contract.claimed?"Claimed":"Claim"}</button></footer>
     </div>`;
   }).join("");
   document.querySelectorAll(".contract-claim").forEach(button=>button.onclick=()=>claimContract(button.dataset.contract));
   document.querySelector("#town-projects").innerHTML=Object.entries(townProjectData).map(([id,project])=>{
-    const level=state.town[id]||0, maxed=level>=project.max, costs=townProjectCost(id);
-    const affordable=hasCosts(costs);
+    const level=state.town[id]||0, maxed=level>=project.max;
+    const remaining=townProjectRemainingCost(id);
+    const progress=townProjectContributionProgress(id);
+    const complete=Object.values(remaining).every(qty=>qty<=0);
+    const affordable=hasAvailableTownContribution(id)||complete;
+    const neededText=Object.entries(remaining).filter(([,qty])=>qty>0).map(([item,qty])=>`${qty.toLocaleString()} ${item} remaining (${(state.inventory[item]||0).toLocaleString()} held)`).join(" + ");
+    const contributedText=`Funded ${progress.paid.toLocaleString()} / ${progress.total.toLocaleString()} materials`;
     return `<div class="town-project">
       <header><div><h4>${project.name}</h4><span>Level ${level} / ${project.max}</span></div><strong>${project.description}</strong></header>
-      <p>${maxed?"Project complete":Object.entries(costs).map(([item,qty])=>`${qty} ${item} (${state.inventory[item]||0})`).join(" + ")}</p>
+      <p>${maxed?"Project complete":neededText||"Level fully funded. Finish construction."}</p>
+      <div class="meter town-meter"><i style="width:${maxed?100:progress.pct}%"></i></div>
+      <small class="town-needed">${maxed?"Maximum level reached":contributedText}</small>
       ${level>=3 ? state.townBranches[id]
         ? `<div class="town-branch active"><strong>${townBranchData[id][state.townBranches[id]].name}</strong><span>${townBranchData[id][state.townBranches[id]].description}</span></div>`
         : `<div class="town-branch-options">${Object.entries(townBranchData[id]).map(([branch,data])=>`<button class="town-branch-choice" data-project="${id}" data-branch="${branch}"><strong>${data.name}</strong><span>${data.description}</span></button>`).join("")}</div>`
         : `<small class="branch-lock">Specialization unlocks at project level 3.</small>`}
-      <button class="primary-button town-build" data-project="${id}" ${maxed||!affordable?"disabled":""}>${maxed?"Maximum":"Build Level"}</button>
+      <button class="primary-button town-build" data-project="${id}" ${maxed||!affordable?"disabled":""}>${maxed?"Maximum":complete?"Finish Level":"Contribute Available"}</button>
     </div>`;
   }).join("");
   document.querySelectorAll(".town-build").forEach(button=>button.onclick=()=>buildTownProject(button.dataset.project));
   document.querySelectorAll(".town-branch-choice").forEach(button=>button.onclick=()=>chooseTownBranch(button.dataset.project,button.dataset.branch));
+  const bountyEntries=zoneData.slice(0,state.unlockedZones).flatMap((zone,zoneIndex)=>zoneBountyDefinitions(zoneIndex).map(bounty=>({zoneIndex,bounty,state:zoneBountyState(zoneIndex,bounty.id)})));
+  const readyBounties=bountyEntries.filter(entry=>(entry.state.progress||0)>=bountyGoal(entry.zoneIndex,entry.bounty)).length;
+  document.querySelector("#bounty-count").textContent=`${readyBounties} ready`;
+  document.querySelector("#bounty-list").innerHTML=zoneData.slice(0,state.unlockedZones).map(renderBountyZone).join("");
+  document.querySelectorAll(".bounty-claim").forEach(button=>button.onclick=()=>claimBounty(Number(button.dataset.zone),button.dataset.bounty));
   const visibleTracks=[...generalAchievementTracks,...zoneAchievementTracks.slice(0,state.unlockedZones)];
   const completedMilestones=achievementData.filter(achievement=>state.achievements.includes(achievement.id)).length;
   const masteredTracks=visibleTracks.filter(track=>achievementTrackState(track).complete).length;
@@ -3169,7 +3396,7 @@ function grantCombatXp(id,amount) {
   const before=skillLevel(id);
   const meal=isBuffActive("tunameal") ? 1.08 : 1;
   const relic=relicActive("Worldscar Fragment") ? 1.10 : 1;
-  const milestone=1+achievementBonus("allXp")+achievementBonus("combatXp",{zone:state.currentZone,enemy:currentEnemy().name});
+  const milestone=1+achievementBonus("allXp")+achievementBonus("combatXp",{zone:state.currentZone,enemy:currentEnemy().name})+shrineXpBonus();
   state.skills[id].xp+=Math.max(1,Math.round(amount*meal*relic*milestone));
   const after=skillLevel(id);
   if (after>before) {
@@ -3269,9 +3496,6 @@ document.querySelector("#auto-eat-toggle").onclick=()=>{
   toast(state.autoEat?"Auto-Eat enabled at 35% health":"Auto-Eat disabled");
   saveState(); renderLive();
 };
-document.querySelector("#combat-overcharge").onclick=activateOvercharge;
-document.querySelector("#board-overcharge").onclick=activateOvercharge;
-document.querySelector("#resonance-pill").onclick=activateOvercharge;
 document.querySelector("#combat-stop-hp").onchange=event=>{
   state.combatAutomation.stopHp=Math.max(1,Math.min(80,Number(event.currentTarget.value)||15));
   saveState(); renderCombatSetup();

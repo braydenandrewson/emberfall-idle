@@ -48,7 +48,7 @@ Roughly top-to-bottom:
    `MAX_LEVEL` (100), `MAX_THREAT` (5), `MAX_OFFLINE_HOURS` (12), production skill list,
    potion config.
 2. **Game data tables** (objects/arrays, ~15–630): the content of the game.
-   - `combatStyles`, `enemyTraits`, `combatAbilities`
+   - `combatStyles`, `enemyTraits`
    - `rarityData`, `affixData` (gear rarity + affixes/enchanting)
    - `townProjectData`, `townBranchData`, `relicPowerData`, `blueprintData`
    - `rotatingMerchantData`, `crossSkillData`
@@ -62,21 +62,21 @@ Roughly top-to-bottom:
 4. **Pure helpers / formulas** (~672–930): XP curves (`xpForLevel`, `levelForXp`,
    mastery + action-expertise variants), stat math (`attackPower`, `defencePower`,
    `maxHit`, `maxHp`, `combatLevel`, `hitChance`, `critChance`), zone/threat scaling,
-   resonance/overcharge, cross-skill bonuses, crafting/gear value.
+   crafting/gear value. Resonance/synergy and combat abilities were intentionally removed.
 5. **Save system** (~1191–1340): `loadState`, `normalizeState` (migrates/repairs older
    saves into current shape — **critical for backwards compatibility**),
    `saveProgressScore`, `saveState`. Plus `migrateAccountSave()` (~3031).
 6. **Production queue + offline progression** (~1340–1607): cross-skill job queue,
    `applyOfflineProduction`, `applyOfflineCombat`, `applyOfflineProgress`.
 7. **Main loop** (~1607): `tick(now)` → `updateSkill` / `updateCombat` /
-   `updateBossPhase`. Combat is timer-based (player + enemy attack timers, abilities,
-   auto-cast, auto-eat).
+   `updateBossPhase`. Combat is timer-based (player + enemy attack timers, combat styles,
+   enemy traits, auto-eat).
 8. **Rendering** (~1961+): one big set of `render*` functions, one per view/panel
    (`renderCombatSetup`, `renderSkill`, `renderInventory`, `renderCrafting`,
    `renderMarketplace`, `renderMastery`, `renderAdventure`, `renderDirector`, etc.).
    DOM is queried by id/class; no virtual DOM — render functions rebuild innerHTML.
 9. **Actions/handlers** (interleaved): `select*`, `craftGear`, `equipGear`,
-   `salvageGear`, `enchantGear`, `useCombatAbility`, contract/town/market handlers,
+   `salvageGear`, `enchantGear`, contract/town/market handlers,
    `exportSave`/`importSave`/`resetProgress`.
 
 ### Views
@@ -88,9 +88,8 @@ Mobile uses a compact nav with a "+ More" menu.
 ### Save system details
 - Saved to **localStorage** under `emberfall-idle-save-v1`, with a second backup key
   `…-v1-backup`. Fully local/offline — **no server, no network calls** (verified).
-- `recovery-save.js` (loaded before `game.js`) exposes `window.EMBERFALL_RECOVERY_SAVE`,
-  a one-time hardcoded recovery of a specific player's ("Megaballz") progress from saves
-  under older launch origins. Guarded by `RECOVERY_APPLIED_KEY` so it applies once.
+- `recovery-save.js` was removed from the public build. Do not re-add hardcoded personal
+  saves; use Settings export/import for manual backups and recovery.
 - Export/Import backup is JSON via the Settings view.
 - When changing `state` shape, update both `defaultState()` and `normalizeState()` so old
   saves keep loading.

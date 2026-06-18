@@ -176,17 +176,6 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .enemy-trait span { color:var(--muted); font-size:8px; line-height:1.45; }
 .combat-expansion { display:grid; grid-template-columns:1.65fr 1fr; gap:12px; margin-top:12px; }
 .combat-expansion > article { padding:16px; background:linear-gradient(155deg,#18221b,#101612); box-shadow:inset 0 1px rgba(255,255,255,.035),0 10px 28px rgba(0,0,0,.14); }
-.ability-list { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
-.ability-card { min-height:93px; padding:10px; border:1px solid #344337; background:#0d130f; color:var(--cream); text-align:left; cursor:pointer; }
-.ability-card:hover:not(:disabled) { border-color:var(--gold); background:#172019; }
-.ability-card:disabled { opacity:.45; cursor:not-allowed; }
-.ability-card strong,.ability-card span,.ability-card em { display:block; }
-.ability-card strong { color:var(--gold-2); font-size:9px; }
-.ability-card span { min-height:35px; margin-top:5px; color:var(--muted); font-size:7px; line-height:1.4; }
-.ability-card em { margin-top:7px; color:#83c989; font-size:7px; font-style:normal; }
-.resonance-panel p { color:var(--muted); font-size:9px; line-height:1.6; }
-.resonance-panel .primary-button { width:100%; margin-top:13px; font-size:8px; }
-.resonance-meter i { background:linear-gradient(90deg,#a64b34,#efb85e 65%,#fff1a8); }
 .damage-number { position: absolute; z-index: 4; font: 700 31px Cinzel,serif; color: #ffdf87; opacity: 0; text-shadow: 0 2px 4px #000; }
 .damage-number.pop { animation: damagePop .75s ease-out; }
 @keyframes damagePop { 0% { opacity:0; transform:translateY(10px) scale(.7); } 25% { opacity:1; } 100% { opacity:0; transform:translateY(-55px) scale(1.1); } }
@@ -209,20 +198,6 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .action-mastery-summary { margin-top:10px; padding:12px; background:rgba(39,71,63,.25); text-align:left; box-shadow:inset 2px 0 #4f9f83; }
 .action-mastery-summary > span { display:block; margin-top:6px; color:var(--muted); font-size:8px; }
 .action-mastery-meter i { background:linear-gradient(90deg,#397a68,#70c69c); }
-.skill-synergy { display:flex; justify-content:space-between; gap:15px; margin-top:12px; padding:11px 13px; background:linear-gradient(90deg,rgba(64,116,82,.22),rgba(20,27,22,.8)); box-shadow:inset 2px 0 #67b66d; }
-.skill-synergy strong { color:#8ed18c; font-size:9px; }
-.skill-synergy span { color:var(--muted); font-size:8px; text-align:right; }
-.expedition-synergy { display:flex; flex-direction:column; gap:3px; margin-top:12px; padding:11px 13px; border:1px solid var(--line); background:linear-gradient(90deg,rgba(40,52,44,.55),rgba(20,27,22,.82)); box-shadow:inset 2px 0 #5a6b5e; }
-.expedition-synergy strong { color:var(--gold); font-size:10px; text-transform:uppercase; letter-spacing:1px; }
-.expedition-synergy span { color:var(--muted); font-size:9px; line-height:1.5; }
-.expedition-synergy.active { background:linear-gradient(90deg,rgba(215,169,79,.28),rgba(20,27,22,.85)); box-shadow:inset 2px 0 var(--gold-2),0 0 18px rgba(244,208,131,.18); animation:expeditionPulse 1.8s ease-in-out infinite; }
-.expedition-synergy.active strong { color:var(--gold-2); }
-.expedition-synergy.active span { color:#e7dcc2; }
-.expedition-synergy.hidden { display:none; }
-@keyframes expeditionPulse { 0%,100%{box-shadow:inset 2px 0 var(--gold-2),0 0 14px rgba(244,208,131,.14);} 50%{box-shadow:inset 2px 0 var(--gold-2),0 0 22px rgba(244,208,131,.30);} }
-.expedition-meter { height:5px; background:rgba(0,0,0,.35); border:1px solid var(--line); margin:3px 0; overflow:hidden; }
-.expedition-meter i { display:block; height:100%; width:0; background:linear-gradient(90deg,var(--gold),var(--gold-2)); transition:width .2s linear; }
-.expedition-momentum { color:var(--gold) !important; font-size:8px !important; text-transform:uppercase; letter-spacing:.6px; }
 /* Combat juice */
 .damage-number.crit-pop { color:#ff7a4d; font-size:40px; text-shadow:0 0 16px rgba(255,120,70,.7),0 2px 4px #000; }
 .combat-layout.shake { animation:combatShake .3s ease; }
@@ -231,12 +206,6 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .boss-banner { position:fixed; top:34%; left:50%; transform:translate(-50%,-50%) scale(.8); z-index:60; pointer-events:none; opacity:0; font:700 38px Cinzel,serif; color:var(--gold-2); text-align:center; text-shadow:0 0 24px rgba(244,208,131,.6),0 4px 10px #000; padding:18px 40px; }
 .boss-banner.show { animation:bossBanner 2.6s ease forwards; }
 @keyframes bossBanner { 0%{opacity:0;transform:translate(-50%,-50%) scale(.7);} 15%{opacity:1;transform:translate(-50%,-50%) scale(1.06);} 80%{opacity:1;transform:translate(-50%,-50%) scale(1);} 100%{opacity:0;transform:translate(-50%,-62%) scale(1);} }
-/* Resonance topbar pill */
-.resonance-pill { display:grid; gap:2px; background:transparent; border:1px solid transparent; padding:4px 10px; border-radius:5px; cursor:pointer; text-align:left; font:inherit; transition:border-color .2s,background .2s,box-shadow .2s; }
-.resonance-pill.ready { border-color:var(--gold); background:rgba(215,169,79,.14); animation:resonancePulse 1.6s ease-in-out infinite; }
-.resonance-pill.ready span { color:var(--gold-2); }
-.resonance-pill.overcharged { border-color:var(--gold-2); background:linear-gradient(90deg,rgba(215,169,79,.3),rgba(20,27,22,.4)); }
-@keyframes resonancePulse { 0%,100%{box-shadow:0 0 12px rgba(244,208,131,.2);} 50%{box-shadow:0 0 20px rgba(244,208,131,.42);} }
 .action-progress { display:grid; grid-template-columns:1fr 36px; gap:8px; align-items:center; margin:19px 0; font-size:10px; }
 .panel-heading { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
 .panel-heading h3 { margin:4px 0; }
@@ -372,21 +341,33 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .adventure-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 .board-panel { padding:18px; background:linear-gradient(155deg,#19231c,#101612); box-shadow:inset 0 1px rgba(255,255,255,.04),0 12px 32px rgba(0,0,0,.14); }
 .contract-list,.town-projects { display:grid; gap:8px; }
-.contract-card,.town-project { padding:13px; background:#0d130f; box-shadow:inset 2px 0 #3b493d; }
-.contract-card.ready { box-shadow:inset 3px 0 var(--gold),0 0 20px rgba(215,169,79,.08); }
-.contract-card.claimed { opacity:.55; }
-.contract-card header,.contract-card footer,.town-project header { display:flex; justify-content:space-between; gap:12px; }
-.contract-card header span { color:var(--gold); font-size:7px; text-transform:uppercase; letter-spacing:1px; }
-.contract-card h4,.town-project h4 { margin:3px 0 0; font-size:11px; }
-.contract-card header > strong { color:var(--gold-2); font-size:9px; }
-.contract-card p,.town-project p { margin:8px 0; color:var(--muted); font-size:8px; line-height:1.5; }
-.contract-card footer { align-items:center; margin-top:9px; color:#bfc8bd; font-size:8px; }
-.contract-card footer button { padding:7px 11px; }
-.contract-meter,.achievement-meter { height:5px; border:0; }
+.starter-panel,.bounty-panel { margin-bottom:14px; }
+.starter-quest-list { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
+.bounty-list { display:grid; gap:10px; }
+.bounty-zone { padding:12px; background:#0d130f; box-shadow:inset 2px 0 #3f4f43; }
+.bounty-zone > header { display:flex; justify-content:space-between; gap:12px; align-items:center; padding-bottom:9px; border-bottom:1px solid var(--line); }
+.bounty-zone h4 { margin:3px 0 0; }
+.bounty-zone header span { color:var(--gold); font-size:7px; text-transform:uppercase; letter-spacing:1px; }
+.bounty-zone header > strong { color:#8fc18f; font-size:8px; }
+.bounty-cards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:10px; }
+.contract-card,.starter-card,.bounty-card,.town-project { padding:13px; background:#0d130f; box-shadow:inset 2px 0 #3b493d; }
+.starter-card,.bounty-card { background:linear-gradient(155deg,#101712,#0b100d); }
+.contract-card.ready,.starter-card.ready,.bounty-card.ready { box-shadow:inset 3px 0 var(--gold),0 0 20px rgba(215,169,79,.08); }
+.contract-card.claimed,.starter-card.claimed { opacity:.55; }
+.contract-card header,.contract-card footer,.starter-card header,.starter-card footer,.bounty-card header,.bounty-card footer,.town-project header { display:flex; justify-content:space-between; gap:12px; }
+.contract-card header span,.starter-card header span,.bounty-card header span { color:var(--gold); font-size:7px; text-transform:uppercase; letter-spacing:1px; }
+.contract-card h4,.starter-card h4,.bounty-card h4,.town-project h4 { margin:3px 0 0; font-size:11px; }
+.contract-card header > strong,.starter-card header > strong,.bounty-card header > strong { color:var(--gold-2); font-size:9px; }
+.contract-card p,.starter-card p,.bounty-card p,.town-project p { margin:8px 0; color:var(--muted); font-size:8px; line-height:1.5; }
+.contract-card footer,.starter-card footer,.bounty-card footer { align-items:center; margin-top:9px; color:#bfc8bd; font-size:8px; }
+.contract-card footer button,.starter-card footer button,.bounty-card footer button { padding:7px 11px; }
+.bounty-card small,.town-needed { display:block; margin-top:7px; color:#879386; font-size:7px; line-height:1.35; }
+.contract-meter,.achievement-meter,.town-meter { height:5px; border:0; }
+.town-meter i { background:linear-gradient(90deg,#6d8f4d,var(--gold)); }
 .town-project header strong { max-width:52%; color:#8dce8d; font-size:8px; font-weight:500; line-height:1.4; text-align:right; }
 .town-project header span { color:var(--muted); font-size:8px; }
 .town-project button { width:100%; padding:9px; font-size:7px; }
-.town-project button:disabled,.contract-card button:disabled { opacity:.4; cursor:not-allowed; }
+.town-project button:disabled,.contract-card button:disabled,.starter-card button:disabled,.bounty-card button:disabled { opacity:.4; cursor:not-allowed; }
 .achievement-panel { margin-top:14px; }
 .achievement-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
 .achievement-card { min-height:245px; padding:15px; background:linear-gradient(155deg,#111914,#0b100d); box-shadow:inset 2px 0 #354438; }
@@ -434,7 +415,6 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .activity-entry.rare,.activity-entry.gear { border-left-color:#6ea8e8; }
 .activity-entry.contract,.activity-entry.town { border-left-color:#d7a94f; }
 .activity-entry.achievement { border-left-color:#efb85e; color:#f4d083; }
-.activity-entry.resonance,.activity-entry.ability { border-left-color:#d87849; }
 .activity-entry.mastery { border-left-color:#70c69c; }
 .modal { position:fixed; inset:0; background:rgba(5,8,6,.78); display:grid; place-items:center; z-index:50; backdrop-filter:blur(8px); }
 .modal.hidden { display:none; }
@@ -459,6 +439,9 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .hidden-file-input { display:none; }
 .danger-button { border:1px solid #74433a; background:#261816; color:#e78370; padding:11px 14px; text-transform:uppercase; letter-spacing:1px; cursor:pointer; font-size:8px; }
 .offline-loot { margin:18px 0; }
+.offline-section { display:grid; gap:9px; margin-top:12px; }
+.offline-section-title { display:flex; justify-content:space-between; align-items:center; gap:12px; padding-bottom:6px; border-bottom:1px solid var(--line); }
+.offline-section-title strong { color:var(--gold-2); font:600 12px Cinzel,serif; text-align:right; }
 .offline-cards { display:grid; gap:6px; }
 .offline-cards > div { display:flex; justify-content:space-between; border-bottom:1px solid var(--line); padding:7px 0; font-size:11px; }
 .offline-cards > .reward-highlight { border-bottom:0; border:1px solid var(--gold); background:rgba(215,169,79,.12); padding:9px 11px; margin-top:5px; }
@@ -485,15 +468,7 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .combat-status-list span,.boss-phase { padding:4px 6px; background:#241a18; color:#e89179; font-size:7px; border-left:2px solid #b85643; }
 .boss-phase { margin-top:6px; text-align:center; color:#ffd18d; border:1px solid #75422f; background:linear-gradient(90deg,#281612,#3b2118,#281612); }
 .boss-phase.hidden { display:none; }
-.combat-expansion { grid-template-columns:1.45fr .8fr .9fr; }
-.ability-card { padding:0; cursor:default; overflow:hidden; }
-.ability-card.equipped { border-color:#8a6938; box-shadow:inset 2px 0 var(--gold); }
-.ability-use { width:100%; min-height:91px; padding:10px; border:0; background:transparent; color:var(--cream); text-align:left; cursor:pointer; }
-.ability-use:disabled { opacity:.45; cursor:not-allowed; }
-.ability-config { display:grid; gap:5px; padding:7px 8px; border-top:1px solid var(--line); background:#0a0f0c; }
-.ability-config button { border:1px solid #455546; background:#151d17; color:#bcc6bc; padding:5px; font-size:7px; cursor:pointer; }
-.ability-config label { color:var(--muted); font-size:6px; line-height:1.3; }
-.ability-config input { accent-color:var(--gold); }
+.combat-expansion { grid-template-columns:1.45fr .9fr; }
 .automation-panel { display:grid; align-content:start; gap:9px; }
 .automation-panel label { display:grid; grid-template-columns:1fr 64px auto; align-items:center; gap:6px; color:#bcc5bb; font-size:8px; }
 .automation-panel input[type="number"] { width:64px; border:1px solid var(--line); background:#0b100d; color:var(--gold-2); padding:7px; }
@@ -593,7 +568,6 @@ h1,h2,h3 { font-family: Cinzel, serif; }
   .recipe-tier-grid { grid-template-columns:repeat(2,minmax(210px,1fr)); }
   .zone-profile { grid-template-columns:repeat(3,1fr); }
   .zone-profile .zone-environment { grid-column:span 2; }
-  .ability-list { grid-template-columns:repeat(2,1fr); }
   .inventory-toolbar { grid-template-columns:1fr 1fr; }
   .achievement-grid { grid-template-columns:repeat(2,1fr); }
 }
@@ -657,7 +631,7 @@ h1,h2,h3 { font-family: Cinzel, serif; }
   .combat-log-panel { display:block; margin-top:10px; }
   .combat-options { grid-template-columns:1fr; }
   .combat-expansion,.adventure-grid { grid-template-columns:1fr; }
-  .ability-list { grid-template-columns:1fr 1fr; }
+  .starter-quest-list,.bounty-cards { grid-template-columns:1fr; }
   .enemy-list { grid-template-columns:1fr; }
   .combat-log-panel > div:first-child { display:none; }
   .combat-log { height:62px; }
@@ -713,7 +687,7 @@ h1,h2,h3 { font-family: Cinzel, serif; }
   .zone-profile .zone-environment { grid-column:1; }
   .recipe-tier-header { display:block; }
   .recipe-tier-header > strong { display:block; margin-top:7px; text-align:left; }
-  .ability-list,.achievement-grid,.inventory-toolbar { grid-template-columns:1fr; }
+  .achievement-grid,.inventory-toolbar { grid-template-columns:1fr; }
   .inventory-toolbar select { grid-column:1; }
 }
 
@@ -729,12 +703,10 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .combat-readout span { font-size:9px; }
 .combat-readout strong { font-size:12px; }
 .potion-button,.boss-button,.auto-eat-button { font-size:10px; }
-.combat-style strong,.enemy-option strong,.ability-card strong { font-size:11px; }
+.combat-style strong,.enemy-option strong { font-size:11px; }
 .combat-style span,.combat-style em,.enemy-option small,.enemy-option b,.enemy-trait strong,.enemy-trait span { font-size:10px; }
-.ability-card span,.ability-card em,.ability-config button,.ability-config label { font-size:10px; }
 .enemy-intent,.combat-status-list span,.boss-phase { font-size:10px; }
-.resonance-panel p,.resonance-panel .primary-button { font-size:10px; }
-.mastery-summary > span,.action-mastery-summary > span,.skill-synergy strong,.skill-synergy span { font-size:10px; }
+.mastery-summary > span,.action-mastery-summary > span { font-size:10px; }
 .action-card p,.action-card-rewards span,.milestone span { font-size:10px; }
 .action-card-time { font-size:11px; }
 .panel-heading > span,.panel-subtitle { font-size:10px; }
@@ -745,8 +717,8 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .item-description,.item-use,.gear-stats,.inventory-guide,.inventory-toolbar input,.inventory-toolbar select,.item-actions button { font-size:10px; }
 .mastery-card p,.mastery-card-detail { font-size:10px; }
 .recipe-tier-header span,.recipe-tier-header > strong,.recipe-tier-header small,.recipe-card header span,.recipe-stats,.recipe-cost,.recipe-card button,.gear-requirement,.recipe-card .recipe-pin { font-size:10px; }
-.board-hero p,.contract-card p,.town-project p,.contract-card footer,.contract-card header span,.contract-card header > strong,.town-project header strong,.town-project header span,.town-project button { font-size:10px; }
-.contract-card h4,.town-project h4 { font-size:13px; }
+.board-hero p,.contract-card p,.starter-card p,.bounty-card p,.town-project p,.contract-card footer,.starter-card footer,.bounty-card footer,.contract-card header span,.starter-card header span,.bounty-card header span,.contract-card header > strong,.starter-card header > strong,.bounty-card header > strong,.town-project header strong,.town-project header span,.town-project button,.bounty-card small,.town-needed { font-size:10px; }
+.contract-card h4,.starter-card h4,.bounty-card h4,.town-project h4 { font-size:13px; }
 .merchant-offer strong,.merchant-offer span,.merchant-offer small,.merchant-offer button,.guild-services p,.text-button { font-size:10px; }
 .upgrade-row p,.upgrade-row button,.progression-legend strong,.progression-legend span { font-size:10px; }
 .director-goals strong,.director-goals span,.threat-control select,.threat-control small { font-size:10px; }

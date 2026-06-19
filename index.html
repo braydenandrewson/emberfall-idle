@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=19">
+  <link rel="stylesheet" href="styles.css?v=20">
 </head>
 <body>
   <div class="app-shell">
@@ -85,6 +85,7 @@
       </div>
       <aside class="progression-director" id="progression-director">
         <div><span class="eyebrow">Recommended next</span><strong id="director-title">Choose your next objective</strong></div>
+        <div id="director-chapter" class="director-chapter"></div>
         <div id="director-goals" class="director-goals"></div>
       </aside>
       <section id="view-combat" class="view active">
@@ -187,6 +188,10 @@
             <label>Stop after <input id="combat-stop-kills" type="number" min="0" max="10000" value="0"> kills <small>0 = unlimited</small></label>
             <label class="check-row"><input id="combat-stop-food" type="checkbox"> Stop when automatic food runs out</label>
             <label class="check-row"><input id="combat-offline" type="checkbox" checked> Continue safe combat while offline</label>
+          </article>
+          <article class="combat-event-panel">
+            <div class="panel-heading"><div><span class="eyebrow">Battle events</span><h3>Moment-to-Moment Pressure</h3></div><span id="combat-event-state">Idle</span></div>
+            <div id="combat-event-card" class="combat-event-card"></div>
           </article>
         </div>
         <div class="combat-log-panel">
@@ -304,6 +309,10 @@
           </select>
           <button class="secondary-button" id="crafting-collapse">Collapse All</button>
         </div>
+        <article class="collection-panel">
+          <div class="panel-heading"><div><span class="eyebrow">Permanent collection chase</span><h3>Gear Collection Log</h3></div><span>Claim complete tiers</span></div>
+          <div id="gear-collection" class="gear-collection"></div>
+        </article>
         <div id="crafting-grid" class="crafting-grid"></div>
       </section>
 
@@ -365,6 +374,10 @@
         <article class="board-panel starter-panel">
           <div class="panel-heading"><div><span class="eyebrow">New adventurer path</span><h3>First Emberfall Steps</h3></div><span id="starter-quest-count">0 / 5</span></div>
           <div id="starter-quest-list" class="starter-quest-list"></div>
+        </article>
+        <article class="board-panel chapter-panel">
+          <div class="panel-heading"><div><span class="eyebrow">Main adventure path</span><h3>Chapter Questlines</h3></div><span id="chapter-count">0 complete</span></div>
+          <div id="chapter-list" class="chapter-list"></div>
         </article>
         <div class="adventure-grid">
           <article class="board-panel">
@@ -430,6 +443,14 @@
   <div id="toast" class="toast"></div>
   <div id="boss-banner" class="boss-banner"></div>
   <div id="activity-feed" class="activity-feed" aria-live="polite"></div>
+  <div id="reward-modal" class="modal reward-modal hidden">
+    <div class="modal-card reward-card">
+      <span class="eyebrow" id="reward-subtitle">Rewards claimed</span>
+      <h2 id="reward-title">Reward</h2>
+      <div id="reward-list" class="reward-list"></div>
+      <button class="primary-button" id="reward-close">Collect</button>
+    </div>
+  </div>
   <div id="offline-modal" class="modal hidden">
     <div class="modal-card">
       <span class="eyebrow">Welcome back</span>
@@ -444,6 +465,6 @@
       document.documentElement.dataset.emberfallError = `${event.message} (${event.lineno}:${event.colno})`;
     });
   </script>
-  <script src="game.js?v=19"></script>
+  <script src="game.js?v=20"></script>
 </body>
 </html>

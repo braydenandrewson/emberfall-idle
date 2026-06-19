@@ -19,7 +19,10 @@ repository page will launch GitHub, not the playable web app.
 - **8 combat zones** with bosses, selectable Threat ranks, enemy traits, and combat stances
 - **10 equipment tiers** with rarity, affixes, upgrading, enchanting, reforging, and set bonuses
 - **Mastery & Action Expertise**, a cross-skill **production queue**, and practical achievement rewards
-- **Adventure Board** — starter quests, guild contracts, repeatable zone bounties, township contributions, achievement tracks, and a bestiary
+- **Adventure Board** — starter quests, chapter questlines, guild contracts, repeatable zone bounties, township contributions, achievement tracks, and a bestiary
+- **Reward reveal moments** for contracts, chapters, bounties, bosses, rare drops, and collection completions
+- **Gear collection log** with tier completion rewards for building out full equipment sets
+- **Combat events** that create temporary weak points, ambushes, guard windows, and rally rewards
 - **Progressive township funding** — contribute materials over time instead of needing every project cost upfront
 - **Smithing components** — forged gear now uses bars, matching wood, and component prep such as grips, shield frames, and armor lining
 - **Offline progression** (up to 12 hours), a satisfying welcome-back recap

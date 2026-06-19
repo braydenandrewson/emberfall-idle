@@ -48,7 +48,7 @@ Roughly top-to-bottom:
    `MAX_LEVEL` (100), `MAX_THREAT` (5), `MAX_OFFLINE_HOURS` (12), production skill list,
    potion config.
 2. **Game data tables** (objects/arrays, ~15–630): the content of the game.
-   - `combatStyles`, `enemyTraits`
+   - `combatStyles`, `combatEventData`, `enemyTraits`
    - `rarityData`, `affixData` (gear rarity + affixes/enchanting)
    - `townProjectData`, `townBranchData`, `relicPowerData`, `blueprintData`
    - `rotatingMerchantData`, `crossSkillData`
@@ -70,7 +70,7 @@ Roughly top-to-bottom:
    `applyOfflineProduction`, `applyOfflineCombat`, `applyOfflineProgress`.
 7. **Main loop** (~1607): `tick(now)` → `updateSkill` / `updateCombat` /
    `updateBossPhase`. Combat is timer-based (player + enemy attack timers, combat styles,
-   enemy traits, auto-eat).
+   automatic combat events, enemy traits, auto-eat).
 8. **Rendering** (~1961+): one big set of `render*` functions, one per view/panel
    (`renderCombatSetup`, `renderSkill`, `renderInventory`, `renderCrafting`,
    `renderMarketplace`, `renderMastery`, `renderAdventure`, `renderDirector`, etc.).
@@ -108,6 +108,9 @@ Mobile uses a compact nav with a "+ More" menu.
 - `index.html` installs a `window.onerror` handler that stashes the message in
   `document.documentElement.dataset.emberfallError` — useful for debugging/tests.
 - After meaningful changes, run the Playwright suite (server must be up on :8000).
+- Current long-term loops include chapter questlines, starter quests, repeatable bounties,
+  township contributions, reward reveal modals, combat event windows, and the gear
+  collection log. Keep these data-driven and do not reintroduce manual combat abilities.
 
 ## Current state (as of 2026-06-15)
 

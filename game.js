@@ -228,6 +228,12 @@ const enemyTraits = {
   "Astral Colossus":{name:"Eventide Shell",description:"Reduces each hit by 13 damage.",armor:13},
   "Nyxara, the World-Eater":{name:"Cosmic Hunger",description:"Drains health, enrages, and deals 40% more damage.",lifesteal:.25,enrage:.6,damage:1.4}
 };
+const combatEventData = {
+  weakPoint:{name:"Exposed Weak Point",description:"Your next landed hit deals 35% more damage.",duration:4500,playerDamage:1.35,consumeOnPlayerHit:true},
+  guarded:{name:"Enemy Guarded",description:"Enemy takes 25% less damage until its next attack.",duration:4200,playerDamage:.75,consumeOnEnemyAttack:true},
+  ambush:{name:"Incoming Ambush",description:"The next enemy hit deals 35% more damage.",duration:3800,enemyDamage:1.35,consumeOnEnemyAttack:true},
+  rally:{name:"Adrenaline Rally",description:"Defeat the enemy during this window for extra coins and materials.",duration:8000,killCoins:.2,bonusMaterial:1,consumeOnKill:true}
+};
 const rarityData = {
   common:{name:"Common",color:"#aab4aa",multiplier:1,affixes:0,weight:60},
   uncommon:{name:"Uncommon",color:"#73c77a",multiplier:1.08,affixes:1,weight:25},
@@ -575,6 +581,29 @@ function zoneBountyDefinitions(zoneIndex) {
     }
   ];
 }
+function chapterDefinitions(zoneIndex) {
+  const zone=zoneData[zoneIndex], first=zone.enemies[0], second=zone.enemies[1]||first;
+  const tier=zone.gearTiers[0]||"Bronze";
+  const gear=equipmentTierData[tier]?.gear||equipmentTierData.Bronze.gear;
+  const bar=equipmentTierData[tier]?.bar||"Bronze Bar";
+  const boss=zone.boss;
+  return {
+    id:`chapter-${zoneIndex}`,
+    zoneIndex,
+    name:`Chapter ${zoneIndex+1}: ${zone.name}`,
+    subtitle:zone.biome,
+    description:`Establish a foothold in ${zone.name}, craft appropriate gear, and defeat ${boss.name}.`,
+    reward:{coins:900+zoneIndex*750,items:{[first.item]:8+zoneIndex*3,[boss.item]:1,"Forge Essence":3+zoneIndex},gear:zoneIndex===0?["Bronze Shield"]:[]},
+    steps:[
+      {id:"stockpile",type:"item",target:first.bonusItem||bar,goal:zoneIndex?10+zoneIndex*4:25,label:`Stockpile ${first.bonusItem||bar}`,view:zoneIndex?"combat":"mining",hint:`Gather or loot ${first.bonusItem||bar} for local preparations.`},
+      {id:"bar",type:"item",target:bar,goal:zoneIndex?6+zoneIndex*2:10,label:`Forge ${bar}`,view:"smithing",hint:`Smelt ${bar} for the ${tier} equipment tier.`},
+      {id:"gear",type:"gear",target:gear[0],goal:1,label:`Craft or loot ${gear[0]}`,view:"crafting",hint:`Own one ${gear[0]} to prove your gear route is online.`},
+      {id:"hunt",type:"enemyKills",target:second.name,goal:Math.max(3,4+zoneIndex*2),label:`Hunt ${second.name}`,view:"combat",hint:`Defeat ${second.name} to learn the zone's pressure.`},
+      {id:"reveal",type:"zoneKills",target:zoneIndex,goal:zone.requiredKills,label:`Reveal ${boss.name}`,view:"combat",hint:`Complete enough hunts in ${zone.name} to reveal the boss.`},
+      {id:"boss",type:"bossKills",target:boss.name,goal:1,label:`Defeat ${boss.name}`,view:"combat",hint:`Clear the chapter by defeating ${boss.name}.`}
+    ]
+  };
+}
 const zoneAchievementTracks = zoneData.map((zone,zoneIndex)=>({
   id:`zone-${zoneIndex}`,
   kind:"zone",
@@ -884,9 +913,10 @@ const defaultState = () => ({
   actionMastery:{},
   buffs:{battle:0,artisan:0,prospector:0,trailmeal:0,wardenmeal:0,embermeal:0,tunameal:0,stormmeal:0,frostmeal:0,leviathanmeal:0,ironbark:0,swiftwater:0,venom:0,ward:0,fortune:0},
   enemyStatus:{}, playerStatus:{poisonTicks:0,poisonNext:0},
+  combatEvent:{id:"",expiresAt:0,nextAt:0},
   combatAutomation:{offline:true,stopHp:15,stopAfter:0,killsRun:0,stopWhenFoodEmpty:false},
   contracts:{day:"",items:[],rerolls:0}, achievements:[], town:{forge:0,storehouse:0,hall:0,shrine:0}, townBranches:{forge:"",storehouse:"",hall:"",shrine:""},
-  starterQuests:{progress:{},claimed:[]}, bounties:{}, townContributions:{},
+  starterQuests:{progress:{},claimed:[]}, chapters:{claimed:[]}, bounties:{}, townContributions:{}, gearCollections:{claimed:[]},
   relicsActivated:{}, bestiary:{kills:{},drops:{},bosses:{}},
   market:{day:"",stock:[],purchases:{},contractRerolls:0},
   blueprints:[],
@@ -1173,6 +1203,7 @@ function formatReward(reward={}) {
   const itemText=rewardItemsText(reward.items);
   if (itemText) parts.push(itemText);
   if (reward.gear?.length) parts.push(`${reward.gear.join(", ")} gear`);
+  if (reward.gearNames?.length) parts.push(`${reward.gearNames.join(", ")} gear`);
   return parts.join(" + ")||"No reward";
 }
 function grantReward(reward={},trackActivity=false) {
@@ -1182,6 +1213,30 @@ function grantReward(reward={},trackActivity=false) {
     const gear=createGear(baseName,"common");
     if (trackActivity) activity(`Gear reward: ${gearDisplayName(gear)}`,"gear");
   });
+}
+function mergeRewards(rewards=[]) {
+  return rewards.reduce((merged,reward={})=>{
+    merged.coins+=(reward.coins||0);
+    Object.entries(reward.items||{}).forEach(([item,qty])=>merged.items[item]=(merged.items[item]||0)+qty);
+    merged.gear.push(...(reward.gear||[]));
+    merged.gearNames.push(...(reward.gearNames||[]));
+    return merged;
+  },{coins:0,items:{},gear:[],gearNames:[]});
+}
+function showRewardReveal(title,reward={},subtitle="Rewards claimed") {
+  const modal=document.querySelector("#reward-modal");
+  if (!modal) return;
+  document.querySelector("#reward-title").textContent=title;
+  document.querySelector("#reward-subtitle").textContent=subtitle;
+  const entries=[];
+  if (reward.coins) entries.push(`<div class="reward-entry coins"><strong>${reward.coins.toLocaleString()}</strong><span>Coins</span></div>`);
+  Object.entries(reward.items||{}).filter(([,qty])=>qty>0).forEach(([item,qty])=>{
+    entries.push(`<div class="reward-entry">${itemIcon(item)}<strong>${qty.toLocaleString()}</strong><span>${item}</span></div>`);
+  });
+  (reward.gear||[]).forEach(item=>entries.push(`<div class="reward-entry gear">${itemIcon(item)}<strong>Gear</strong><span>${item}</span></div>`));
+  (reward.gearNames||[]).forEach(item=>entries.push(`<div class="reward-entry gear"><strong>Gear</strong><span>${item}</span></div>`));
+  document.querySelector("#reward-list").innerHTML=entries.join("")||`<div class="reward-entry"><strong>Done</strong><span>Progress recorded</span></div>`;
+  modal.classList.remove("hidden");
 }
 function hasCosts(costs={}) { return Object.entries(costs).every(([item,qty]) => (state.inventory[item]||0) >= qty); }
 function payCosts(costs={}) { Object.entries(costs).forEach(([item,qty]) => addItem(item,-qty)); }
@@ -1403,10 +1458,47 @@ function claimStarterQuest(id) {
   state.starterQuests.progress[quest.id]=quest.goal;
   state.starterQuests.claimed.push(quest.id);
   grantReward(quest.reward,true);
+  showRewardReveal(quest.name,quest.reward,"Starter path reward");
   activity(`Starter reward: ${formatReward(quest.reward)}`,"contract");
   saveState();
   renderAdventure();
   renderLive();
+}
+function chapterStepProgress(step) {
+  if (step.type==="item") return Math.min(step.goal,state.inventory[step.target]||0);
+  if (step.type==="gear") return Math.min(step.goal,state.gearVault.filter(gear=>gear.baseName===step.target).length);
+  if (step.type==="enemyKills") return Math.min(step.goal,state.bestiary.kills[step.target]||0);
+  if (step.type==="zoneKills") return Math.min(step.goal,state.zoneKills[step.target]||0);
+  if (step.type==="bossKills") return Math.min(step.goal,state.bestiary.bosses[step.target]||0);
+  if (step.type==="townLevel") return Math.min(step.goal,state.town[step.target]||0);
+  return 0;
+}
+function chapterState(zoneIndex) {
+  const chapter=chapterDefinitions(zoneIndex);
+  const steps=chapter.steps.map(step=>({...step,progress:chapterStepProgress(step),complete:chapterStepProgress(step)>=step.goal}));
+  const complete=steps.every(step=>step.complete);
+  const claimed=state.chapters.claimed.includes(chapter.id);
+  const next=steps.find(step=>!step.complete)||null;
+  return {...chapter,steps,complete,claimed,next};
+}
+function nextChapterObjective() {
+  for (let index=0;index<state.unlockedZones;index++) {
+    const chapter=chapterState(index);
+    if (!chapter.claimed) return chapter;
+  }
+  const nextIndex=Math.min(state.unlockedZones,zoneData.length-1);
+  return chapterState(nextIndex);
+}
+function claimChapter(id) {
+  const zoneIndex=Number(String(id).split("-")[1]);
+  const chapter=chapterState(zoneIndex);
+  if (!chapter || chapter.claimed || !chapter.complete) return;
+  state.chapters.claimed.push(chapter.id);
+  grantReward(chapter.reward,true);
+  showRewardReveal(chapter.name,chapter.reward,"Chapter complete");
+  activity(`Chapter complete: ${chapter.name}`,"achievement");
+  saveState();
+  render();
 }
 function bountyKey(zoneIndex,id) {
   return `${zoneIndex}:${id}`;
@@ -1455,6 +1547,7 @@ function claimBounty(zoneIndex,id) {
   if ((current.progress||0)<goal) return;
   const reward=bountyReward(zoneIndex,bounty);
   grantReward(reward,true);
+  showRewardReveal(bounty.name,reward,"Bounty reward");
   setZoneBountyState(zoneIndex,id,{
     progress:Math.max(0,(current.progress||0)-goal),
     completions:(current.completions||0)+1
@@ -1494,7 +1587,7 @@ function achievementProgress(achievement) {
   if (achievement.type==="townLevels") return Object.values(state.town).reduce((sum,level)=>sum+level,0);
   return state.stats[achievement.type]||0;
 }
-function checkAchievements() {
+function checkAchievements({showReveal=true}={}) {
   const unlocked=[];
   achievementData.forEach(achievement=>{
     if (state.achievements.includes(achievement.id) || achievementProgress(achievement)<achievement.goal) return;
@@ -1505,6 +1598,7 @@ function checkAchievements() {
   });
   if (!unlocked.length) return;
   toast(unlocked.length===1 ? `${unlocked[0].name} unlocked` : `${unlocked.length} achievement milestones unlocked`);
+  if (showReveal) showRewardReveal(unlocked.length===1 ? unlocked[0].name : `${unlocked.length} Achievements`,mergeRewards(unlocked.map(item=>item.reward)),"Achievement reward");
   document.body.classList.add("achievement-flash");
   setTimeout(()=>document.body.classList.remove("achievement-flash"),700);
 }
@@ -1513,6 +1607,7 @@ function claimContract(id) {
   if (!contract || contract.claimed || contract.progress<contract.goal) return;
   contract.claimed=true;
   grantReward(contract.reward,true);
+  showRewardReveal(contract.name,contract.reward,"Contract reward");
   state.stats.contracts=(state.stats.contracts||0)+1;
   activity(`Contract reward: ${formatReward(contract.reward)}`,"contract");
   checkAchievements();
@@ -1669,6 +1764,7 @@ function normalizeState(parsed={}) {
     buffs:{...base.buffs,...parsed.buffs},
     enemyStatus:{...base.enemyStatus,...parsed.enemyStatus},
     playerStatus:{...base.playerStatus,...parsed.playerStatus},
+    combatEvent:{...base.combatEvent,...parsed.combatEvent},
     contracts:{...base.contracts,...parsed.contracts,items:[...(parsed.contracts?.items||[])]},
     town:{...base.town,...parsed.town},
     townBranches:{...base.townBranches,...parsed.townBranches},
@@ -1676,8 +1772,10 @@ function normalizeState(parsed={}) {
       progress:{...base.starterQuests.progress,...parsed.starterQuests?.progress},
       claimed:[...(parsed.starterQuests?.claimed||[])]
     },
+    chapters:{claimed:[...(parsed.chapters?.claimed||[])]},
     bounties:{...base.bounties,...parsed.bounties},
     townContributions:{...base.townContributions,...parsed.townContributions},
+    gearCollections:{claimed:[...(parsed.gearCollections?.claimed||[])]},
     relicsActivated:{...base.relicsActivated,...parsed.relicsActivated},
     bestiary:{
       ...base.bestiary,...parsed.bestiary,
@@ -2109,6 +2207,7 @@ function updateCombat(dt) {
   const trait=currentEnemyTrait();
   const now=Date.now();
   updateBossPhase();
+  maybeTriggerCombatEvent(now);
   if (shouldStopCombat()) return;
   if (state.playerStatus.poisonTicks>0 && now>=state.playerStatus.poisonNext) {
     const poisonGuard=relicActive("Mireheart Pearl") ? .5 : 1;
@@ -2140,12 +2239,15 @@ function updateCombat(dt) {
       const critical=Math.random()<critChance();
       const rolledHit=Math.max(1,Math.floor(Math.random()*(maxHit()+1)));
       const armor=trait.armor||0;
-      const hit=Math.max(1,Math.round(rolledHit*(critical?1.75:1)*combatDamageMultiplier())-armor);
+      const event=activeCombatEvent();
+      const eventDamage=event?.playerDamage||1;
+      const hit=Math.max(1,Math.round(rolledHit*(critical?1.75:1)*combatDamageMultiplier()*eventDamage)-armor);
       state.enemyHp -= hit;
       Object.entries(style.xp).forEach(([skill,multiplier])=>grantCombatXp(skill,Math.max(1,Math.round(hit*multiplier))));
       if (style.lifesteal) state.heroHp=Math.min(maxHp(),state.heroHp+Math.max(1,Math.floor(hit*style.lifesteal)));
       popDamage("enemy",hit,critical?"Crit":"");
       addLog(`${state.characterName} ${critical?"critically ":""}strikes ${enemy.name} for ${hit}.`);
+      if (event?.consumeOnPlayerHit) clearCombatEvent();
       if (state.enemyHp <= 0) {
         defeatEnemy();
         return;
@@ -2167,7 +2269,8 @@ function updateCombat(dt) {
     const environmentPenalty=(currentEnvironment().enemyDamage||1)-1;
     const environmentMultiplier=1+environmentPenalty*((isBuffActive("ward")||isBuffActive("frostmeal")) ? .5 : 1);
     const phaseMultiplier=state.fightingBoss ? 1+Math.max(0,(state.bossPhase||1)-1)*.12 : 1;
-    const traitDamage=(trait.damage||1)*environmentMultiplier*(enraged?1+(trait.enrage||0):1)*(heavyStrike?1.5:1)*phaseMultiplier;
+    const event=activeCombatEvent();
+    const traitDamage=(trait.damage||1)*environmentMultiplier*(enraged?1+(trait.enrage||0):1)*(heavyStrike?1.5:1)*phaseMultiplier*(event?.enemyDamage||1);
     const rawHit=Math.max(0,Math.floor(Math.random()*(enemyMaxHitValue(enemy)+1))-Math.floor(effectiveDefence/8));
     let hit=Math.max(0,Math.floor(rawHit*style.damageTaken*traitDamage));
     state.heroHp -= hit;
@@ -2181,6 +2284,7 @@ function updateCombat(dt) {
     }
     popDamage("hero",hit,heavyStrike&&hit>0?"Heavy":"");
     addLog(hit ? `${enemy.name} ${heavyStrike?"lands a heavy strike and ":""}hits ${state.characterName} for ${hit}.` : `${state.characterName} blocks ${enemy.name}'s attack.`);
+    if (event?.consumeOnEnemyAttack) clearCombatEvent();
     if (state.autoEat && state.heroHp>0 && state.heroHp/maxHp()<=AUTO_EAT_THRESHOLD) autoEatFood();
     if (state.heroHp <= 0) {
       const loss=Math.min(state.coins,5*(state.currentZone+1));
@@ -2233,6 +2337,49 @@ function shouldStopCombat() {
 function resetCombatStatuses() {
   state.enemyStatus={};
   state.playerStatus={poisonTicks:0,poisonNext:0};
+  state.combatEvent={id:"",expiresAt:0,nextAt:Date.now()+7000+Math.random()*6000};
+}
+
+function activeCombatEvent(now=Date.now()) {
+  const id=state.combatEvent?.id;
+  if (!id) return null;
+  if ((state.combatEvent.expiresAt||0)<=now) {
+    clearCombatEvent(now);
+    return null;
+  }
+  return combatEventData[id] ? {id,...combatEventData[id],remaining:state.combatEvent.expiresAt-now} : null;
+}
+function clearCombatEvent(now=Date.now()) {
+  state.combatEvent={id:"",expiresAt:0,nextAt:now+9000+Math.random()*7000};
+}
+function maybeTriggerCombatEvent(now=Date.now()) {
+  if (!state.combat) return;
+  const active=activeCombatEvent(now);
+  if (active) return;
+  if (!state.combatEvent.nextAt) state.combatEvent.nextAt=now+5000+Math.random()*5000;
+  if (now<state.combatEvent.nextAt) return;
+  const ids=Object.keys(combatEventData);
+  const id=ids[Math.floor(Math.random()*ids.length)];
+  const event=combatEventData[id];
+  state.combatEvent={id,expiresAt:now+event.duration,nextAt:0};
+  activity(event.name,"rare");
+  addLog(`Battle event: ${event.description}`);
+}
+function renderCombatEvent() {
+  const card=document.querySelector("#combat-event-card");
+  if (!card) return;
+  const active=activeCombatEvent();
+  const stateLabel=document.querySelector("#combat-event-state");
+  if (active) {
+    stateLabel.textContent="Active";
+    card.classList.add("active");
+    card.innerHTML=`<strong>${active.name}</strong><span>${active.description}</span><div class="meter"><i style="width:${Math.max(0,active.remaining/active.duration*100)}%"></i></div>`;
+    return;
+  }
+  card.classList.remove("active");
+  stateLabel.textContent=state.combat?"Watching":"Idle";
+  const wait=Math.max(0,(state.combatEvent.nextAt||0)-Date.now());
+  card.innerHTML=`<strong>${state.combat?"Next event forming":"Combat idle"}</strong><span>${state.combat?`Another battlefield event can trigger in about ${Math.ceil(wait/1000)}s.`:"Start combat to trigger weak points, ambushes, guard windows, and rally rewards."}</span><div class="meter"><i style="width:${state.combat?Math.max(0,100-wait/160):0}%"></i></div>`;
 }
 
 function autoEatFood() {
@@ -2260,19 +2407,24 @@ function defeatEnemy() {
   const coinRange=enemyCoinRange(enemy);
   const baseCoins=coinRange[0]+Math.floor(Math.random()*(coinRange[1]-coinRange[0]+1));
   const chainBonus=Math.min(.25,state.combatChain*.01);
-  const coinReward=Math.max(1,Math.floor(baseCoins*(1+chainBonus+(trait.lootBonus||0))));
-  const materialQty=1+(Math.random()<zoneThreatRank()*.15 ? 1 : 0);
+  const event=activeCombatEvent();
+  const coinReward=Math.max(1,Math.floor(baseCoins*(1+chainBonus+(trait.lootBonus||0)+(event?.killCoins||0))));
+  const materialQty=1+(Math.random()<zoneThreatRank()*.15 ? 1 : 0)+(event?.bonusMaterial||0);
   state.kills++; state.combatChain++; state.coins+=coinReward; activity(`+${coinReward} coins`,"coins"); addItem(enemy.item,materialQty,true);
   bestiaryKill(enemy.name,1);
   bestiaryDrop(enemy.item,materialQty);
   recordProgress("kills",{zone:state.currentZone,enemy:enemy.name},1);
+  if (event?.consumeOnKill) clearCombatEvent();
+  let gearReward=null;
   if (wasBoss || Math.random()<threatGearChance()) {
     const table=currentZone().gearTiers.flatMap(tier=>equipmentTierData[tier]?.gear||[]);
     const baseName=table[Math.floor(Math.random()*table.length)];
     const rarity=rollRarity((wasBoss?12+state.currentZone*4:state.currentZone*2)+zoneThreatRank()*3);
     const gear=createGear(baseName,rarity);
+    gearReward=gear;
     activity(`Loot: ${rarityData[rarity].name} ${gearDisplayName(gear)}`,["rare","epic","legendary"].includes(rarity)?"rare":"gear");
     bestiaryDrop(baseName,1);
+    if (!wasBoss && ["rare","epic","legendary"].includes(rarity)) showRewardReveal("Rare Gear Found",{gearNames:[`${rarityData[rarity].name} ${gearDisplayName(gear)}`]},"Combat drop");
     checkAchievements();
   }
   if (!state.fightingBoss && enemy.bonusItem && Math.random()<.45) {
@@ -2285,6 +2437,7 @@ function defeatEnemy() {
     state.bestiary.bosses[enemy.name]=(state.bestiary.bosses[enemy.name]||0)+1;
     recordProgress("bosses",{zone:defeatedZone,enemy:enemy.name},1);
     addLog(`${enemy.name} defeated! ${state.characterName} earns ${coinReward} coins.`);
+    showRewardReveal(`${enemy.name} defeated`,{coins:coinReward,items:{[enemy.item]:materialQty},gearNames:gearReward?[`${rarityData[gearReward.rarity].name} ${gearDisplayName(gearReward)}`]:[]},"Boss spoils");
     if (defeatedZone+1<zoneData.length && state.unlockedZones<defeatedZone+2) {
       state.unlockedZones=defeatedZone+2;
       toast(`${zoneData[defeatedZone+1].name} unlocked`);
@@ -2374,6 +2527,12 @@ function render() {
 function recommendedGoals() {
   ensureContracts();
   const goals=[];
+  const chapter=nextChapterObjective();
+  if (chapter?.complete && !chapter.claimed) {
+    goals.push({view:"adventure",title:`Claim ${chapter.name}`,detail:formatReward(chapter.reward)});
+  } else if (chapter?.next) {
+    goals.push({view:chapter.next.view,title:chapter.next.label,detail:chapter.next.hint});
+  }
   const starterView=quest=>{
     if (["mine-copper","mine-tin"].includes(quest.id)) return "mining";
     if (quest.id==="smelt-bronze") return "smithing";
@@ -2413,9 +2572,12 @@ function recommendedGoals() {
 
 function renderDirector() {
   const goals=recommendedGoals();
+  const chapter=nextChapterObjective();
+  const chapterProgress=chapter ? chapter.steps.filter(step=>step.complete).length : 0;
   document.querySelector("#director-title").textContent=state.activeSkill
     ? `${skillData[state.activeSkill].name}: ${getAction(state.activeSkill).name}`
     : state.combat ? `${currentZone().name}: ${currentEnemy().name}` : "Choose your next objective";
+  document.querySelector("#director-chapter").innerHTML=chapter ? `<strong>${chapter.name}</strong><span>${chapter.claimed?"Complete":chapter.next?chapter.next.hint:"Ready to claim"} - ${chapterProgress}/${chapter.steps.length}</span><div class="meter director-meter"><i style="width:${chapter.steps.length?chapterProgress/chapter.steps.length*100:0}%"></i></div>` : "";
   document.querySelector("#director-goals").innerHTML=goals.map(goal=>`<button data-goal-view="${goal.view}"><strong>${goal.title}</strong><span>${goal.detail}</span></button>`).join("");
   document.querySelectorAll("[data-goal-view]").forEach(button=>button.onclick=()=>navigate(button.dataset.goalView));
 }
@@ -2453,6 +2615,7 @@ function renderLive() {
   bossPhase.classList.toggle("hidden",!state.fightingBoss);
   bossPhase.textContent=`Boss Phase ${state.bossPhase||1} · ${state.bossPhase===1?"Opening pattern":state.bossPhase===2?"Enraged pattern":"Final pattern"}`;
   renderCombatStatuses();
+  renderCombatEvent();
   renderLiveSkillHud();
   if (skillData[currentSkill]) {
     const action=getAction();
@@ -2842,6 +3005,21 @@ function renderBountyZone(zone,zoneIndex) {
   </section>`;
 }
 
+function renderChapterCard(zoneIndex) {
+  const chapter=chapterState(zoneIndex);
+  const finished=chapter.steps.filter(step=>step.complete).length;
+  const locked=zoneIndex>=state.unlockedZones;
+  return `<article class="chapter-card ${chapter.complete?"complete":""} ${chapter.claimed?"claimed":""} ${locked?"locked":""}">
+    <header><div><span>${chapter.subtitle}</span><h4>${chapter.name}</h4></div><strong>${finished} / ${chapter.steps.length}</strong></header>
+    <p>${locked?`Defeat ${zoneData[zoneIndex-1]?.boss.name||"the previous boss"} to unlock this chapter.`:chapter.description}</p>
+    <div class="chapter-steps">${chapter.steps.map(step=>`
+      <button class="chapter-step ${step.complete?"done":""}" data-goal-view="${step.view}" ${locked?"disabled":""}>
+        <strong>${step.complete?"Done":"Next"}: ${step.label}</strong><span>${step.progress.toLocaleString()} / ${step.goal.toLocaleString()}</span>
+      </button>`).join("")}</div>
+    <footer><span>${formatReward(chapter.reward)}</span><button class="secondary-button chapter-claim" data-chapter="${chapter.id}" ${!chapter.complete||chapter.claimed||locked?"disabled":""}>${chapter.claimed?"Claimed":"Claim Chapter"}</button></footer>
+  </article>`;
+}
+
 function renderAdventure() {
   ensureContracts();
   document.querySelector("#board-standing").textContent=(state.stats.contracts||0).toLocaleString();
@@ -2849,6 +3027,11 @@ function renderAdventure() {
   document.querySelector("#starter-quest-count").textContent=`${starterClaimed} / ${starterQuestData.length} complete`;
   document.querySelector("#starter-quest-list").innerHTML=starterQuestData.map(renderStarterQuestCard).join("");
   document.querySelectorAll(".starter-claim").forEach(button=>button.onclick=()=>claimStarterQuest(button.dataset.starter));
+  const chapters=zoneData.map((zone,index)=>chapterState(index));
+  document.querySelector("#chapter-count").textContent=`${chapters.filter(chapter=>chapter.claimed).length} / ${chapters.length} complete`;
+  document.querySelector("#chapter-list").innerHTML=zoneData.map((zone,index)=>renderChapterCard(index)).join("");
+  document.querySelectorAll(".chapter-claim").forEach(button=>button.onclick=()=>claimChapter(button.dataset.chapter));
+  document.querySelectorAll(".chapter-step[data-goal-view]").forEach(button=>button.onclick=()=>navigate(button.dataset.goalView));
   const rerollCost=100+(state.contracts.rerolls||0)*75;
   document.querySelector("#contract-refresh").textContent=`Refreshes ${todayKey()} UTC · ${state.contracts.rerolls||0} rerolls`;
   document.querySelector("#contract-reroll").textContent=`Reroll ${rerollCost}c`;
@@ -3282,11 +3465,50 @@ function sellAllUnlocked() {
   saveState(); render();
 }
 
+function gearCollectionState(tier) {
+  const gear=equipmentTierData[tier]?.gear||[];
+  const owned=new Set(state.gearVault.map(item=>item.baseName));
+  const count=gear.filter(item=>owned.has(item)).length;
+  const claimed=state.gearCollections.claimed.includes(tier);
+  return {tier,gear,count,total:gear.length,complete:gear.length>0 && count===gear.length,claimed};
+}
+function gearCollectionReward(tier) {
+  const index=Object.keys(equipmentTierData).indexOf(tier);
+  const material=equipmentTierData[tier]?.bar||"Bronze Bar";
+  return makeReward(500+index*700,{[material]:Math.max(4,4+index*2),"Forge Essence":Math.max(2,2+index)});
+}
+function claimGearCollection(tier) {
+  const collection=gearCollectionState(tier);
+  if (!collection.complete || collection.claimed) return;
+  const reward=gearCollectionReward(tier);
+  state.gearCollections.claimed.push(tier);
+  grantReward(reward,true);
+  showRewardReveal(`${tier} Collection`,reward,"Gear collection complete");
+  activity(`${tier} equipment collection completed`,"achievement");
+  saveState();
+  renderCrafting();
+  renderLive();
+}
+function renderGearCollection() {
+  document.querySelector("#gear-collection").innerHTML=Object.keys(equipmentTierData).map(tier=>{
+    const collection=gearCollectionState(tier);
+    const pct=collection.total ? collection.count/collection.total*100 : 0;
+    return `<article class="collection-card ${collection.complete?"complete":""}">
+      <header><div><span>${collection.count} / ${collection.total} owned</span><h4>${tier} Set Log</h4></div><button class="secondary-button collection-claim" data-collection="${tier}" ${!collection.complete||collection.claimed?"disabled":""}>${collection.claimed?"Claimed":"Claim"}</button></header>
+      <div class="meter collection-meter"><i style="width:${pct}%"></i></div>
+      <div class="collection-pieces">${collection.gear.map(item=>`<span class="${state.gearVault.some(gear=>gear.baseName===item)?"owned":""}">${item}</span>`).join("")}</div>
+      <small>Reward: ${formatReward(gearCollectionReward(tier))}</small>
+    </article>`;
+  }).join("");
+  document.querySelectorAll(".collection-claim").forEach(button=>button.onclick=()=>claimGearCollection(button.dataset.collection));
+}
+
 function renderCrafting() {
   const level=skillLevel("smithing");
   document.querySelector("#crafting-level").textContent=level;
   document.querySelector("#crafting-search").value=state.craftingUi.search;
   document.querySelector("#crafting-filter").value=state.craftingUi.filter;
+  renderGearCollection();
   const search=state.craftingUi.search.trim().toLowerCase();
   const sections=Object.entries(equipmentTierData).map(([tier,tierData])=>{
     let recipes=craftingRecipes.filter(recipe=>equipmentSetName(recipe.name)===tier);
@@ -3627,6 +3849,9 @@ document.querySelector("#offline-close").onclick=()=>{
   document.querySelector("#offline-modal").classList.add("hidden");
   saveState();
 };
+document.querySelector("#reward-close").onclick=()=>{
+  document.querySelector("#reward-modal").classList.add("hidden");
+};
 document.addEventListener("visibilitychange",()=>{
   if (document.hidden) {
     saveState();
@@ -3649,7 +3874,7 @@ state.currentZone=Math.min(state.currentZone,zoneData.length-1,state.unlockedZon
 state.fightingBoss=state.fightingBoss && bossReady();
 state.enemyHp=state.combat ? Math.min(state.enemyHp,enemyMaxHp()) : enemyMaxHp();
 state.heroHp=Math.min(state.heroHp,maxHp());
-checkAchievements();
+checkAchievements({showReveal:false});
 render();
 requestAnimationFrame(tick);
 saveState();

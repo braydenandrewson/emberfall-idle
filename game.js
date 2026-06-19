@@ -711,6 +711,19 @@ const equipmentTierData = {
   Astral:{bar:"Astral Bar",bonus:[29,36,9],gear:["Astral Saber","Astral Guard","Astral Circlet","Astral Mantle"]},
   Starforged:{bar:"Starforged Bar",bonus:[36,45,12],gear:["Starforged Blade","Starforged Aegis","Starforged Crown","Starforged Plate"]}
 };
+const equipmentTierVisuals = {
+  Starter:{color:"#7a5a37",trim:"#c8a071"},
+  Bronze:{color:"#a86537",trim:"#e1a35d"},
+  Iron:{color:"#8d9696",trim:"#d2d9d7"},
+  Steel:{color:"#7d8fa3",trim:"#dbe9f4"},
+  Silver:{color:"#c8d7df",trim:"#ffffff"},
+  Mithril:{color:"#4fb7c6",trim:"#a5f1ff"},
+  Obsidian:{color:"#2d2536",trim:"#9c6ddb"},
+  Emberforged:{color:"#c45732",trim:"#ffc15f"},
+  Runic:{color:"#5a9c74",trim:"#b9ffc6"},
+  Astral:{color:"#5d63d6",trim:"#d2c8ff"},
+  Starforged:{color:"#f0d36f",trim:"#fff2b2"}
+};
 
 const equipmentData = {
   "Rusty Sword":{slot:"weapon",attack:3,maxHit:2},
@@ -1075,6 +1088,52 @@ function equipmentSetName(baseName) {
   return Object.entries(equipmentTierData).find(([,tier])=>tier.gear.includes(baseName))?.[0]
     || craftingRecipes.find(recipe=>recipe.name===baseName)?.tier
     || null;
+}
+function equipmentVisualTier(baseName) {
+  if (!baseName || baseName==="None") return null;
+  return equipmentSetName(baseName)||"Starter";
+}
+function heroSlotVisual(slot) {
+  const base=equipmentBase(state.equipment[slot]);
+  const tier=equipmentVisualTier(base);
+  return {base,tier,visual:tier?equipmentTierVisuals[tier]||equipmentTierVisuals.Starter:null};
+}
+function heroLoadoutLabel() {
+  const tiers=["weapon","shield","body","head"].map(slot=>heroSlotVisual(slot).tier).filter(Boolean);
+  if (!tiers.length) return "Unarmed";
+  const unique=[...new Set(tiers)];
+  const order=Object.keys(equipmentTierVisuals);
+  const highest=unique.sort((a,b)=>order.indexOf(b)-order.indexOf(a))[0];
+  return unique.length===1 ? `${highest} kit` : `${highest} mixed kit`;
+}
+function heroModelMarkup(includeId=false) {
+  return `<img ${includeId?`id="hero-image"`:""} src="assets/hero.png" alt="${state.characterName}, your adventurer">
+    <span class="hero-gear hero-helm"></span>
+    <span class="hero-gear hero-armor"></span>
+    <span class="hero-gear hero-weapon"></span>
+    <span class="hero-gear hero-shield"></span>`;
+}
+function renderHeroModel(selector,includeId=false) {
+  const root=document.querySelector(selector);
+  if (!root) return;
+  if (!root.querySelector("img")) root.innerHTML=heroModelMarkup(includeId);
+  const slots={head:"helm",body:"armor",weapon:"weapon",shield:"shield"};
+  root.dataset.loadout=heroLoadoutLabel();
+  Object.entries(slots).forEach(([slot,key])=>{
+    const layer=root.querySelector(`.hero-${key}`);
+    const data=heroSlotVisual(slot);
+    if (!layer) return;
+    layer.classList.toggle("hidden",!data.visual || data.base==="None");
+    root.style.setProperty(`--${key}-color`,data.visual?.color||"transparent");
+    root.style.setProperty(`--${key}-trim`,data.visual?.trim||"transparent");
+    layer.title=data.base&&data.base!=="None" ? `${data.base} (${data.tier})` : "";
+  });
+  const image=root.querySelector("img");
+  if (image) image.alt=`${state.characterName}, your equipped adventurer`;
+}
+function renderHeroModels() {
+  renderHeroModel("#hero-model");
+  renderHeroModel("#inventory-hero-model");
 }
 function recipeUnlocked(recipe) { return !recipe.blueprint || state.blueprints.includes(recipe.blueprint); }
 function setBonuses() {
@@ -2669,7 +2728,7 @@ function renderCombatSetup() {
   const style=combatStyles[state.combatStyle]||combatStyles.balanced;
   const trait=currentEnemyTrait();
   document.querySelector("#hero-name").textContent=state.characterName;
-  document.querySelector("#hero-image").alt=`${state.characterName}, your adventurer`;
+  renderHeroModels();
   document.querySelector("#zone-number").textContent=`Zone ${state.currentZone+1}`;
   document.querySelector("#zone-name").textContent=zone.name;
   document.querySelector("#combat-eyebrow").textContent=zone.biome;
@@ -3147,6 +3206,7 @@ function renderInventory() {
   document.querySelector("#inventory-search").value=state.inventoryUi.search;
   document.querySelector("#inventory-category").value=state.inventoryUi.category;
   document.querySelector("#inventory-sort").value=state.inventoryUi.sort;
+  renderHeroModels();
   const setText=equipmentStatsObjectText(setBonuses());
   document.querySelector("#equipment-slots").innerHTML=Object.entries(state.equipment).map(([slot,ref])=>{
     const gear=gearById(ref);

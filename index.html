@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20">
+  <link rel="stylesheet" href="styles.css?v=21">
 </head>
 <body>
   <div class="app-shell">
@@ -109,7 +109,13 @@
             </div>
             <div class="portrait-stage">
               <div class="aura"></div>
-              <img id="hero-image" src="assets/hero.png" alt="Rowan, your adventurer">
+              <div id="hero-model" class="hero-model">
+                <img id="hero-image" src="assets/hero.png" alt="Rowan, your adventurer">
+                <span class="hero-gear hero-helm"></span>
+                <span class="hero-gear hero-armor"></span>
+                <span class="hero-gear hero-weapon"></span>
+                <span class="hero-gear hero-shield"></span>
+              </div>
               <span class="damage-number" id="hero-damage"></span>
             </div>
             <div class="bar-label"><span>Health</span><strong id="hero-hp-text">100 / 100</strong></div>
@@ -261,7 +267,7 @@
         <div class="inventory-layout">
           <article class="equipment-panel">
             <div class="panel-heading"><div><span class="eyebrow">Currently equipped</span><h3>Adventurer</h3></div></div>
-            <div class="equipment-hero"><img src="assets/hero.png" alt=""></div>
+            <div class="equipment-hero"><div id="inventory-hero-model" class="hero-model inventory-hero-model"></div></div>
             <div id="equipment-slots" class="equipment-slots"></div>
           </article>
           <article>
@@ -465,6 +471,6 @@
       document.documentElement.dataset.emberfallError = `${event.message} (${event.lineno}:${event.colno})`;
     });
   </script>
-  <script src="game.js?v=20"></script>
+  <script src="game.js?v=21"></script>
 </body>
 </html>

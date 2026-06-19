@@ -483,80 +483,104 @@ const zoneData = [
   {
     name:"Greenveil Trail",biome:"Whisperwood frontier",recommended:[1,10],gearTiers:["Bronze"],requiredKills:10,
     environment:{name:"Sheltered Trail",description:"No environmental penalty. A suitable proving ground."},
+    cache:{name:"Greenveil Forager's Cache",description:"Trail caches favor early bars, logs, and field food for new hunters.",chance:.08,items:[
+      {item:"Copper Ore",qty:[1,2],weight:4},{item:"Logs",qty:[1,2],weight:3},{item:"Tin Ore",qty:1,weight:2},{item:"Field Stew",qty:1,weight:1}
+    ]},
     enemies:[
-      {name:"Greenveil Goblin",rank:"Trail scavenger",level:2,hp:22,maxHit:4,attackTime:3200,coins:[5,10],item:"Goblin Scrap",bonusItem:"Copper Ore",image:"greenveil-goblin"},
-      {name:"Briar Fang",rank:"Wild stalker",level:4,hp:28,maxHit:7,attackTime:2600,coins:[6,11],item:"Goblin Scrap",bonusItem:"Logs",image:"briar-fang"},
-      {name:"Mossback Brute",rank:"Forest bruiser",level:6,hp:46,maxHit:7,attackTime:3500,coins:[8,13],item:"Goblin Scrap",bonusItem:"Tin Ore",image:"mossback-brute"}
+      {name:"Greenveil Goblin",rank:"Trail scavenger",level:2,hp:22,maxHit:4,attackTime:3200,coins:[5,10],item:"Goblin Scrap",bonusItem:"Copper Ore",bonusChance:.55,image:"greenveil-goblin",tactic:"Best early coin target with Copper support."},
+      {name:"Briar Fang",rank:"Wild stalker",level:4,hp:28,maxHit:7,attackTime:2600,coins:[6,11],item:"Goblin Scrap",bonusItem:"Logs",bonusChance:.5,image:"briar-fang",tactic:"Fast kills, but evasive enough to punish low Attack."},
+      {name:"Mossback Brute",rank:"Forest bruiser",level:6,hp:46,maxHit:7,attackTime:3500,coins:[8,13],item:"Goblin Scrap",bonusItem:"Tin Ore",bonusChance:.62,image:"mossback-brute",tactic:"Slow, sturdy target with the best Tin payout."}
     ],
     boss:{name:"Grak the Trailbreaker", level:8, hp:115, maxHit:10, attackTime:2600, coins:[45,65], item:"Trailbreaker Crest",image:"grak-the-trailbreaker"}
   },
   {
     name:"Ashen Quarry",biome:"Volcanic mine",recommended:[11,22],gearTiers:["Iron","Steel"],requiredKills:14,
-    environment:{name:"Ashfall",description:"Enemies deal 5% more damage in the choking heat.",enemyDamage:1.05},
+    environment:{name:"Ashfall",description:"Enemies deal 5% more damage in the choking heat.",counter:"Ward Draught reduces this pressure.",enemyDamage:1.05},
+    cache:{name:"Ashen Prospector Cache",description:"Collapsed tunnels hide ore, coal, scales, and volatile combat tonics.",chance:.09,items:[
+      {item:"Iron Ore",qty:[1,2],weight:4},{item:"Coal",qty:[1,2],weight:3},{item:"Cinder Scale",qty:[1,2],weight:2},{item:"Battle Tonic",qty:1,weight:1}
+    ]},
     enemies:[
-      {name:"Cinder Kobold",rank:"Quarry raider",level:12,hp:72,maxHit:11,attackTime:2700,coins:[9,15],item:"Cinder Scale",bonusItem:"Iron Ore",image:"cinder-kobold"},
-      {name:"Ashclaw Miner",rank:"Tunnel skirmisher",level:14,hp:60,maxHit:14,attackTime:2300,coins:[11,18],item:"Cinder Scale",bonusItem:"Coal",image:"ashclaw-miner"},
-      {name:"Basalt Mauler",rank:"Stonebound brute",level:17,hp:105,maxHit:13,attackTime:3300,coins:[14,22],item:"Cinder Scale",bonusItem:"Iron Ore",image:"basalt-mauler"}
+      {name:"Cinder Kobold",rank:"Quarry raider",level:12,hp:72,maxHit:11,attackTime:2700,coins:[9,15],item:"Cinder Scale",bonusItem:"Iron Ore",bonusChance:.48,image:"cinder-kobold",tactic:"Balanced ore target with dangerous heavy strikes."},
+      {name:"Ashclaw Miner",rank:"Tunnel skirmisher",level:14,hp:60,maxHit:14,attackTime:2300,coins:[11,18],item:"Cinder Scale",bonusItem:"Coal",bonusChance:.57,image:"ashclaw-miner",tactic:"High pressure, better coal flow for smelting."},
+      {name:"Basalt Mauler",rank:"Stonebound brute",level:17,hp:105,maxHit:13,attackTime:3300,coins:[14,22],item:"Cinder Scale",bonusItem:"Iron Ore",bonusChance:.64,image:"basalt-mauler",tactic:"Armored, slower, and best for sustained ore farming."}
     ],
     boss:{name:"Magmar, Quarry Tyrant", level:20, hp:260, maxHit:17, attackTime:2300, coins:[110,145], item:"Molten Core",image:"magmar-quarry-tyrant"}
   },
   {
     name:"Frostmere Pass",biome:"Frozen mountain pass",recommended:[23,38],gearTiers:["Silver"],requiredKills:18,
-    environment:{name:"Biting Cold",description:"Player attack speed is 8% slower.",playerAttackTime:1.08},
+    environment:{name:"Biting Cold",description:"Player attack speed is 8% slower.",counter:"Ward Draught reduces this pressure.",playerAttackTime:1.08},
+    cache:{name:"Frostmere Expedition Cache",description:"Frozen packs hold silver, coldwater food, and pass sigils.",chance:.1,items:[
+      {item:"Silver Ore",qty:[1,2],weight:4},{item:"Raw Frostmere Ray",qty:1,weight:3},{item:"Frozen Sigil",qty:[1,2],weight:2},{item:"Frostmere Supper",qty:1,weight:1}
+    ]},
     enemies:[
-      {name:"Frostbound Raider",rank:"Pass marauder",level:24,hp:145,maxHit:17,attackTime:2400,coins:[16,25],item:"Frozen Sigil",bonusItem:"Coal",image:"frostbound-raider"},
-      {name:"Rimeblade Scout",rank:"Frozen duelist",level:27,hp:118,maxHit:21,attackTime:2050,coins:[19,29],item:"Frozen Sigil",bonusItem:"Silver Ore",image:"rimeblade-scout"},
-      {name:"Glacier Warden",rank:"Icebound sentinel",level:31,hp:205,maxHit:19,attackTime:3050,coins:[23,34],item:"Frozen Sigil",bonusItem:"Mithril Ore",image:"glacier-warden"}
+      {name:"Frostbound Raider",rank:"Pass marauder",level:24,hp:145,maxHit:17,attackTime:2400,coins:[16,25],item:"Frozen Sigil",bonusItem:"Coal",bonusChance:.46,image:"frostbound-raider",tactic:"Reliable sigils with coal for the Silver route."},
+      {name:"Rimeblade Scout",rank:"Frozen duelist",level:27,hp:118,maxHit:21,attackTime:2050,coins:[19,29],item:"Frozen Sigil",bonusItem:"Silver Ore",bonusChance:.58,image:"rimeblade-scout",tactic:"Fast and evasive, but the best Silver Ore target."},
+      {name:"Glacier Warden",rank:"Icebound sentinel",level:31,hp:205,maxHit:19,attackTime:3050,coins:[23,34],item:"Frozen Sigil",bonusItem:"Mithril Ore",bonusChance:.5,image:"glacier-warden",tactic:"Durable gatekeeper that previews Mithril supplies."}
     ],
     boss:{name:"Skall the White Warden", level:35, hp:520, maxHit:25, attackTime:2100, coins:[230,290], item:"Warden Horn",image:"skall-the-white-warden"}
   },
   {
     name:"Emberfall Citadel",biome:"Burning fortress",recommended:[39,58],gearTiers:["Mithril","Obsidian"],requiredKills:24,
-    environment:{name:"Citadel Pressure",description:"Enemies gain 10% Defence and deal 10% more damage.",enemyDefence:1.1,enemyDamage:1.1},
+    environment:{name:"Citadel Pressure",description:"Enemies gain 10% Defence and deal 10% more damage.",counter:"Ward Draught reduces this pressure.",enemyDefence:1.1,enemyDamage:1.1},
+    cache:{name:"Citadel Armory Cache",description:"Sealed armories carry bars, Emberite, forge essence, and battle tonics.",chance:.105,items:[
+      {item:"Steel Bar",qty:1,weight:4},{item:"Emberite Ore",qty:[1,2],weight:3},{item:"Forge Essence",qty:1,weight:2},{item:"Battle Tonic",qty:1,weight:1}
+    ]},
     enemies:[
-      {name:"Emberguard Knight",rank:"Citadel soldier",level:40,hp:270,maxHit:25,attackTime:2200,coins:[28,42],item:"Emberguard Seal",bonusItem:"Iron Bar",image:"emberguard-knight"},
-      {name:"Cinderblade Duelist",rank:"Royal champion",level:44,hp:225,maxHit:31,attackTime:1850,coins:[34,49],item:"Emberguard Seal",bonusItem:"Steel Bar",image:"cinderblade-duelist"},
-      {name:"Furnace Sentinel",rank:"Living bulwark",level:49,hp:390,maxHit:28,attackTime:2850,coins:[40,58],item:"Emberguard Seal",bonusItem:"Emberite Ore",image:"furnace-sentinel"}
+      {name:"Emberguard Knight",rank:"Citadel soldier",level:40,hp:270,maxHit:25,attackTime:2200,coins:[28,42],item:"Emberguard Seal",bonusItem:"Iron Bar",bonusChance:.46,image:"emberguard-knight",tactic:"Stable seal farming with defensive pressure."},
+      {name:"Cinderblade Duelist",rank:"Royal champion",level:44,hp:225,maxHit:31,attackTime:1850,coins:[34,49],item:"Emberguard Seal",bonusItem:"Steel Bar",bonusChance:.54,image:"cinderblade-duelist",tactic:"Fast kill target for Steel, but crits hard."},
+      {name:"Furnace Sentinel",rank:"Living bulwark",level:49,hp:390,maxHit:28,attackTime:2850,coins:[40,58],item:"Emberguard Seal",bonusItem:"Emberite Ore",bonusChance:.63,image:"furnace-sentinel",tactic:"Slowest fight, best Emberite payout."}
     ],
     boss:{name:"Vharos, the Cinder King", level:55, hp:950, maxHit:36, attackTime:1900, coins:[500,650], item:"Cinder Crown",image:"vharos-the-cinder-king"}
   },
   {
     name:"Verdant Mire",biome:"Poisoned deep swamp",recommended:[58,70],gearTiers:["Emberforged"],requiredKills:28,
-    environment:{name:"Toxic Miasma",description:"Enemy hits have a 15% chance to inflict poison.",poisonChance:.15,poisonDamage:7},
+    environment:{name:"Toxic Miasma",description:"Enemy hits have a 15% chance to inflict poison.",counter:"Ward Draught reduces this pressure.",poisonChance:.15,poisonDamage:7},
+    cache:{name:"Mire Apothecary Cache",description:"Half-sunk packs contain resin, rotbloom, obsidian, and anti-poison tools.",chance:.11,items:[
+      {item:"Mire Resin",qty:[1,2],weight:4},{item:"Rotbloom",qty:1,weight:3},{item:"Obsidian",qty:1,weight:2},{item:"Venom Oil",qty:1,weight:1},{item:"Ward Draught",qty:1,weight:1}
+    ]},
     enemies:[
-      {name:"Mirestalker Lizard",rank:"Swamp hunter",level:58,hp:520,maxHit:38,attackTime:1950,coins:[48,70],item:"Mire Resin",bonusItem:"Emberite Ore",image:"mirestalker-lizard"},
-      {name:"Bog Hexer",rank:"Marsh occultist",level:61,hp:460,maxHit:44,attackTime:2200,coins:[55,78],item:"Mire Resin",bonusItem:"Obsidian",image:"bog-hexer"},
-      {name:"Rotwood Colossus",rank:"Fungal behemoth",level:65,hp:760,maxHit:40,attackTime:2950,coins:[62,88],item:"Rotbloom",bonusItem:"Embersteel Bar",image:"rotwood-colossus"}
+      {name:"Mirestalker Lizard",rank:"Swamp hunter",level:58,hp:520,maxHit:38,attackTime:1950,coins:[48,70],item:"Mire Resin",bonusItem:"Emberite Ore",bonusChance:.48,image:"mirestalker-lizard",tactic:"Fast venom pressure with Emberite support."},
+      {name:"Bog Hexer",rank:"Marsh occultist",level:61,hp:460,maxHit:44,attackTime:2200,coins:[55,78],item:"Mire Resin",bonusItem:"Obsidian",bonusChance:.56,image:"bog-hexer",tactic:"Lower health, harsher healing pressure, best Obsidian target."},
+      {name:"Rotwood Colossus",rank:"Fungal behemoth",level:65,hp:760,maxHit:40,attackTime:2950,coins:[62,88],item:"Rotbloom",bonusItem:"Embersteel Bar",bonusChance:.62,image:"rotwood-colossus",tactic:"Long, armored fight with superior bar payouts."}
     ],
     boss:{name:"Velka, the Marsh Mother",level:70,hp:1700,maxHit:52,attackTime:1850,coins:[750,950],item:"Mireheart Pearl",image:"velka-marsh-mother"}
   },
   {
     name:"Sunscar Expanse",biome:"Glass desert",recommended:[68,82],gearTiers:["Runic"],requiredKills:32,
-    environment:{name:"Scorching Zenith",description:"Enemies deal 15% more damage and all healing is reduced by 25%.",enemyDamage:1.15,healingReduction:.25},
+    environment:{name:"Scorching Zenith",description:"Enemies deal 15% more damage and all healing is reduced by 25%.",counter:"Ward Draught reduces this pressure.",enemyDamage:1.15,healingReduction:.25},
+    cache:{name:"Sunscar Relic Cache",description:"Buried shrines hold runic materials, sunstone, and fortune philters.",chance:.115,items:[
+      {item:"Runite Ore",qty:[1,2],weight:4},{item:"Runic Bar",qty:1,weight:2},{item:"Sunstone Shard",qty:1,weight:3},{item:"Fortune Philter",qty:1,weight:1}
+    ]},
     enemies:[
-      {name:"Dune Jackal",rank:"Desert predator",level:70,hp:760,maxHit:52,attackTime:1750,coins:[72,102],item:"Sunscar Hide",bonusItem:"Runite Ore",image:"dune-jackal"},
-      {name:"Glassblade Nomad",rank:"Mirage duelist",level:74,hp:680,maxHit:59,attackTime:1650,coins:[80,112],item:"Sunscar Hide",bonusItem:"Runite Ore",image:"glassblade-nomad"},
-      {name:"Sunstone Golem",rank:"Solar construct",level:78,hp:1100,maxHit:55,attackTime:2700,coins:[88,124],item:"Sunstone Shard",bonusItem:"Runic Bar",image:"sunstone-golem"}
+      {name:"Dune Jackal",rank:"Desert predator",level:70,hp:760,maxHit:52,attackTime:1750,coins:[72,102],item:"Sunscar Hide",bonusItem:"Runite Ore",bonusChance:.5,image:"dune-jackal",tactic:"Fast, risky hide and ore farming."},
+      {name:"Glassblade Nomad",rank:"Mirage duelist",level:74,hp:680,maxHit:59,attackTime:1650,coins:[80,112],item:"Sunscar Hide",bonusItem:"Runite Ore",bonusChance:.58,image:"glassblade-nomad",tactic:"Best ore target, but evasive and high damage."},
+      {name:"Sunstone Golem",rank:"Solar construct",level:78,hp:1100,maxHit:55,attackTime:2700,coins:[88,124],item:"Sunstone Shard",bonusItem:"Runic Bar",bonusChance:.62,image:"sunstone-golem",tactic:"Slow construct with the best Runic Bar chance."}
     ],
     boss:{name:"Azhar, the Sand Crown",level:82,hp:2500,maxHit:68,attackTime:1700,coins:[1050,1325],item:"Solar Core",image:"azhar-sand-crown"}
   },
   {
     name:"Tempest Reach",biome:"Storm-wracked cliffs",recommended:[80,94],gearTiers:["Astral"],requiredKills:36,
-    environment:{name:"Static Front",description:"Enemy attacks are 12% faster and successful hits delay your next strike.",enemyAttackTime:.88,slowOnHit:350},
+    environment:{name:"Static Front",description:"Enemy attacks are 12% faster and successful hits delay your next strike.",counter:"Ward Draught reduces this pressure.",enemyAttackTime:.88,slowOnHit:350},
+    cache:{name:"Tempest Wreckage Cache",description:"Lightning-scoured wreckage yields stormglass, astral ore, and speed serums.",chance:.12,items:[
+      {item:"Stormglass",qty:[1,2],weight:4},{item:"Astral Ore",qty:[1,2],weight:3},{item:"Astral Bar",qty:1,weight:2},{item:"Swiftwater Serum",qty:1,weight:1}
+    ]},
     enemies:[
-      {name:"Stormwing Harrier",rank:"Cliff predator",level:82,hp:1050,maxHit:66,attackTime:1550,coins:[100,138],item:"Stormglass",bonusItem:"Astral Ore",image:"stormwing-harrier"},
-      {name:"Thunderbound Raider",rank:"Storm marauder",level:86,hp:1180,maxHit:72,attackTime:1750,coins:[112,152],item:"Stormglass",bonusItem:"Astral Ore",image:"thunderbound-raider"},
-      {name:"Cloudforge Automaton",rank:"Ancient war engine",level:90,hp:1650,maxHit:68,attackTime:2450,coins:[124,168],item:"Charged Cog",bonusItem:"Astral Bar",image:"cloudforge-automaton"}
+      {name:"Stormwing Harrier",rank:"Cliff predator",level:82,hp:1050,maxHit:66,attackTime:1550,coins:[100,138],item:"Stormglass",bonusItem:"Astral Ore",bonusChance:.5,image:"stormwing-harrier",tactic:"Fastest astral ore source, but delays your strikes."},
+      {name:"Thunderbound Raider",rank:"Storm marauder",level:86,hp:1180,maxHit:72,attackTime:1750,coins:[112,152],item:"Stormglass",bonusItem:"Astral Ore",bonusChance:.57,image:"thunderbound-raider",tactic:"Better coin and ore flow with frequent heavy strikes."},
+      {name:"Cloudforge Automaton",rank:"Ancient war engine",level:90,hp:1650,maxHit:68,attackTime:2450,coins:[124,168],item:"Charged Cog",bonusItem:"Astral Bar",bonusChance:.62,image:"cloudforge-automaton",tactic:"Long armored fight with the best Astral Bar chance."}
     ],
     boss:{name:"Vael, the Storm Herald",level:94,hp:3700,maxHit:82,attackTime:1500,coins:[1500,1850],item:"Tempest Heart",image:"vael-storm-herald"}
   },
   {
     name:"Astral Scar",biome:"Fractured cosmic wasteland",recommended:[92,110],gearTiers:["Starforged"],requiredKills:42,
-    environment:{name:"Reality Fracture",description:"Enemies gain 18% Defence, 20% damage, and 8% evasion.",enemyDefence:1.18,enemyDamage:1.2,evasion:.08},
+    environment:{name:"Reality Fracture",description:"Enemies gain 18% Defence, 20% damage, and 8% evasion.",counter:"Ward Draught reduces this pressure.",enemyDefence:1.18,enemyDamage:1.2,evasion:.08},
+    cache:{name:"Astral Fracture Cache",description:"Broken realities spill star metal, void shards, forge essence, and reforging tools.",chance:.13,items:[
+      {item:"Void Shard",qty:[1,2],weight:4},{item:"Star Metal",qty:[1,2],weight:3},{item:"Starforged Bar",qty:1,weight:2},{item:"Forge Essence",qty:[1,2],weight:2},{item:"Reforge Token",qty:1,weight:1}
+    ]},
     enemies:[
-      {name:"Voidling Ravager",rank:"Abyssal skirmisher",level:94,hp:1550,maxHit:82,attackTime:1450,coins:[145,190],item:"Void Shard",bonusItem:"Star Metal",image:"voidling-ravager"},
-      {name:"Starborn Seer",rank:"Cosmic oracle",level:99,hp:1420,maxHit:92,attackTime:1700,coins:[160,210],item:"Void Shard",bonusItem:"Astral Bar",image:"starborn-seer"},
-      {name:"Astral Colossus",rank:"Constellation titan",level:104,hp:2400,maxHit:88,attackTime:2350,coins:[180,235],item:"Worldstone Fragment",bonusItem:"Starforged Bar",image:"astral-colossus"}
+      {name:"Voidling Ravager",rank:"Abyssal skirmisher",level:94,hp:1550,maxHit:82,attackTime:1450,coins:[145,190],item:"Void Shard",bonusItem:"Star Metal",bonusChance:.52,image:"voidling-ravager",tactic:"Very fast, high-risk Star Metal farming."},
+      {name:"Starborn Seer",rank:"Cosmic oracle",level:99,hp:1420,maxHit:92,attackTime:1700,coins:[160,210],item:"Void Shard",bonusItem:"Astral Bar",bonusChance:.58,image:"starborn-seer",tactic:"Evasive oracle with strong Astral Bar support."},
+      {name:"Astral Colossus",rank:"Constellation titan",level:104,hp:2400,maxHit:88,attackTime:2350,coins:[180,235],item:"Worldstone Fragment",bonusItem:"Starforged Bar",bonusChance:.64,image:"astral-colossus",tactic:"Longest fight, best Starforged Bar target."}
     ],
     boss:{name:"Nyxara, the World-Eater",level:110,hp:5800,maxHit:108,attackTime:1400,coins:[2300,2850],item:"Worldscar Fragment",image:"nyxara-world-eater"}
   }
@@ -1175,7 +1199,9 @@ function enemyMaxHp(enemy=currentEnemy()) { return Math.round(enemy.hp*(1+zoneTh
 function enemyMaxHitValue(enemy=currentEnemy()) { return Math.round(enemy.maxHit*(1+zoneThreatRank()*.08)); }
 function enemyAttackTime(enemy=currentEnemy()) {
   const phase=state.fightingBoss ? Math.max(0,(state.bossPhase||1)-1) : 0;
-  return Math.max(900,Math.round(enemy.attackTime*(currentEnvironment().enemyAttackTime||1)*(1-zoneThreatRank()*.02)*(1-phase*.05)));
+  const ward=(isBuffActive("ward")||isBuffActive("frostmeal")) ? .5 : 1;
+  const environment=1+((currentEnvironment().enemyAttackTime||1)-1)*ward;
+  return Math.max(900,Math.round(enemy.attackTime*environment*(1-zoneThreatRank()*.02)*(1-phase*.05)));
 }
 function enemyCoinRange(enemy=currentEnemy()) {
   const achievementCoins=achievementBonus("combatCoins",{zone:state.currentZone,enemy:enemy.name});
@@ -1183,17 +1209,90 @@ function enemyCoinRange(enemy=currentEnemy()) {
   const multiplier=zoneThreatMultiplier()*(relicActive("Trailbreaker Crest")?1.05:1)*(1+achievementCoins+bossCoins);
   return enemy.coins.map(value=>Math.round(value*multiplier));
 }
+function enemyBonusDropChance(enemy=currentEnemy(),zoneIndex=state.currentZone,chain=state.combatChain||0) {
+  if (!enemy?.bonusItem) return 0;
+  const base=enemy.bonusChance ?? .45;
+  return Math.min(.85,base+zoneThreatRank(zoneIndex)*.025+Math.min(.08,chain*.002));
+}
+function zoneCacheChance(zoneIndex=state.currentZone,chain=state.combatChain||0) {
+  const cache=zoneData[zoneIndex]?.cache;
+  if (!cache) return 0;
+  return Math.min(.35,(cache.chance||0)+zoneThreatRank(zoneIndex)*.025+Math.min(.06,chain*.002)+(isBuffActive("fortune") ? .03 : 0));
+}
+function weightedDrop(entries=[]) {
+  const total=entries.reduce((sum,entry)=>sum+(entry.weight||1),0);
+  if (!total) return null;
+  let roll=Math.random()*total;
+  return entries.find(entry=>(roll-=entry.weight||1)<=0) || entries[entries.length-1];
+}
+function dropQuantity(entry={},scale=1) {
+  const qty=Array.isArray(entry.qty)
+    ? entry.qty[0]+Math.floor(Math.random()*(entry.qty[1]-entry.qty[0]+1))
+    : entry.qty||1;
+  return Math.max(1,Math.round(qty*scale));
+}
+function addRewardItem(reward,item,qty) {
+  const amount=Math.max(0,Math.round(qty||0));
+  if (!item || amount<=0) return;
+  reward.items[item]=(reward.items[item]||0)+amount;
+}
+function mergeRewardItems(target,items={}) {
+  Object.entries(items).forEach(([item,qty])=>addRewardItem(target,item,qty));
+  return target;
+}
+function rollZoneCacheReward(zoneIndex=state.currentZone,rolls=1,scale=1) {
+  const cache=zoneData[zoneIndex]?.cache;
+  const reward=makeReward(0,{});
+  if (!cache?.items?.length || rolls<=0) return reward;
+  for (let index=0;index<rolls;index++) {
+    const drop=weightedDrop(cache.items);
+    if (drop) addRewardItem(reward,drop.item,dropQuantity(drop,scale));
+  }
+  return reward;
+}
+function rollBossChestReward(zoneIndex=state.currentZone,enemy=currentEnemy()) {
+  const repeatKills=state.bestiary.bosses?.[enemy.name]||0;
+  const threat=zoneThreatRank(zoneIndex);
+  const reward=makeReward(Math.round((enemy.coins?.[0]||0)*(.3+threat*.08)),{});
+  const cacheRolls=2+Math.min(3,threat)+Math.min(2,repeatKills);
+  mergeRewardItems(reward,rollZoneCacheReward(zoneIndex,cacheRolls,1.25+threat*.15).items);
+  if (zoneIndex>=1 || threat>=2 || repeatKills>0) addRewardItem(reward,"Reforge Token",1+Math.floor(threat/3));
+  if (zoneIndex>=3) addRewardItem(reward,"Forge Essence",1+Math.floor(zoneIndex/2));
+  return reward;
+}
+function grantCombatCoins(reward,coins,track=true) {
+  const amount=Math.max(0,Math.round(coins||0));
+  if (!amount) return;
+  state.coins+=amount;
+  reward.coins=(reward.coins||0)+amount;
+  if (track) activity(`+${amount} coins`,"coins");
+}
+function grantCombatItem(reward,item,qty,track=true) {
+  const amount=Math.max(0,Math.round(qty||0));
+  if (!item || amount<=0) return;
+  addItem(item,amount,track);
+  bestiaryDrop(item,amount);
+  addRewardItem(reward,item,amount);
+}
+function grantCombatReward(reward,extra={},track=true) {
+  grantCombatCoins(reward,extra.coins||0,track);
+  Object.entries(extra.items||{}).forEach(([item,qty])=>grantCombatItem(reward,item,qty,track));
+}
 function currentEnemyTrait() { return enemyTraits[currentEnemy().name] || {name:"Unremarkable",description:"No special combat modifier."}; }
 function enemyDefence(enemy=currentEnemy()) {
   const phase=state.fightingBoss ? Math.max(0,(state.bossPhase||1)-1) : 0;
   const base=3+enemy.level*1.2+(currentEnemyTrait().armor||0)*2+zoneThreatRank()*3+phase*2;
-  return base*(currentEnvironment().enemyDefence||1);
+  const ward=(isBuffActive("ward")||isBuffActive("frostmeal")) ? .5 : 1;
+  const environment=1+((currentEnvironment().enemyDefence||1)-1)*ward;
+  return base*environment;
 }
 function hitChance() {
   const style=combatStyles[state.combatStyle]||combatStyles.balanced;
   const attack=attackPower()*(style.accuracy||1);
   const defence=enemyDefence();
-  return Math.max(.22,Math.min(.96,.68+(attack-defence)/Math.max(30,attack+defence)-(currentEnemyTrait().evasion||0)-(currentEnvironment().evasion||0)));
+  const ward=(isBuffActive("ward")||isBuffActive("frostmeal")) ? .5 : 1;
+  const environmentEvasion=(currentEnvironment().evasion||0)*ward;
+  return Math.max(.22,Math.min(.96,.68+(attack-defence)/Math.max(30,attack+defence)-(currentEnemyTrait().evasion||0)-environmentEvasion));
 }
 function healingMultiplier() {
   if (!state.combat) return 1;
@@ -2104,9 +2203,12 @@ function applyOfflineCombat(away) {
     state.enemyHp=enemyMaxHp();
   }
   const enemy=currentEnemy(), style=combatStyles[state.combatStyle]||combatStyles.balanced;
+  const startChain=state.combatChain||0;
   const playerDps=Math.max(.1,(hitChance()*Math.max(1,maxHit()*.52)*combatDamageMultiplier())/(playerAttackTime()/1000))*1.12;
   const rawEnemyHit=Math.max(0,enemyMaxHitValue(enemy)*.48-defencePower()/8);
-  const enemyDps=Math.max(0,rawEnemyHit*style.damageTaken*(currentEnvironment().enemyDamage||1)/(enemyAttackTime(enemy)/1000));
+  const ward=(isBuffActive("ward")||isBuffActive("frostmeal")) ? .5 : 1;
+  const environmentDamage=1+((currentEnvironment().enemyDamage||1)-1)*ward;
+  const enemyDps=Math.max(0,rawEnemyHit*style.damageTaken*environmentDamage/(enemyAttackTime(enemy)/1000));
   const killSeconds=Math.max(1,enemyMaxHp(enemy)/playerDps+.8);
   const stopHp=Math.max(1,Math.min(80,state.combatAutomation.stopHp||15));
   const safeHealth=Math.max(1,maxHp()*(1-stopHp/100));
@@ -2119,21 +2221,29 @@ function applyOfflineCombat(away) {
   if (state.combatAutomation.stopAfter>0) kills=Math.min(kills,state.combatAutomation.stopAfter);
   if (!kills) {
     state.combat=false;
+    state.combatChain=0;
     state.heroHp=Math.max(1,Math.round(maxHp()*stopHp/100));
     return {kills:0,coins:0,food:food.consumed,item:enemy.item,itemQty:0};
   }
   const averageCoins=(enemyCoinRange(enemy)[0]+enemyCoinRange(enemy)[1])/2;
   const coins=Math.round(averageCoins*kills*1.12);
   const materialQty=kills+Math.floor(kills*zoneThreatRank()*.15);
-  const bonusQty=enemy.bonusItem ? Math.floor(kills*.45) : 0;
+  const bonusChance=enemyBonusDropChance(enemy,state.currentZone,startChain);
+  const bonusQty=enemy.bonusItem ? Math.floor(kills*bonusChance) : 0;
+  const expectedCaches=kills*zoneCacheChance(state.currentZone,startChain);
+  const cacheRolls=Math.floor(expectedCaches)+(Math.random()<expectedCaches%1 ? 1 : 0);
+  const streaks=Math.max(0,Math.floor((startChain+kills)/10)-Math.floor(startChain/10));
+  const cacheReward=rollZoneCacheReward(state.currentZone,cacheRolls+streaks,1+zoneThreatRank()*.08+(streaks?0.12:0));
   state.kills+=kills;
   state.zoneKills[state.currentZone]+=kills;
   state.coins+=coins;
   addItem(enemy.item,materialQty);
   if (enemy.bonusItem) addItem(enemy.bonusItem,bonusQty);
+  Object.entries(cacheReward.items||{}).forEach(([item,qty])=>addItem(item,qty));
   bestiaryKill(enemy.name,kills);
   bestiaryDrop(enemy.item,materialQty);
   bestiaryDrop(enemy.bonusItem,bonusQty);
+  Object.entries(cacheReward.items||{}).forEach(([item,qty])=>bestiaryDrop(item,qty));
   const damageXp=enemyMaxHp(enemy)*kills;
   const combatXpMultiplier=1+achievementBonus("allXp")+achievementBonus("combatXp",{zone:state.currentZone,enemy:enemy.name})+shrineXpBonus();
   let totalXp=0;
@@ -2155,8 +2265,9 @@ function applyOfflineCombat(away) {
   state.heroHp=Math.max(1,Math.min(maxHp(),Math.round(maxHp()+food.healed-damageTaken)));
   const stopped=activeSeconds<away/1000 || (state.combatAutomation.stopAfter>0 && kills>=state.combatAutomation.stopAfter);
   if (stopped) state.combat=false;
+  state.combatChain=stopped ? 0 : startChain+kills;
   state.combatAutomation.killsRun=(state.combatAutomation.killsRun||0)+kills;
-  return {kills,coins,food:food.consumed,item:enemy.item,itemQty:materialQty,bonusItem:enemy.bonusItem,bonusQty,gearDrops,totalXp,bestGear:bestGear?{name:gearDisplayName(bestGear),rarity:bestGear.rarity}:null};
+  return {kills,coins,food:food.consumed,item:enemy.item,itemQty:materialQty,bonusItem:enemy.bonusItem,bonusQty,cacheItems:cacheReward.items,cacheRolls,streaks,gearDrops,totalXp,bestGear:bestGear?{name:gearDisplayName(bestGear),rarity:bestGear.rarity}:null};
 }
 
 function applyOfflineProgress(elapsed=Date.now()-(state.lastSeen||Date.now())) {
@@ -2169,12 +2280,19 @@ function applyOfflineProgress(elapsed=Date.now()-(state.lastSeen||Date.now())) {
   document.querySelector("#offline-time").textContent = `You were away for ${formatDuration(away)}. Here is what your adventurer accomplished:`;
   const sections=[];
   if (combatResult) {
+    const cacheCards=Object.entries(combatResult.cacheItems||{})
+      .filter(([,qty])=>qty>0)
+      .map(([item,qty])=>`<div><span>${item}</span><strong>+${qty.toLocaleString()}</strong></div>`)
+      .join("");
     const cards=[
       `<div><span>Enemies defeated</span><strong>${combatResult.kills.toLocaleString()}</strong></div>`,
       `<div class="reward-highlight"><span>Coins</span><strong>+${combatResult.coins.toLocaleString()}</strong></div>`,
       `<div><span>Combat XP</span><strong>+${(combatResult.totalXp||0).toLocaleString()}</strong></div>`,
       `<div><span>${combatResult.item}</span><strong>+${(combatResult.itemQty||0).toLocaleString()}</strong></div>`,
       combatResult.bonusQty?`<div><span>${combatResult.bonusItem}</span><strong>+${combatResult.bonusQty.toLocaleString()}</strong></div>`:"",
+      cacheCards,
+      combatResult.cacheRolls?`<div><span>Zone caches opened</span><strong>${combatResult.cacheRolls.toLocaleString()}</strong></div>`:"",
+      combatResult.streaks?`<div><span>Hunt streak caches</span><strong>${combatResult.streaks.toLocaleString()}</strong></div>`:"",
       combatResult.gearDrops?`<div><span>Equipment found</span><strong>${combatResult.gearDrops}</strong></div>`:"",
       combatResult.food?`<div><span>Food consumed</span><strong>${combatResult.food}</strong></div>`:""
     ].join("");
@@ -2301,7 +2419,8 @@ function updateCombat(dt) {
     const rawHit=Math.max(0,Math.floor(Math.random()*(enemyMaxHitValue(enemy)+1))-Math.floor(effectiveDefence/8));
     let hit=Math.max(0,Math.floor(rawHit*style.damageTaken*traitDamage));
     state.heroHp -= hit;
-    const slow=(trait.slow||0)+(currentEnvironment().slowOnHit||0);
+    const ward=(isBuffActive("ward")||isBuffActive("frostmeal")) ? .5 : 1;
+    const slow=(trait.slow||0)+(currentEnvironment().slowOnHit||0)*ward;
     if (slow && hit>0) state.attackElapsed=Math.max(0,state.attackElapsed-slow);
     if (trait.lifesteal && hit>0) state.enemyHp=Math.min(enemyMaxHp(enemy),state.enemyHp+Math.max(1,Math.floor(hit*trait.lifesteal)));
     if (hit>0 && currentEnvironment().poisonChance && Math.random()<currentEnvironment().poisonChance) {
@@ -2432,40 +2551,59 @@ function defeatEnemy() {
   const enemy=currentEnemy();
   const trait=currentEnemyTrait();
   const wasBoss=state.fightingBoss;
+  const defeatedZone=state.currentZone;
+  const zone=currentZone();
+  const firstKill=!wasBoss && !(state.bestiary.kills?.[enemy.name]>0);
   const coinRange=enemyCoinRange(enemy);
   const baseCoins=coinRange[0]+Math.floor(Math.random()*(coinRange[1]-coinRange[0]+1));
   const chainBonus=Math.min(.25,state.combatChain*.01);
   const event=activeCombatEvent();
   const coinReward=Math.max(1,Math.floor(baseCoins*(1+chainBonus+(trait.lootBonus||0)+(event?.killCoins||0))));
   const materialQty=1+(Math.random()<zoneThreatRank()*.15 ? 1 : 0)+(event?.bonusMaterial||0);
-  state.kills++; state.combatChain++; state.coins+=coinReward; activity(`+${coinReward} coins`,"coins"); addItem(enemy.item,materialQty,true);
+  const reward={coins:0,items:{},gearNames:[]};
+  const notable=[];
+  state.kills++;
+  state.combatChain++;
+  grantCombatCoins(reward,coinReward,true);
+  grantCombatItem(reward,enemy.item,materialQty,true);
   bestiaryKill(enemy.name,1);
-  bestiaryDrop(enemy.item,materialQty);
   recordProgress("kills",{zone:state.currentZone,enemy:enemy.name},1);
   if (event?.consumeOnKill) clearCombatEvent();
-  let gearReward=null;
+  let rareGearFound=false;
   if (wasBoss || Math.random()<threatGearChance()) {
-    const table=currentZone().gearTiers.flatMap(tier=>equipmentTierData[tier]?.gear||[]);
+    const table=zone.gearTiers.flatMap(tier=>equipmentTierData[tier]?.gear||[]);
     const baseName=table[Math.floor(Math.random()*table.length)];
     const rarity=rollRarity((wasBoss?12+state.currentZone*4:state.currentZone*2)+zoneThreatRank()*3);
     const gear=createGear(baseName,rarity);
-    gearReward=gear;
+    rareGearFound=["rare","epic","legendary"].includes(rarity);
+    reward.gearNames.push(`${rarityData[rarity].name} ${gearDisplayName(gear)}`);
     activity(`Loot: ${rarityData[rarity].name} ${gearDisplayName(gear)}`,["rare","epic","legendary"].includes(rarity)?"rare":"gear");
     bestiaryDrop(baseName,1);
-    if (!wasBoss && ["rare","epic","legendary"].includes(rarity)) showRewardReveal("Rare Gear Found",{gearNames:[`${rarityData[rarity].name} ${gearDisplayName(gear)}`]},"Combat drop");
     checkAchievements();
   }
-  if (!state.fightingBoss && enemy.bonusItem && Math.random()<.45) {
-    addItem(enemy.bonusItem,1,true);
-    bestiaryDrop(enemy.bonusItem,1);
+  if (!wasBoss && enemy.bonusItem && Math.random()<enemyBonusDropChance(enemy,defeatedZone,state.combatChain)) {
+    grantCombatItem(reward,enemy.bonusItem,1,true);
   }
-  if (state.fightingBoss) {
-    const defeatedZone=state.currentZone;
+  if (!wasBoss && zone.cache && Math.random()<zoneCacheChance(defeatedZone,state.combatChain)) {
+    grantCombatReward(reward,rollZoneCacheReward(defeatedZone,1,1+zoneThreatRank(defeatedZone)*.08),true);
+    notable.push(zone.cache.name);
+  }
+  if (!wasBoss && firstKill) {
+    grantCombatReward(reward,makeReward(25+defeatedZone*35,{[enemy.item]:2+defeatedZone}),true);
+    notable.push(`${enemy.name} field notes`);
+  }
+  if (!wasBoss && state.combatChain>0 && state.combatChain%10===0) {
+    const streakReward=rollZoneCacheReward(defeatedZone,1+Math.floor(zoneThreatRank(defeatedZone)/3),1.15+Math.min(1,state.combatChain/100));
+    grantCombatReward(reward,streakReward,true);
+    notable.push(`${state.combatChain}-hunt streak`);
+  }
+  if (wasBoss) {
+    grantCombatReward(reward,rollBossChestReward(defeatedZone,enemy),true);
     state.bossDefeated[defeatedZone]=true;
     state.bestiary.bosses[enemy.name]=(state.bestiary.bosses[enemy.name]||0)+1;
     recordProgress("bosses",{zone:defeatedZone,enemy:enemy.name},1);
-    addLog(`${enemy.name} defeated! ${state.characterName} earns ${coinReward} coins.`);
-    showRewardReveal(`${enemy.name} defeated`,{coins:coinReward,items:{[enemy.item]:materialQty},gearNames:gearReward?[`${rarityData[gearReward.rarity].name} ${gearDisplayName(gearReward)}`]:[]},"Boss spoils");
+    addLog(`${enemy.name} defeated! ${state.characterName} earns ${reward.coins.toLocaleString()} coins and opens a boss chest.`);
+    showRewardReveal(`${enemy.name} defeated`,reward,"Boss chest opened");
     if (defeatedZone+1<zoneData.length && state.unlockedZones<defeatedZone+2) {
       state.unlockedZones=defeatedZone+2;
       toast(`${zoneData[defeatedZone+1].name} unlocked`);
@@ -2478,6 +2616,10 @@ function defeatEnemy() {
   } else {
     state.zoneKills[state.currentZone]++;
     addLog(`${enemy.name} defeated. Hunt progress: ${state.zoneKills[state.currentZone]}/${currentZone().requiredKills}.`);
+    if (notable.length || rareGearFound) {
+      showRewardReveal(rareGearFound ? "Rare Gear Found" : notable[0],reward,notable.length>1 ? notable.join(" + ") : "Combat spoils");
+    }
+    if (notable.length) addLog(`${notable.join(" and ")} recovered from ${enemy.name}.`);
     if (state.zoneKills[state.currentZone]===currentZone().requiredKills) toast(`${currentZone().boss.name} revealed`);
   }
   if (wasBoss) { showBossBanner(enemy.name); Music.bossStinger(); }
@@ -2713,8 +2855,12 @@ function renderCombatSetup() {
     ? `+${zoneThreatRank()*18}% coins, ${Math.round(threatGearChance()*1000)/10}% gear chance`
     : maximumThreat ? "Base rewards; raise Threat for better loot" : "Defeat this zone boss to unlock Threat";
   document.querySelector("#zone-environment-name").textContent=zone.environment.name;
-  document.querySelector("#zone-environment-description").textContent=zone.environment.description;
+  document.querySelector("#zone-environment-description").textContent=[zone.environment.description,zone.environment.counter].filter(Boolean).join(" ");
   document.querySelector("#zone-gear-tiers").textContent=zone.gearTiers.join(" / ");
+  document.querySelector("#zone-spoils-name").textContent=zone.cache?.name||"No Cache";
+  document.querySelector("#zone-spoils-description").textContent=zone.cache
+    ? `${zone.cache.description} Cache chance: ${Math.round(zoneCacheChance()*100)}%.`
+    : "This zone has no extra cache table.";
   document.querySelector("#enemy-rank").textContent=state.fightingBoss ? "Zone boss" : enemy.rank;
   document.querySelector("#enemy-name").textContent=enemy.name;
   document.querySelector("#enemy-level").textContent=enemy.level;
@@ -2725,10 +2871,11 @@ function renderCombatSetup() {
   document.querySelector(".enemy-card").classList.toggle("boss-active",state.fightingBoss);
   const enemyCoins=enemyCoinRange(enemy);
   document.querySelector("#enemy-loot").innerHTML=[
-    `<b>${enemyCoins[0]}-${enemyCoins[1]} coins · 100%</b>`,
-    `<b>${enemy.item} · 100%</b>`,
-    !state.fightingBoss && enemy.bonusItem ? `<b>${enemy.bonusItem} · 45%</b>` : "",
-    `<b>Equipment · ${state.fightingBoss?100:Math.round(threatGearChance()*1000)/10}%</b>`
+    `<b>${enemyCoins[0]}-${enemyCoins[1]} coins - 100%</b>`,
+    `<b>${enemy.item} - 100%</b>`,
+    !state.fightingBoss && enemy.bonusItem ? `<b>${enemy.bonusItem} - ${Math.round(enemyBonusDropChance(enemy)*100)}%</b>` : "",
+    !state.fightingBoss && zone.cache ? `<b>${zone.cache.name} - ${Math.round(zoneCacheChance()*100)}%</b>` : "",
+    `<b>Equipment - ${state.fightingBoss?100:Math.round(threatGearChance()*1000)/10}%</b>`
   ].join("");
   const ready=bossReady();
   document.querySelector("#boss-toggle").disabled=!ready;
@@ -2760,17 +2907,11 @@ function renderCombatSetup() {
       <strong>${item.name}</strong><span>${item.description}</span><em>${combatXpText(item)}</em>
     </button>`).join("");
   document.querySelector("#enemy-count-label").textContent=state.fightingBoss ? "Boss selected" : `${zone.enemies.length} available`;
-  document.querySelector("#enemy-list").innerHTML=zone.enemies.map((item,index)=>`
-    <button class="enemy-option ${!state.fightingBoss && currentEnemy()===item?"selected":""}" data-enemy="${index}">
-      <img class="enemy-option-mark" src="assets/enemies/${item.image}.png" alt="">
-      <span><strong>${item.name}</strong><small>${item.rank} · Lv. ${item.level} · ${item.hp} HP</small></span>
-      <b>${item.coins[0]}-${item.coins[1]}c</b>
-    </button>`).join("");
   document.querySelector("#enemy-list").innerHTML=zone.enemies.map((item,index)=>{
     const coins=enemyCoinRange(item);
     return `<button class="enemy-option ${!state.fightingBoss && currentEnemy()===item?"selected":""}" data-enemy="${index}">
       <img class="enemy-option-mark" src="assets/enemies/${item.image}.png" alt="">
-      <span><strong>${item.name}</strong><small>${item.rank} · Lv. ${item.level} · ${enemyMaxHp(item)} HP</small></span>
+      <span><strong>${item.name}</strong><small>${item.rank} - Lv. ${item.level} - ${enemyMaxHp(item)} HP</small><small>${item.tactic||`${item.bonusItem||item.item} focus`} - ${item.bonusItem?Math.round(enemyBonusDropChance(item)*100):0}% bonus</small></span>
       <b>${coins[0]}-${coins[1]}c</b>
     </button>`;
   }).join("");
@@ -3110,7 +3251,7 @@ function renderAdventure() {
   document.querySelector("#bestiary-grid").innerHTML=zoneData.slice(0,state.unlockedZones).map((zone,index)=>{
     const enemies=zone.enemies.map(enemy=>`<div class="bestiary-entry">
       <img src="assets/enemies/${enemy.image}.png" alt="">
-      <div><strong>${enemy.name}</strong><span>${state.bestiary.kills[enemy.name]||0} defeated</span><small>${enemy.item} 100% · ${enemy.bonusItem} 45% · gear ${Math.round(threatGearChance(index,enemy.name)*1000)/10}%</small>${renderEnemyMastery(enemy)}</div>
+      <div><strong>${enemy.name}</strong><span>${state.bestiary.kills[enemy.name]||0} defeated</span><small>${enemy.item} 100% - ${enemy.bonusItem} ${Math.round(enemyBonusDropChance(enemy,index,0)*100)}% - gear ${Math.round(threatGearChance(index,enemy.name)*1000)/10}%</small><small>${enemy.tactic||""}</small>${renderEnemyMastery(enemy)}</div>
     </div>`).join("");
     const relic=relicPowerData[zone.boss.item];
     return `<section class="bestiary-zone"><header><div><span>Zone ${index+1}</span><h4>${zone.name}</h4></div><strong>${state.bossDefeated[index]?"Boss cleared":"Boss undefeated"}</strong></header>

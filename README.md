@@ -16,7 +16,7 @@ repository page will launch GitHub, not the playable web app.
 
 - **Dual-track idle** — run a gathering/crafting skill and combat simultaneously
 - **6 skills** — Mining, Woodcutting, Fishing, Smithing, Cooking, Alchemy, each feeding the others
-- **8 combat zones** with bosses, selectable Threat ranks, enemy traits, and combat stances
+- **8 combat zones** with bosses, selectable Threat ranks, enemy traits, zone cache rewards, and combat stances
 - **10 equipment tiers** with rarity, affixes, upgrading, enchanting, reforging, and set bonuses
 - **Deep equipment progression** — forged gear changes combat stats, rarity, affixes, upgrades, enchants, reforges, and set bonuses
 - **Mastery & Action Expertise**, a cross-skill **production queue**, and practical achievement rewards

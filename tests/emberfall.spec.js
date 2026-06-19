@@ -2,7 +2,7 @@ const { test, expect } = require("@playwright/test");
 const fs = require("fs");
 const path = require("path");
 
-const BUILD_URL = "http://localhost:8000/?build=progression-v25";
+const BUILD_URL = "http://localhost:8000/?build=progression-v26";
 const itemSlug = name => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 test("loads the game and renders core progression surfaces", async ({ page }) => {
@@ -17,6 +17,9 @@ test("loads the game and renders core progression surfaces", async ({ page }) =>
   await expect(page.locator("#director-goals button")).toHaveCount(3);
   await expect(page.locator("#director-chapter")).toContainText("Chapter 1");
   await expect(page.locator("#combat-event-card")).toContainText("Start combat");
+  await expect(page.locator("#zone-spoils-name")).toContainText("Greenveil Forager's Cache");
+  await expect(page.locator("#enemy-loot")).toContainText("Greenveil Forager's Cache");
+  await expect(page.locator("#enemy-list .enemy-option").first()).toContainText("Copper support");
   await expect(page.locator("#hero-model > img")).toHaveAttribute("src", "assets/hero.png");
   await expect(page.locator("#hero-model .hero-gear")).toHaveCount(0);
   await expect(page.locator("#director-goals")).toContainText("Starter:");
@@ -88,6 +91,7 @@ test("all displayable items have project icon art", async ({ page }) => {
         values.add(enemy.item);
         if (enemy.bonusItem) values.add(enemy.bonusItem);
       });
+      (zone.cache?.items || []).forEach(drop => values.add(drop.item));
       values.add(zone.boss.item);
       (zone.gearTiers || []).forEach(tier => (equipmentTierData[tier]?.gear || []).forEach(name => values.add(name)));
     });

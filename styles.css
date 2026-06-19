@@ -94,13 +94,15 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .zone-card.locked { opacity:.42; cursor:not-allowed; }
 .zone-card span, .zone-card small { color:var(--muted); font-size:8px; text-transform:uppercase; letter-spacing:1px; }
 .zone-card strong { font:600 11px Cinzel,serif; }
-.zone-profile { display:grid; grid-template-columns:1fr 1fr .7fr 2.2fr 1fr; gap:7px; margin:-8px 0 18px; }
+.zone-profile { display:grid; grid-template-columns:1fr 1fr .7fr 2.1fr 1fr 1.45fr; gap:7px; margin:-8px 0 18px; }
 .zone-profile > div { min-width:0; padding:9px 11px; background:linear-gradient(145deg,#151e18,#0f1511); box-shadow:inset 0 1px rgba(255,255,255,.035); }
 .zone-profile span,.zone-profile strong { display:block; }
 .zone-profile span { color:var(--gold); font-size:7px; text-transform:uppercase; letter-spacing:1px; }
 .zone-profile strong { margin-top:4px; color:#c9d1c7; font-size:8px; line-height:1.4; }
 .zone-profile .zone-environment { box-shadow:inset 2px 0 #c66e43,inset 0 1px rgba(255,255,255,.035); }
 .zone-profile .zone-environment span { color:#df8c5b; }
+.zone-profile .zone-spoils { box-shadow:inset 2px 0 #7d6040,inset 0 1px rgba(255,255,255,.035); }
+.zone-profile .zone-spoils span { color:var(--gold-2); }
 .skill-level-card strong { color: var(--gold-2); font: 700 26px Cinzel, serif; }
 .combat-layout { display: grid; grid-template-columns: minmax(280px,1fr) 190px minmax(280px,1fr); gap: 18px; align-items: center; }
 .fighter-card, .current-action, .equipment-panel { background: linear-gradient(160deg, #1c261e, #121813 65%); border: 1px solid var(--line); padding: 20px; box-shadow: var(--shadow); position: relative; overflow: hidden; }

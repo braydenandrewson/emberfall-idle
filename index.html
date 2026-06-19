@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=25">
+  <link rel="stylesheet" href="styles.css?v=26">
 </head>
 <body>
   <div class="app-shell">
@@ -100,6 +100,7 @@
           <div class="threat-control"><span>Threat Rank</span><select id="zone-threat" aria-label="Select zone threat"><option value="0">0</option></select><small id="zone-threat-reward">Base rewards</small></div>
           <div class="zone-environment"><span id="zone-environment-name">Sheltered Trail</span><strong id="zone-environment-description">No environmental penalty.</strong></div>
           <div><span>Gear Drops</span><strong id="zone-gear-tiers">Bronze</strong></div>
+          <div class="zone-spoils"><span id="zone-spoils-name">Forager Cache</span><strong id="zone-spoils-description">Extra supplies can appear during hunts.</strong></div>
         </div>
         <div class="combat-layout">
           <article class="fighter-card hero-card">
@@ -467,6 +468,6 @@
       document.documentElement.dataset.emberfallError = `${event.message} (${event.lineno}:${event.colno})`;
     });
   </script>
-  <script src="game.js?v=25"></script>
+  <script src="game.js?v=26"></script>
 </body>
 </html>

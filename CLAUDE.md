@@ -54,7 +54,7 @@ Roughly top-to-bottom:
    - `rotatingMerchantData`, `crossSkillData`
    - `generalAchievementTracks` (+ `zoneAchievementTracks`, `enemyAchievementTracks`
      derived from `zoneData`)
-   - `itemData` (all items), `zoneData` (combat zones + enemies + bosses),
+   - `itemData` (all items), `zoneData` (combat zones + enemies + bosses + cache rewards),
      `masteryMilestones`, `equipmentTierData`, `equipmentData`, `craftingRecipes`,
      `skillData` (mining/woodcutting/fishing/smithing/cooking/alchemy + their actions)
 3. **`defaultState()`** (~633): the canonical shape of a save/game state object. The

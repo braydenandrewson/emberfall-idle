@@ -2,7 +2,7 @@ const { test, expect } = require("@playwright/test");
 const fs = require("fs");
 const path = require("path");
 
-const BUILD_URL = "http://localhost:8000/?build=progression-v24";
+const BUILD_URL = "http://localhost:8000/?build=progression-v25";
 const itemSlug = name => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 test("loads the game and renders core progression surfaces", async ({ page }) => {
@@ -17,13 +17,13 @@ test("loads the game and renders core progression surfaces", async ({ page }) =>
   await expect(page.locator("#director-goals button")).toHaveCount(3);
   await expect(page.locator("#director-chapter")).toContainText("Chapter 1");
   await expect(page.locator("#combat-event-card")).toContainText("Start combat");
-  await expect(page.locator("#hero-model")).toHaveAttribute("data-loadout", "Starter kit");
-  await expect(page.locator("#hero-model")).toHaveAttribute("data-weapon-tier", "Starter");
+  await expect(page.locator("#hero-model > img")).toHaveAttribute("src", "assets/hero.png");
+  await expect(page.locator("#hero-model .hero-gear")).toHaveCount(0);
   await expect(page.locator("#director-goals")).toContainText("Starter:");
   expect(errors).toEqual([]);
 });
 
-test("renders matching equipment as a full visual set", async ({ page }) => {
+test("equipped gear keeps base hero portrait", async ({ page }) => {
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
   await page.addInitScript(() => {
@@ -41,25 +41,15 @@ test("renders matching equipment as a full visual set", async ({ page }) => {
   await page.goto(BUILD_URL);
 
   const hero = page.locator("#hero-model");
-  await expect(hero).toHaveAttribute("data-loadout", "Bronze full set");
-  await expect(hero).toHaveAttribute("data-full-set", "Bronze");
-  await expect(hero).toHaveAttribute("data-weapon-tier", "Bronze");
-  await expect(hero).toHaveClass(/full-set/);
-  await expect(page.locator("#hero-model .hero-set-sigil")).toBeVisible();
-  const combatGeometry = await page.evaluate(() => {
-    const root = document.querySelector("#hero-model").getBoundingClientRect();
-    const shield = document.querySelector("#hero-model .hero-shield").getBoundingClientRect();
-    const weapon = document.querySelector("#hero-model .hero-weapon").getBoundingClientRect();
-    return {
-      shieldCenter: shield.left + shield.width / 2 - root.left,
-      weaponCenter: weapon.left + weapon.width / 2 - root.left,
-      modelCenter: root.width / 2
-    };
-  });
-  expect(combatGeometry.shieldCenter).toBeGreaterThan(combatGeometry.modelCenter + 35);
-  expect(combatGeometry.weaponCenter).toBeLessThan(combatGeometry.modelCenter - 20);
+  await expect(hero.locator("> img")).toHaveAttribute("src", "assets/hero.png");
+  await expect(hero.locator(".hero-gear,.hero-set-aura")).toHaveCount(0);
+  expect(await hero.getAttribute("data-loadout")).toBeNull();
 
   await page.locator('[data-view="inventory"]').click();
+  await expect(page.locator("#equipment-slots")).toContainText("Bronze Sword");
+  await expect(page.locator("#equipment-slots")).toContainText("Active Set Bonuses");
+  await expect(page.locator("#inventory-hero-model > img")).toHaveAttribute("src", "assets/hero.png");
+  await expect(page.locator("#inventory-hero-model .hero-gear,.hero-set-aura")).toHaveCount(0);
   const inventoryGeometry = await page.evaluate(() => {
     const stage = document.querySelector(".equipment-hero").getBoundingClientRect();
     const image = document.querySelector("#inventory-hero-model img").getBoundingClientRect();

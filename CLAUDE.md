@@ -54,8 +54,6 @@ Roughly top-to-bottom:
    - `rotatingMerchantData`, `crossSkillData`
    - `generalAchievementTracks` (+ `zoneAchievementTracks`, `enemyAchievementTracks`
      derived from `zoneData`)
-   - `equipmentTierVisuals` drives the hero paper-doll overlay colors, glow, and rarity
-     state by equipped tier.
    - `itemData` (all items), `zoneData` (combat zones + enemies + bosses),
      `masteryMilestones`, `equipmentTierData`, `equipmentData`, `craftingRecipes`,
      `skillData` (mining/woodcutting/fishing/smithing/cooking/alchemy + their actions)
@@ -114,9 +112,9 @@ Mobile uses a compact nav with a "+ More" menu.
 - Current long-term loops include chapter questlines, starter quests, repeatable bounties,
   township contributions, reward reveal modals, combat event windows, and the gear
   collection log. Keep these data-driven and do not reintroduce manual combat abilities.
-- The hero model is a CSS/JS paper doll: `renderHeroModels()` layers weapon, shield,
-  helm, armor, full-set aura, and combat animation states on top of `assets/hero.png`
-  using equipped item tiers.
+- The hero model intentionally renders the static base `assets/hero.png` only. Equipment
+  affects stats, inventory, crafting, drops, and set bonuses, but should not visually
+  overlay the character model unless that system is rebuilt from proper character art.
 
 ## Current state (as of 2026-06-15)
 

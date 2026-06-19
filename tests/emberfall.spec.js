@@ -1,10 +1,15 @@
 const { test, expect } = require("@playwright/test");
+const fs = require("fs");
+const path = require("path");
+
+const BUILD_URL = "http://localhost:8000/?build=progression-v23";
+const itemSlug = name => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 test("loads the game and renders core progression surfaces", async ({ page }) => {
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
 
-  await page.goto("http://localhost:8000/?build=progression-v22");
+  await page.goto(BUILD_URL);
 
   await expect(page.getByRole("heading", { name: "Combat Grounds" })).toBeVisible();
   await expect(page.locator("#zone-list .zone-card")).toHaveCount(8);
@@ -33,7 +38,7 @@ test("renders matching equipment as a full visual set", async ({ page }) => {
     localStorage.setItem("emberfall-idle-save-v1-backup", JSON.stringify(save));
     localStorage.setItem("emberfall-idle-recovery-20260613", "1");
   });
-  await page.goto("http://localhost:8000/?build=progression-v22");
+  await page.goto(BUILD_URL);
 
   const hero = page.locator("#hero-model");
   await expect(hero).toHaveAttribute("data-loadout", "Bronze full set");
@@ -44,10 +49,49 @@ test("renders matching equipment as a full visual set", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("all displayable items have project icon art", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.goto(BUILD_URL);
+
+  const names = await page.evaluate(() => {
+    const values = new Set();
+    Object.keys(itemData).forEach(name => values.add(name));
+    Object.keys(equipmentData).filter(name => name !== "None").forEach(name => values.add(name));
+    craftingRecipes.forEach(recipe => {
+      values.add(recipe.name);
+      Object.keys(recipe.costs || {}).forEach(name => values.add(name));
+    });
+    productionSkills.forEach(id => skillData[id].actions.forEach(action => {
+      values.add(action.item);
+      Object.keys(action.costs || {}).forEach(name => values.add(name));
+    }));
+    zoneData.forEach(zone => {
+      zone.enemies.forEach(enemy => {
+        values.add(enemy.item);
+        if (enemy.bonusItem) values.add(enemy.bonusItem);
+      });
+      values.add(zone.boss.item);
+      (zone.gearTiers || []).forEach(tier => (equipmentTierData[tier]?.gear || []).forEach(name => values.add(name)));
+    });
+    rotatingMerchantData.forEach(offer => {
+      if (offer.item) values.add(offer.item);
+      Object.keys(offer.items || {}).forEach(name => values.add(name));
+    });
+    return [...values].sort();
+  });
+  const existing = new Set(fs.readdirSync(path.join(__dirname, "..", "assets", "items-clean"))
+    .filter(file => file.endsWith(".png"))
+    .map(file => file.replace(/\.png$/, "")));
+  const missing = names.filter(name => !existing.has(itemSlug(name)));
+  expect(missing).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
 test("opens queue, crafting, market, and adventure interfaces", async ({ page }) => {
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
-  await page.goto("http://localhost:8000/?build=progression-v22");
+  await page.goto(BUILD_URL);
 
   await page.locator('[data-view="mining"]').click();
   await expect(page.getByRole("heading", { name: "Production Queue" })).toBeVisible();
@@ -77,7 +121,7 @@ test("opens queue, crafting, market, and adventure interfaces", async ({ page })
 });
 
 test("runs and persists a cross-skill production queue", async ({ page }) => {
-  await page.goto("http://localhost:8000/?build=progression-v22");
+  await page.goto(BUILD_URL);
   await page.locator('[data-view="mining"]').click();
   await page.getByRole("button", { name: "Add Current Action" }).click();
   await expect(page.locator("#production-queue .queue-job")).toHaveCount(1);
@@ -106,7 +150,7 @@ test("offline progress awards combat and active production together", async ({ p
     localStorage.setItem("emberfall-idle-save-v1-backup", JSON.stringify(save));
     localStorage.setItem("emberfall-idle-recovery-20260613", "1");
   });
-  await page.goto("http://localhost:8000/?build=progression-v22");
+  await page.goto(BUILD_URL);
 
   await expect(page.locator("#offline-modal")).toBeVisible();
   await expect(page.locator("#offline-loot")).toContainText("Combat");
@@ -138,7 +182,7 @@ test("supports selectable threat and compact mobile navigation", async ({ page }
     localStorage.setItem("emberfall-idle-save-v1-backup", JSON.stringify(save));
     localStorage.setItem("emberfall-idle-recovery-20260613", "1");
   });
-  await page.goto("http://localhost:8000/?build=progression-v22");
+  await page.goto(BUILD_URL);
 
   await page.locator("#zone-threat").selectOption("3");
   await expect(page.locator("#zone-threat")).toHaveValue("3");
@@ -174,7 +218,7 @@ test("expands achievements into escalating tracks with permanent hunt bonuses", 
     localStorage.setItem("emberfall-idle-save-v1-backup", JSON.stringify(save));
     localStorage.setItem("emberfall-idle-recovery-20260613", "1");
   });
-  await page.goto("http://localhost:8000/?build=progression-v22");
+  await page.goto(BUILD_URL);
   await page.getByRole("button", { name: "Adventure Board" }).click();
 
   await expect(page.getByRole("heading", { name: "Achievement Tracks" })).toBeVisible();

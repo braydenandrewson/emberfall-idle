@@ -106,6 +106,7 @@ Mobile uses a compact nav with a "+ More" menu.
 - Asset images live in `assets/` (`assets/skills/*-v2.png`, `assets/navigation/*-v2.png`,
   `assets/enemies/*.png`, `assets/items/*.png`, plus `assets/items-clean/*` variants).
   Names referenced from data tables (`image:` fields, `skillIconPath`, `itemIcon`).
+  The Playwright suite audits displayable item names against `assets/items-clean/*.png`.
 - Bump `?v=N` in `index.html` after editing `game.js`/`styles.css`.
 - `index.html` installs a `window.onerror` handler that stashes the message in
   `document.documentElement.dataset.emberfallError` — useful for debugging/tests.

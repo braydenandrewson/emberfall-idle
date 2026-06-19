@@ -27,6 +27,9 @@ Completed assets:
 - `guild-armory-blueprint.png`
 - `guildmaster-blade.png`
 - `guildmaster-ward.png`
+- `wooden-grip.png`
+- `shield-frame.png`
+- `armor-lining.png`
 
 Future item additions should follow the same style: a single centered painted
 fantasy object, no text, no border, and a transparent background.

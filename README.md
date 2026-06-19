@@ -18,7 +18,7 @@ repository page will launch GitHub, not the playable web app.
 - **6 skills** — Mining, Woodcutting, Fishing, Smithing, Cooking, Alchemy, each feeding the others
 - **8 combat zones** with bosses, selectable Threat ranks, enemy traits, and combat stances
 - **10 equipment tiers** with rarity, affixes, upgrading, enchanting, reforging, and set bonuses
-- **Visible equipment progression** — the adventurer portrait changes by equipped weapon, shield, helm, and armor tier
+- **Visible equipment progression** — the adventurer model changes by equipped weapon, shield, helm, and armor tier, with full-set glow and combat animations
 - **Mastery & Action Expertise**, a cross-skill **production queue**, and practical achievement rewards
 - **Adventure Board** — starter quests, chapter questlines, guild contracts, repeatable zone bounties, township contributions, achievement tracks, and a bestiary
 - **Reward reveal moments** for contracts, chapters, bounties, bosses, rare drops, and collection completions

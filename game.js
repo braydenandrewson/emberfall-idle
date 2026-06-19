@@ -712,18 +712,19 @@ const equipmentTierData = {
   Starforged:{bar:"Starforged Bar",bonus:[36,45,12],gear:["Starforged Blade","Starforged Aegis","Starforged Crown","Starforged Plate"]}
 };
 const equipmentTierVisuals = {
-  Starter:{color:"#7a5a37",trim:"#c8a071"},
-  Bronze:{color:"#a86537",trim:"#e1a35d"},
-  Iron:{color:"#8d9696",trim:"#d2d9d7"},
-  Steel:{color:"#7d8fa3",trim:"#dbe9f4"},
-  Silver:{color:"#c8d7df",trim:"#ffffff"},
-  Mithril:{color:"#4fb7c6",trim:"#a5f1ff"},
-  Obsidian:{color:"#2d2536",trim:"#9c6ddb"},
-  Emberforged:{color:"#c45732",trim:"#ffc15f"},
-  Runic:{color:"#5a9c74",trim:"#b9ffc6"},
-  Astral:{color:"#5d63d6",trim:"#d2c8ff"},
-  Starforged:{color:"#f0d36f",trim:"#fff2b2"}
+  Starter:{color:"#7a5a37",trim:"#c8a071",glow:"#8a6640"},
+  Bronze:{color:"#a86537",trim:"#e1a35d",glow:"#d08a45"},
+  Iron:{color:"#8d9696",trim:"#d2d9d7",glow:"#a9b3b1"},
+  Steel:{color:"#7d8fa3",trim:"#dbe9f4",glow:"#9db4cc"},
+  Silver:{color:"#c8d7df",trim:"#ffffff",glow:"#f4fbff"},
+  Mithril:{color:"#4fb7c6",trim:"#a5f1ff",glow:"#65e6f0"},
+  Obsidian:{color:"#2d2536",trim:"#9c6ddb",glow:"#7d4fc9",rare:true},
+  Emberforged:{color:"#c45732",trim:"#ffc15f",glow:"#ff7845",rare:true},
+  Runic:{color:"#5a9c74",trim:"#b9ffc6",glow:"#75df8f",rare:true},
+  Astral:{color:"#5d63d6",trim:"#d2c8ff",glow:"#a89bff",rare:true},
+  Starforged:{color:"#f0d36f",trim:"#fff2b2",glow:"#ffe777",rare:true}
 };
+const heroVisualTierOrder = Object.keys(equipmentTierVisuals);
 
 const equipmentData = {
   "Rusty Sword":{slot:"weapon",attack:3,maxHit:2},
@@ -1093,39 +1094,78 @@ function equipmentVisualTier(baseName) {
   if (!baseName || baseName==="None") return null;
   return equipmentSetName(baseName)||"Starter";
 }
+function heroTierRank(tier) {
+  const index=heroVisualTierOrder.indexOf(tier);
+  return index<0 ? 0 : index;
+}
 function heroSlotVisual(slot) {
   const base=equipmentBase(state.equipment[slot]);
   const tier=equipmentVisualTier(base);
   return {base,tier,visual:tier?equipmentTierVisuals[tier]||equipmentTierVisuals.Starter:null};
 }
+function heroEquippedVisuals() {
+  return ["weapon","shield","body","head"].map(slot=>({slot,...heroSlotVisual(slot)}))
+    .filter(item=>item.base && item.base!=="None" && item.tier);
+}
+function heroHighestTier() {
+  const tiers=heroEquippedVisuals().map(item=>item.tier);
+  return tiers.sort((a,b)=>heroTierRank(b)-heroTierRank(a))[0]||null;
+}
+function heroFullSetTier() {
+  const equipped=heroEquippedVisuals();
+  if (equipped.length<4) return null;
+  const tier=equipped[0].tier;
+  return tier && tier!=="Starter" && equipped.every(item=>item.tier===tier) ? tier : null;
+}
 function heroLoadoutLabel() {
-  const tiers=["weapon","shield","body","head"].map(slot=>heroSlotVisual(slot).tier).filter(Boolean);
+  const fullSet=heroFullSetTier();
+  if (fullSet) return `${fullSet} full set`;
+  const tiers=heroEquippedVisuals().map(item=>item.tier);
   if (!tiers.length) return "Unarmed";
   const unique=[...new Set(tiers)];
-  const order=Object.keys(equipmentTierVisuals);
-  const highest=unique.sort((a,b)=>order.indexOf(b)-order.indexOf(a))[0];
+  const highest=unique.sort((a,b)=>heroTierRank(b)-heroTierRank(a))[0];
   return unique.length===1 ? `${highest} kit` : `${highest} mixed kit`;
 }
 function heroModelMarkup(includeId=false) {
-  return `<img ${includeId?`id="hero-image"`:""} src="assets/hero.png" alt="${state.characterName}, your adventurer">
+  return `<span class="hero-set-aura"></span>
+    <img ${includeId?`id="hero-image"`:""} src="assets/hero.png" alt="${state.characterName}, your adventurer">
+    <span class="hero-gear hero-cloak"></span>
     <span class="hero-gear hero-helm"></span>
     <span class="hero-gear hero-armor"></span>
     <span class="hero-gear hero-weapon"></span>
-    <span class="hero-gear hero-shield"></span>`;
+    <span class="hero-gear hero-shield"></span>
+    <span class="hero-gear hero-set-sigil"></span>`;
 }
 function renderHeroModel(selector,includeId=false) {
   const root=document.querySelector(selector);
   if (!root) return;
-  if (!root.querySelector("img")) root.innerHTML=heroModelMarkup(includeId);
+  if (!root.querySelector("img") || !root.querySelector(".hero-set-aura")) root.innerHTML=heroModelMarkup(includeId);
   const slots={head:"helm",body:"armor",weapon:"weapon",shield:"shield"};
+  const fullSet=heroFullSetTier();
+  const highestTier=heroHighestTier();
+  const fullVisual=fullSet ? equipmentTierVisuals[fullSet] : null;
+  const highestVisual=highestTier ? equipmentTierVisuals[highestTier] : null;
   root.dataset.loadout=heroLoadoutLabel();
+  root.dataset.fullSet=fullSet||"";
+  root.dataset.highestTier=highestTier||"";
+  root.classList.toggle("full-set",Boolean(fullSet));
+  root.classList.toggle("rare-loadout",heroEquippedVisuals().some(item=>item.visual?.rare));
+  root.classList.toggle("combat-active",selector==="#hero-model" && state.combat);
+  root.style.setProperty("--set-color",fullVisual?.color||highestVisual?.color||"transparent");
+  root.style.setProperty("--set-trim",fullVisual?.trim||highestVisual?.trim||"transparent");
+  root.style.setProperty("--set-glow",fullVisual?.glow||highestVisual?.glow||"transparent");
+  root.querySelectorAll(".hero-cloak,.hero-set-sigil,.hero-set-aura").forEach(layer=>layer.classList.toggle("hidden",!fullSet));
   Object.entries(slots).forEach(([slot,key])=>{
     const layer=root.querySelector(`.hero-${key}`);
     const data=heroSlotVisual(slot);
+    root.dataset[`${key}Tier`]=data.tier||"";
     if (!layer) return;
+    layer.dataset.tier=data.tier||"";
+    layer.dataset.item=data.base||"";
     layer.classList.toggle("hidden",!data.visual || data.base==="None");
     root.style.setProperty(`--${key}-color`,data.visual?.color||"transparent");
     root.style.setProperty(`--${key}-trim`,data.visual?.trim||"transparent");
+    root.style.setProperty(`--${key}-glow`,data.visual?.glow||"transparent");
     layer.title=data.base&&data.base!=="None" ? `${data.base} (${data.tier})` : "";
   });
   const image=root.querySelector("img");
@@ -1134,6 +1174,14 @@ function renderHeroModel(selector,includeId=false) {
 function renderHeroModels() {
   renderHeroModel("#hero-model");
   renderHeroModel("#inventory-hero-model");
+}
+function pulseHeroModel(className) {
+  const root=document.querySelector("#hero-model");
+  if (!root) return;
+  root.classList.remove(className);
+  void root.offsetWidth;
+  root.classList.add(className);
+  window.setTimeout(()=>root.classList.remove(className),className==="hero-victory"?900:420);
 }
 function recipeUnlocked(recipe) { return !recipe.blueprint || state.blueprints.includes(recipe.blueprint); }
 function setBonuses() {
@@ -2291,6 +2339,7 @@ function updateCombat(dt) {
   state.enemyAttackElapsed += dt;
   if (state.attackElapsed >= attackTime) {
     state.attackElapsed -= attackTime;
+    pulseHeroModel("hero-attack");
     if (Math.random()>hitChance()) {
       popDamage("enemy",0,"Miss");
       addLog(`${state.characterName}'s ${style.name.toLowerCase()} strike misses ${enemy.name}.`);
@@ -2304,6 +2353,7 @@ function updateCombat(dt) {
       state.enemyHp -= hit;
       Object.entries(style.xp).forEach(([skill,multiplier])=>grantCombatXp(skill,Math.max(1,Math.round(hit*multiplier))));
       if (style.lifesteal) state.heroHp=Math.min(maxHp(),state.heroHp+Math.max(1,Math.floor(hit*style.lifesteal)));
+      if (critical) pulseHeroModel("hero-crit");
       popDamage("enemy",hit,critical?"Crit":"");
       addLog(`${state.characterName} ${critical?"critically ":""}strikes ${enemy.name} for ${hit}.`);
       if (event?.consumeOnPlayerHit) clearCombatEvent();
@@ -2318,6 +2368,7 @@ function updateCombat(dt) {
     state.enemyAttackElapsed -= currentEnemyAttackTime;
     const foodDodge=isBuffActive("trailmeal") ? .03 : 0;
     if (Math.random()<Math.min(.35,(style.dodge||0)+equipmentBonus("dodge")+foodDodge)) {
+      pulseHeroModel("hero-block");
       popDamage("hero",0,"Dodge");
       addLog(`${state.characterName} evades ${enemy.name}'s attack.`);
       return;
@@ -2341,6 +2392,7 @@ function updateCombat(dt) {
       state.playerStatus.poisonNext=now+800;
       addLog(`${state.characterName} is poisoned by the ${currentEnvironment().name.toLowerCase()}.`);
     }
+    pulseHeroModel(hit>0?"hero-hit":"hero-block");
     popDamage("hero",hit,heavyStrike&&hit>0?"Heavy":"");
     addLog(hit ? `${enemy.name} ${heavyStrike?"lands a heavy strike and ":""}hits ${state.characterName} for ${hit}.` : `${state.characterName} blocks ${enemy.name}'s attack.`);
     if (event?.consumeOnEnemyAttack) clearCombatEvent();
@@ -2505,6 +2557,7 @@ function defeatEnemy() {
     }
     state.fightingBoss=false;
     state.bossPhase=1;
+    pulseHeroModel("hero-victory");
   } else {
     state.zoneKills[state.currentZone]++;
     addLog(`${enemy.name} defeated. Hunt progress: ${state.zoneKills[state.currentZone]}/${currentZone().requiredKills}.`);

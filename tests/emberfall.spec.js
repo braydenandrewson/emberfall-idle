@@ -4,7 +4,7 @@ test("loads the game and renders core progression surfaces", async ({ page }) =>
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
 
-  await page.goto("http://localhost:8000/?build=progression-v21");
+  await page.goto("http://localhost:8000/?build=progression-v22");
 
   await expect(page.getByRole("heading", { name: "Combat Grounds" })).toBeVisible();
   await expect(page.locator("#zone-list .zone-card")).toHaveCount(8);
@@ -13,14 +13,41 @@ test("loads the game and renders core progression surfaces", async ({ page }) =>
   await expect(page.locator("#director-chapter")).toContainText("Chapter 1");
   await expect(page.locator("#combat-event-card")).toContainText("Start combat");
   await expect(page.locator("#hero-model")).toHaveAttribute("data-loadout", "Starter kit");
+  await expect(page.locator("#hero-model")).toHaveAttribute("data-weapon-tier", "Starter");
   await expect(page.locator("#director-goals")).toContainText("Starter:");
+  expect(errors).toEqual([]);
+});
+
+test("renders matching equipment as a full visual set", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.addInitScript(() => {
+    const save = {
+      characterName: "Bronze Tester",
+      equipment: { weapon: "Bronze Sword", shield: "Bronze Shield", body: "Bronze Platebody", head: "Bronze Helm" },
+      inventory: {},
+      skills: {},
+      lastSeen: Date.now()
+    };
+    localStorage.setItem("emberfall-idle-save-v1", JSON.stringify(save));
+    localStorage.setItem("emberfall-idle-save-v1-backup", JSON.stringify(save));
+    localStorage.setItem("emberfall-idle-recovery-20260613", "1");
+  });
+  await page.goto("http://localhost:8000/?build=progression-v22");
+
+  const hero = page.locator("#hero-model");
+  await expect(hero).toHaveAttribute("data-loadout", "Bronze full set");
+  await expect(hero).toHaveAttribute("data-full-set", "Bronze");
+  await expect(hero).toHaveAttribute("data-weapon-tier", "Bronze");
+  await expect(hero).toHaveClass(/full-set/);
+  await expect(page.locator("#hero-model .hero-set-sigil")).toBeVisible();
   expect(errors).toEqual([]);
 });
 
 test("opens queue, crafting, market, and adventure interfaces", async ({ page }) => {
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
-  await page.goto("http://localhost:8000/?build=progression-v21");
+  await page.goto("http://localhost:8000/?build=progression-v22");
 
   await page.locator('[data-view="mining"]').click();
   await expect(page.getByRole("heading", { name: "Production Queue" })).toBeVisible();
@@ -50,7 +77,7 @@ test("opens queue, crafting, market, and adventure interfaces", async ({ page })
 });
 
 test("runs and persists a cross-skill production queue", async ({ page }) => {
-  await page.goto("http://localhost:8000/?build=progression-v21");
+  await page.goto("http://localhost:8000/?build=progression-v22");
   await page.locator('[data-view="mining"]').click();
   await page.getByRole("button", { name: "Add Current Action" }).click();
   await expect(page.locator("#production-queue .queue-job")).toHaveCount(1);
@@ -79,7 +106,7 @@ test("offline progress awards combat and active production together", async ({ p
     localStorage.setItem("emberfall-idle-save-v1-backup", JSON.stringify(save));
     localStorage.setItem("emberfall-idle-recovery-20260613", "1");
   });
-  await page.goto("http://localhost:8000/?build=progression-v21");
+  await page.goto("http://localhost:8000/?build=progression-v22");
 
   await expect(page.locator("#offline-modal")).toBeVisible();
   await expect(page.locator("#offline-loot")).toContainText("Combat");
@@ -111,7 +138,7 @@ test("supports selectable threat and compact mobile navigation", async ({ page }
     localStorage.setItem("emberfall-idle-save-v1-backup", JSON.stringify(save));
     localStorage.setItem("emberfall-idle-recovery-20260613", "1");
   });
-  await page.goto("http://localhost:8000/?build=progression-v21");
+  await page.goto("http://localhost:8000/?build=progression-v22");
 
   await page.locator("#zone-threat").selectOption("3");
   await expect(page.locator("#zone-threat")).toHaveValue("3");
@@ -147,7 +174,7 @@ test("expands achievements into escalating tracks with permanent hunt bonuses", 
     localStorage.setItem("emberfall-idle-save-v1-backup", JSON.stringify(save));
     localStorage.setItem("emberfall-idle-recovery-20260613", "1");
   });
-  await page.goto("http://localhost:8000/?build=progression-v21");
+  await page.goto("http://localhost:8000/?build=progression-v22");
   await page.getByRole("button", { name: "Adventure Board" }).click();
 
   await expect(page.getByRole("heading", { name: "Achievement Tracks" })).toBeVisible();

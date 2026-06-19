@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=21">
+  <link rel="stylesheet" href="styles.css?v=22">
 </head>
 <body>
   <div class="app-shell">
@@ -110,11 +110,14 @@
             <div class="portrait-stage">
               <div class="aura"></div>
               <div id="hero-model" class="hero-model">
+                <span class="hero-set-aura"></span>
                 <img id="hero-image" src="assets/hero.png" alt="Rowan, your adventurer">
+                <span class="hero-gear hero-cloak"></span>
                 <span class="hero-gear hero-helm"></span>
                 <span class="hero-gear hero-armor"></span>
                 <span class="hero-gear hero-weapon"></span>
                 <span class="hero-gear hero-shield"></span>
+                <span class="hero-gear hero-set-sigil"></span>
               </div>
               <span class="damage-number" id="hero-damage"></span>
             </div>
@@ -471,6 +474,6 @@
       document.documentElement.dataset.emberfallError = `${event.message} (${event.lineno}:${event.colno})`;
     });
   </script>
-  <script src="game.js?v=21"></script>
+  <script src="game.js?v=22"></script>
 </body>
 </html>

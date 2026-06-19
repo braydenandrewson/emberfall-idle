@@ -2,7 +2,7 @@ const { test, expect } = require("@playwright/test");
 const fs = require("fs");
 const path = require("path");
 
-const BUILD_URL = "http://localhost:8000/?build=progression-v23";
+const BUILD_URL = "http://localhost:8000/?build=progression-v24";
 const itemSlug = name => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 test("loads the game and renders core progression surfaces", async ({ page }) => {
@@ -46,6 +46,33 @@ test("renders matching equipment as a full visual set", async ({ page }) => {
   await expect(hero).toHaveAttribute("data-weapon-tier", "Bronze");
   await expect(hero).toHaveClass(/full-set/);
   await expect(page.locator("#hero-model .hero-set-sigil")).toBeVisible();
+  const combatGeometry = await page.evaluate(() => {
+    const root = document.querySelector("#hero-model").getBoundingClientRect();
+    const shield = document.querySelector("#hero-model .hero-shield").getBoundingClientRect();
+    const weapon = document.querySelector("#hero-model .hero-weapon").getBoundingClientRect();
+    return {
+      shieldCenter: shield.left + shield.width / 2 - root.left,
+      weaponCenter: weapon.left + weapon.width / 2 - root.left,
+      modelCenter: root.width / 2
+    };
+  });
+  expect(combatGeometry.shieldCenter).toBeGreaterThan(combatGeometry.modelCenter + 35);
+  expect(combatGeometry.weaponCenter).toBeLessThan(combatGeometry.modelCenter - 20);
+
+  await page.locator('[data-view="inventory"]').click();
+  const inventoryGeometry = await page.evaluate(() => {
+    const stage = document.querySelector(".equipment-hero").getBoundingClientRect();
+    const image = document.querySelector("#inventory-hero-model img").getBoundingClientRect();
+    return {
+      topGap: image.top - stage.top,
+      bottomGap: stage.bottom - image.bottom,
+      imageHeight: image.height,
+      stageHeight: stage.height
+    };
+  });
+  expect(inventoryGeometry.topGap).toBeGreaterThanOrEqual(0);
+  expect(inventoryGeometry.bottomGap).toBeGreaterThanOrEqual(0);
+  expect(inventoryGeometry.imageHeight).toBeLessThanOrEqual(inventoryGeometry.stageHeight);
   expect(errors).toEqual([]);
 });
 

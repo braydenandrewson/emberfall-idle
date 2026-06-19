@@ -132,34 +132,34 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .hero-armor { left:38%; top:40%; width:24%; height:28%; z-index:4; scale:.9; clip-path:polygon(18% 0,82% 0,100% 25%,82% 100%,18% 100%,0 25%); background:linear-gradient(150deg,color-mix(in srgb,var(--armor-trim) 80%,#d8c1a4),var(--armor-color) 48%,#121713); box-shadow:inset 0 -10px rgba(0,0,0,.36),0 2px 4px rgba(0,0,0,.26); mix-blend-mode:multiply; opacity:.78; }
 .hero-armor:before { content:""; position:absolute; left:12%; right:12%; top:18%; height:7%; background:rgba(255,255,255,.12); }
 .hero-armor:after { content:""; position:absolute; inset:16% 42%; background:rgba(255,255,255,.13); transform:skewX(-10deg); }
-.hero-weapon { left:20%; top:30%; width:5%; height:48%; z-index:5; translate:22px 4px; transform:rotate(-20deg); border-radius:2px; background:linear-gradient(90deg,var(--weapon-trim),var(--weapon-color),#f3ecd4); box-shadow:1px 3px 4px rgba(0,0,0,.38),0 0 7px color-mix(in srgb,var(--weapon-glow) 26%,transparent); transform-origin:bottom center; clip-path:polygon(42% 0,58% 0,68% 84%,50% 100%,32% 84%); opacity:.88; }
+.hero-weapon { left:12%; top:36%; width:4%; height:43%; z-index:5; translate:0 0; transform:rotate(-23deg); border-radius:2px; background:linear-gradient(90deg,color-mix(in srgb,var(--weapon-color) 72%,#3a2a15),var(--weapon-trim),color-mix(in srgb,var(--weapon-color) 68%,#20170e)); box-shadow:1px 3px 4px rgba(0,0,0,.34),0 0 5px color-mix(in srgb,var(--weapon-glow) 18%,transparent); transform-origin:bottom center; clip-path:polygon(42% 0,58% 0,68% 84%,50% 100%,32% 84%); mix-blend-mode:multiply; opacity:.64; }
 .hero-weapon:before { content:""; position:absolute; left:-135%; bottom:-6%; width:370%; height:10%; border-radius:4px; background:var(--weapon-trim); }
 .hero-weapon:after { content:""; position:absolute; left:40%; top:8%; width:20%; height:70%; border-radius:5px; background:rgba(255,255,255,.2); }
-.hero-shield { right:22%; top:42%; width:18%; height:27%; z-index:6; translate:-14px 2px; clip-path:polygon(50% 0,94% 17%,82% 82%,50% 100%,18% 82%,6% 17%); background:linear-gradient(145deg,color-mix(in srgb,var(--shield-trim) 82%,#d8c1a4),var(--shield-color) 54%,#111611); box-shadow:inset 0 -8px rgba(0,0,0,.36),1px 4px 5px rgba(0,0,0,.34),0 0 8px color-mix(in srgb,var(--shield-glow) 24%,transparent); opacity:.88; }
+.hero-shield { right:-3%; top:35%; width:28%; height:34%; z-index:6; translate:0 0; clip-path:polygon(50% 0,94% 17%,82% 82%,50% 100%,18% 82%,6% 17%); background:linear-gradient(145deg,color-mix(in srgb,var(--shield-color) 74%,#3a2a15),var(--shield-trim) 54%,color-mix(in srgb,var(--shield-color) 62%,#111611)); box-shadow:inset 0 -8px rgba(0,0,0,.36),1px 4px 5px rgba(0,0,0,.28),0 0 6px color-mix(in srgb,var(--shield-glow) 18%,transparent); mix-blend-mode:multiply; opacity:.58; }
 .hero-shield:before { content:""; position:absolute; left:14%; right:14%; top:14%; bottom:14%; border:1px solid rgba(255,255,255,.24); clip-path:inherit; }
 .hero-shield:after { content:""; position:absolute; left:45%; top:9%; width:10%; height:80%; background:rgba(255,255,255,.22); }
 .hero-set-sigil { left:46.5%; top:50%; width:7%; height:7%; z-index:7; opacity:0; border:1px solid color-mix(in srgb,var(--set-trim) 70%,#0a0f0b); border-radius:50%; background:radial-gradient(circle,var(--set-trim),var(--set-color) 54%,transparent 58%); box-shadow:0 0 8px color-mix(in srgb,var(--set-glow) 42%,transparent); }
 .hero-model.full-set .hero-set-sigil { opacity:.72; animation:heroSigilSpin 6s linear infinite; }
-.hero-model[data-weapon-tier="Bronze"] .hero-weapon { height:42%; width:5%; left:22%; top:34%; }
-.hero-model[data-weapon-tier="Iron"] .hero-weapon { height:48%; width:6%; left:20%; clip-path:polygon(37% 0,63% 0,76% 82%,50% 100%,24% 82%); }
-.hero-model[data-weapon-tier="Steel"] .hero-weapon { height:50%; width:7%; left:19%; clip-path:polygon(50% 0,72% 12%,66% 82%,50% 100%,34% 82%,28% 12%); }
-.hero-model[data-weapon-tier="Silver"] .hero-weapon { height:52%; width:4%; left:22%; border-radius:50% 50% 2px 2px; }
-.hero-model[data-weapon-tier="Mithril"] .hero-weapon { height:50%; width:7%; left:19%; clip-path:polygon(50% 0,82% 25%,62% 88%,50% 100%,38% 88%,18% 25%); border-radius:20px 20px 3px 3px; }
-.hero-model[data-weapon-tier="Obsidian"] .hero-weapon { height:51%; width:8%; left:18%; clip-path:polygon(52% 0,72% 18%,58% 31%,82% 52%,59% 63%,66% 86%,50% 100%,32% 82%,40% 63%,18% 51%,42% 31%,28% 16%); }
-.hero-model[data-weapon-tier="Emberforged"] .hero-weapon { height:53%; width:8%; left:18%; clip-path:polygon(48% 0,76% 17%,61% 37%,80% 60%,57% 86%,50% 100%,34% 84%,43% 63%,22% 42%,41% 23%); box-shadow:1px 3px 4px rgba(0,0,0,.38),0 0 11px color-mix(in srgb,var(--weapon-glow) 44%,transparent); }
-.hero-model[data-weapon-tier="Runic"] .hero-weapon { height:52%; width:6%; left:20%; clip-path:polygon(50% 0,68% 10%,68% 83%,50% 100%,32% 83%,32% 10%); }
-.hero-model[data-weapon-tier="Astral"] .hero-weapon { height:50%; width:7%; left:19%; border-radius:90% 35% 8px 8px; clip-path:ellipse(42% 50% at 58% 46%); }
-.hero-model[data-weapon-tier="Starforged"] .hero-weapon { height:55%; width:6%; left:20%; clip-path:polygon(50% 0,67% 12%,61% 83%,50% 100%,39% 83%,33% 12%); box-shadow:1px 3px 4px rgba(0,0,0,.38),0 0 13px color-mix(in srgb,var(--weapon-glow) 48%,transparent); }
+.hero-model[data-weapon-tier="Bronze"] .hero-weapon { height:39%; width:4%; left:13%; top:38%; }
+.hero-model[data-weapon-tier="Iron"] .hero-weapon { height:42%; width:4.5%; left:12%; clip-path:polygon(37% 0,63% 0,76% 82%,50% 100%,24% 82%); }
+.hero-model[data-weapon-tier="Steel"] .hero-weapon { height:43%; width:5%; left:11.5%; clip-path:polygon(50% 0,72% 12%,66% 82%,50% 100%,34% 82%,28% 12%); }
+.hero-model[data-weapon-tier="Silver"] .hero-weapon { height:44%; width:3.5%; left:13%; border-radius:50% 50% 2px 2px; }
+.hero-model[data-weapon-tier="Mithril"] .hero-weapon { height:43%; width:5%; left:11.5%; clip-path:polygon(50% 0,82% 25%,62% 88%,50% 100%,38% 88%,18% 25%); border-radius:20px 20px 3px 3px; }
+.hero-model[data-weapon-tier="Obsidian"] .hero-weapon { height:44%; width:5.5%; left:11%; clip-path:polygon(52% 0,72% 18%,58% 31%,82% 52%,59% 63%,66% 86%,50% 100%,32% 82%,40% 63%,18% 51%,42% 31%,28% 16%); }
+.hero-model[data-weapon-tier="Emberforged"] .hero-weapon { height:45%; width:5.5%; left:11%; clip-path:polygon(48% 0,76% 17%,61% 37%,80% 60%,57% 86%,50% 100%,34% 84%,43% 63%,22% 42%,41% 23%); box-shadow:1px 3px 4px rgba(0,0,0,.34),0 0 6px color-mix(in srgb,var(--weapon-glow) 24%,transparent); }
+.hero-model[data-weapon-tier="Runic"] .hero-weapon { height:44%; width:4.5%; left:12%; clip-path:polygon(50% 0,68% 10%,68% 83%,50% 100%,32% 83%,32% 10%); }
+.hero-model[data-weapon-tier="Astral"] .hero-weapon { height:43%; width:5%; left:11.5%; border-radius:90% 35% 8px 8px; clip-path:ellipse(42% 50% at 58% 46%); }
+.hero-model[data-weapon-tier="Starforged"] .hero-weapon { height:46%; width:4.5%; left:12%; clip-path:polygon(50% 0,67% 12%,61% 83%,50% 100%,39% 83%,33% 12%); box-shadow:1px 3px 4px rgba(0,0,0,.34),0 0 7px color-mix(in srgb,var(--weapon-glow) 26%,transparent); }
 .hero-model[data-shield-tier="Bronze"] .hero-shield { border-radius:50%; clip-path:circle(50% at 50% 50%); }
 .hero-model[data-shield-tier="Iron"] .hero-shield { clip-path:polygon(50% 0,96% 18%,84% 84%,50% 100%,16% 84%,4% 18%); }
 .hero-model[data-shield-tier="Steel"] .hero-shield { width:19%; height:31%; top:39%; clip-path:polygon(21% 0,79% 0,92% 77%,50% 100%,8% 77%); }
 .hero-model[data-shield-tier="Silver"] .hero-shield { clip-path:polygon(50% 0,94% 25%,74% 100%,50% 84%,26% 100%,6% 25%); }
 .hero-model[data-shield-tier="Mithril"] .hero-shield { clip-path:polygon(50% 0,100% 28%,70% 89%,50% 100%,30% 89%,0 28%); border-radius:28% 28% 44% 44%; }
 .hero-model[data-shield-tier="Obsidian"] .hero-shield { clip-path:polygon(50% 0,93% 14%,81% 34%,95% 54%,72% 88%,50% 100%,28% 88%,5% 54%,19% 34%,7% 14%); }
-.hero-model[data-shield-tier="Emberforged"] .hero-shield { clip-path:polygon(50% 0,87% 16%,100% 55%,69% 92%,50% 100%,31% 92%,0 55%,13% 16%); box-shadow:inset 0 -8px rgba(0,0,0,.36),1px 4px 5px rgba(0,0,0,.34),0 0 12px color-mix(in srgb,var(--shield-glow) 42%,transparent); }
+.hero-model[data-shield-tier="Emberforged"] .hero-shield { clip-path:polygon(50% 0,87% 16%,100% 55%,69% 92%,50% 100%,31% 92%,0 55%,13% 16%); box-shadow:inset 0 -8px rgba(0,0,0,.36),1px 4px 5px rgba(0,0,0,.28),0 0 7px color-mix(in srgb,var(--shield-glow) 26%,transparent); }
 .hero-model[data-shield-tier="Runic"] .hero-shield { clip-path:polygon(25% 0,75% 0,96% 42%,78% 100%,22% 100%,4% 42%); }
 .hero-model[data-shield-tier="Astral"] .hero-shield { clip-path:ellipse(43% 50% at 50% 50%); }
-.hero-model[data-shield-tier="Starforged"] .hero-shield { clip-path:polygon(50% 0,88% 18%,76% 86%,50% 100%,24% 86%,12% 18%); box-shadow:inset 0 -8px rgba(0,0,0,.36),1px 4px 5px rgba(0,0,0,.34),0 0 14px color-mix(in srgb,var(--shield-glow) 48%,transparent); }
+.hero-model[data-shield-tier="Starforged"] .hero-shield { clip-path:polygon(50% 0,88% 18%,76% 86%,50% 100%,24% 86%,12% 18%); box-shadow:inset 0 -8px rgba(0,0,0,.36),1px 4px 5px rgba(0,0,0,.28),0 0 8px color-mix(in srgb,var(--shield-glow) 28%,transparent); }
 .hero-model[data-armor-tier="Bronze"] .hero-armor { clip-path:polygon(25% 0,75% 0,96% 26%,76% 100%,24% 100%,4% 26%); }
 .hero-model[data-armor-tier="Iron"] .hero-armor { width:30%; left:35%; clip-path:polygon(14% 0,86% 0,100% 22%,78% 100%,22% 100%,0 22%); }
 .hero-model[data-armor-tier="Steel"] .hero-armor { width:31%; left:34%; clip-path:polygon(8% 8%,30% 0,70% 0,92% 8%,82% 100%,18% 100%); }
@@ -180,6 +180,8 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .hero-model[data-helm-tier="Runic"] .hero-helm { clip-path:polygon(18% 0,82% 0,100% 42%,74% 100%,26% 100%,0 42%); border-radius:2px; }
 .hero-model[data-helm-tier="Astral"] .hero-helm { clip-path:ellipse(48% 42% at 50% 55%); }
 .hero-model[data-helm-tier="Starforged"] .hero-helm { clip-path:polygon(50% 0,62% 28%,92% 22%,70% 48%,78% 100%,50% 82%,22% 100%,30% 48%,8% 22%,38% 28%); box-shadow:inset 0 -4px rgba(0,0,0,.34),0 2px 3px rgba(0,0,0,.26),0 0 11px color-mix(in srgb,var(--helm-glow) 42%,transparent); }
+.hero-model[data-weapon-tier] .hero-weapon { left:21%; top:56%; width:3.5%; height:30%; transform:rotate(43deg); opacity:.32; box-shadow:1px 2px 3px rgba(0,0,0,.28),0 0 4px color-mix(in srgb,var(--weapon-glow) 16%,transparent); }
+.hero-model[data-shield-tier] .hero-shield { right:8%; top:38%; width:24%; height:31%; opacity:.34; box-shadow:inset 0 -8px rgba(0,0,0,.34),1px 3px 4px rgba(0,0,0,.24),0 0 5px color-mix(in srgb,var(--shield-glow) 16%,transparent); }
 @keyframes heroIdleBreath { 0%,100%{transform:translateY(0) scale(1);} 50%{transform:translateY(-2px) scale(1.006);} }
 @keyframes heroCombatIdle { 0%,100%{transform:translateY(0) rotate(-.2deg);} 50%{transform:translateY(-4px) rotate(.3deg);} }
 @keyframes heroAuraPulse { 0%,100%{transform:scale(.96);opacity:.45;} 50%{transform:scale(1.04);opacity:.88;} }
@@ -322,9 +324,9 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .milestone strong { display:block; color:#c8a7e9; font:700 15px Cinzel,serif; }
 .milestone span { display:block; color:var(--muted); font-size:8px; line-height:1.4; margin-top:5px; }
 .inventory-layout { display:grid; grid-template-columns:310px 1fr; gap:22px; }
-.equipment-hero { height:275px; display:flex; justify-content:center; align-items:end; border-bottom:1px solid var(--line); margin-bottom:14px; background:radial-gradient(circle at 50% 60%,#354534,transparent 55%); overflow:hidden; }
-.equipment-hero img { height:120%; margin-top:10px; }
-.inventory-hero-model { height:116%; width:min(230px,100%); }
+.equipment-hero { height:335px; display:flex; justify-content:center; align-items:end; border-bottom:1px solid var(--line); margin-bottom:14px; background:radial-gradient(circle at 50% 60%,#354534,transparent 55%); overflow:visible; }
+.equipment-hero img { height:96%; margin-top:0; }
+.inventory-hero-model { height:100%; width:min(245px,100%); }
 .equipment-slots { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
 .equipment-slot { border:1px solid var(--line); padding:9px; font-size:10px; display:flex; justify-content:space-between; }
 .equipment-slot span { color:var(--muted); }

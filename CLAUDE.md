@@ -112,6 +112,9 @@ Mobile uses a compact nav with a "+ More" menu.
 - Current long-term loops include chapter questlines, starter quests, repeatable bounties,
   township contributions, reward reveal modals, combat event windows, and the gear
   collection log. Keep these data-driven and do not reintroduce manual combat abilities.
+- Inventory cards generate item source/use guidance from `skillData`, `craftingRecipes`,
+  `zoneData`, and marketplace data. Gear cleanup protects equipped/locked pieces and
+  should keep bulk actions conservative.
 - The hero model intentionally renders the static base `assets/hero.png` only. Equipment
   affects stats, inventory, crafting, drops, and set bonuses, but should not visually
   overlay the character model unless that system is rebuilt from proper character art.

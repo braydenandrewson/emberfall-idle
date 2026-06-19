@@ -23,6 +23,7 @@ repository page will launch GitHub, not the playable web app.
 - **Adventure Board** — starter quests, chapter questlines, guild contracts, repeatable zone bounties, township contributions, achievement tracks, and a bestiary
 - **Reward reveal moments** for contracts, chapters, bounties, bosses, rare drops, and collection completions
 - **Gear collection log** with tier completion rewards for building out full equipment sets
+- **Inventory management tools** with item source/use guidance, gear comparison, locking, bulk common salvage, and best-gear protection
 - **Combat events** that create temporary weak points, ambushes, guard windows, and rally rewards
 - **Progressive township funding** — contribute materials over time instead of needing every project cost upfront
 - **Smithing components** — forged gear now uses bars, matching wood, and component prep such as grips, shield frames, and armor lining

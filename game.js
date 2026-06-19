@@ -3294,29 +3294,176 @@ function renderInventoryLegacy() {
   document.querySelectorAll(".sell-button").forEach(btn=>btn.onclick=()=>sellInventoryItem(btn.dataset.item));
 }
 
+function compactList(items=[],limit=3) {
+  const unique=[...new Set(items.filter(Boolean))];
+  return unique.length>limit ? `${unique.slice(0,limit).join(", ")} +${unique.length-limit} more` : unique.join(", ");
+}
+
+function itemCraftUses(name) {
+  const uses=[];
+  productionSkills.forEach(id=>{
+    skillData[id].actions
+      .filter(action=>action.costs?.[name])
+      .forEach(action=>uses.push(`${skillData[id].name}: ${action.name}`));
+  });
+  craftingRecipes
+    .filter(recipe=>recipe.costs?.[name])
+    .forEach(recipe=>uses.push(`Craft ${recipe.name}`));
+  Object.values(townProjectData)
+    .filter(project=>project.baseCost?.[name])
+    .forEach(project=>uses.push(`${project.name} project`));
+  return uses;
+}
+
+function itemSources(name) {
+  const sources=[];
+  productionSkills.forEach(id=>{
+    skillData[id].actions
+      .filter(action=>action.item===name)
+      .forEach(action=>sources.push(`${skillData[id].name}: ${action.name}`));
+  });
+  craftingRecipes
+    .filter(recipe=>recipe.name===name)
+    .forEach(recipe=>sources.push(`Crafting: Smithing ${recipe.level}`));
+  zoneData.forEach(zone=>{
+    zone.enemies.forEach(enemy=>{
+      if (enemy.item===name) sources.push(`${zone.name}: ${enemy.name} 100%`);
+      if (enemy.bonusItem===name) sources.push(`${zone.name}: ${enemy.name} ${Math.round((enemy.bonusChance??.45)*100)}%`);
+    });
+    if (zone.boss.item===name) sources.push(`${zone.name}: ${zone.boss.name} boss`);
+    (zone.cache?.items||[])
+      .filter(drop=>drop.item===name)
+      .forEach(()=>sources.push(`${zone.name}: ${zone.cache.name}`));
+  });
+  rotatingMerchantData.forEach(offer=>{
+    if (offer.item===name || offer.items?.[name]) sources.push("Traveling Quartermaster");
+  });
+  return sources;
+}
+
+function itemKeepAdvice(name) {
+  const meta=itemMeta(name);
+  const uses=itemCraftUses(name);
+  if (relicPowerData[name] && !state.relicsActivated[name]) return "Attune one copy before selling extras.";
+  if (relicPowerData[name]) return uses.length ? "Relic is active; keep spares for crafting or exchange extras." : "Relic is active; exchange or sell spare copies.";
+  if (name==="Forge Essence") return "Save for reforging, enchanting cleanup, and gear progression.";
+  if (name==="Reforge Token") return "Save for rerolling affixes on promising gear.";
+  if (["Food","Consumable","Tonic"].includes(meta.category)) return "Keep a field supply before long combat runs.";
+  if (uses.length) return "Keep enough for active recipes and township contributions.";
+  if (meta.category==="Combat Material") return "Combat material; useful for contracts, alchemy, crafting, or selling surplus.";
+  return "Safe to sell when you have no near-term recipe need.";
+}
+
+function itemDetailHtml(name) {
+  const uses=compactList(itemCraftUses(name),4)||"No direct recipe currently uses this.";
+  const sources=compactList(itemSources(name),3)||"Earned through progression, rewards, or marketplace stock.";
+  return `<div class="item-details">
+    <span><b>Used in:</b> ${uses}</span>
+    <span><b>Best source:</b> ${sources}</span>
+    <span><b>Keep/sell:</b> ${itemKeepAdvice(name)}</span>
+  </div>`;
+}
+
+function gearPowerScore(gear) {
+  const stats=gearStats(gear);
+  return Math.round(
+    (stats.attack||0)*1.2+
+    (stats.defence||0)*1.05+
+    (stats.maxHit||0)*2.2+
+    (stats.maxHp||0)*.16+
+    (stats.crit||0)*150+
+    (stats.dodge||0)*130+
+    (gear.upgrade||0)*4+
+    Object.keys(rarityData).indexOf(gear.rarity)*3
+  );
+}
+
+function formatSignedStatValue(stat,value) {
+  const amount=formatStatValue(stat,Math.abs(value));
+  return value>0 ? `+${amount}` : value<0 ? `-${amount}` : "0";
+}
+
+function gearComparisonHtml(gear) {
+  const slot=equipmentData[gear.baseName]?.slot;
+  const current=gearById(state.equipment[slot]);
+  const candidate=gearStats(gear);
+  const score=gearPowerScore(gear);
+  if (!current) {
+    return `<div class="gear-compare">No comparable gear is equipped. Estimated power ${score}.</div>`;
+  }
+  const equipped=gearStats(current);
+  const currentScore=gearPowerScore(current);
+  const labels={attack:"ATK",defence:"DEF",maxHit:"Max Hit",maxHp:"HP",crit:"Crit",dodge:"Dodge"};
+  const rows=["attack","defence","maxHit","maxHp","crit","dodge"].map(stat=>{
+    const change=(candidate[stat]||0)-(equipped[stat]||0);
+    return `<span class="${change>0?"positive":change<0?"negative":"neutral"}"><b>${labels[stat]}</b>${formatSignedStatValue(stat,change)}</span>`;
+  }).join("");
+  const scoreChange=score-currentScore;
+  return `<div class="gear-compare">Compared to ${gearDisplayName(current)}: power ${formatSignedStatValue("score",scoreChange)} (${score} vs ${currentScore}).</div><div class="gear-compare-grid">${rows}</div>`;
+}
+
+function inventoryEntrySearchText(entry) {
+  if (entry.kind==="gear") {
+    const gear=entry.gear;
+    return [entry.name,gear.baseName,gear.rarity,equipmentData[gear.baseName]?.slot,equipmentSetName(gear.baseName),equipmentStatsText(gear.id)].join(" ").toLowerCase();
+  }
+  const meta=itemMeta(entry.name);
+  return [entry.name,meta.category,meta.description,meta.use,itemCraftUses(entry.name).join(" "),itemSources(entry.name).join(" ")].join(" ").toLowerCase();
+}
+
+function inventoryEntryMatches(entry,category) {
+  if (category==="all") return true;
+  if (category==="locked") return entry.locked;
+  if (entry.kind==="gear") return category==="equipment";
+  const meta=itemMeta(entry.name);
+  if (category==="equipment") return meta.category==="Equipment";
+  if (category==="food") return meta.category==="Food";
+  if (category==="tonic") return ["Consumable","Tonic"].includes(meta.category);
+  if (category==="crafting") return itemCraftUses(entry.name).length>0;
+  if (category==="upgrade") return ["Forge Essence","Reforge Token"].includes(entry.name);
+  if (category==="combat") return meta.category==="Combat Material";
+  if (category==="relic") return meta.category==="Boss Relic" || Boolean(relicPowerData[entry.name]);
+  if (category==="resource") return ["Skill Resource","Crafting Material","Material","Guild Service"].includes(meta.category);
+  return entry.category===category;
+}
+
 function renderInventory() {
   const equippedIds=new Set(Object.values(state.equipment));
   const search=state.inventoryUi.search.trim().toLowerCase();
   const category=state.inventoryUi.category;
-  const stackEntries=Object.entries(state.inventory).filter(([,qty])=>qty>0).map(([name,qty])=>({
-    kind:"stack",name,qty,value:itemMeta(name).value||1,category:inventoryCategory(name)
-  }));
+  const stackEntries=Object.entries(state.inventory).filter(([,qty])=>qty>0).map(([name,qty])=>{
+    const unitValue=itemMeta(name).value||1;
+    const tier=Math.max(0,...itemCraftUses(name).map(use=>{
+      const recipe=craftingRecipes.find(item=>use.endsWith(item.name));
+      return recipe?.level||0;
+    }));
+    return {kind:"stack",name,qty,value:unitValue*qty,unitValue,tier,locked:state.lockedItems.includes(name),category:inventoryCategory(name)};
+  });
   const gearEntries=state.gearVault.filter(gear=>!equippedIds.has(gear.id)).map(gear=>({
     kind:"gear",name:gearDisplayName(gear),qty:1,value:gearValue(gear),category:"equipment",
-    rarity:Object.keys(rarityData).indexOf(gear.rarity),gear
+    rarity:Object.keys(rarityData).indexOf(gear.rarity),tier:gearRequirement(gear.baseName),locked:state.lockedGear.includes(gear.id),gear
   }));
   const visible=[...gearEntries,...stackEntries]
-    .filter(entry=>(!search || entry.name.toLowerCase().includes(search)) && (category==="all" || entry.category===category))
+    .filter(entry=>(!search || inventoryEntrySearchText(entry).includes(search)) && inventoryEntryMatches(entry,category))
     .sort((a,b)=>{
       if (state.inventoryUi.sort==="quantity") return b.qty-a.qty || a.name.localeCompare(b.name);
       if (state.inventoryUi.sort==="value") return b.value-a.value || a.name.localeCompare(b.name);
       if (state.inventoryUi.sort==="rarity") return (b.rarity||0)-(a.rarity||0) || a.name.localeCompare(b.name);
+      if (state.inventoryUi.sort==="tier") return (b.tier||0)-(a.tier||0) || a.name.localeCompare(b.name);
       return a.name.localeCompare(b.name);
     });
   document.querySelector("#used-slots").textContent=(stackEntries.length+gearEntries.length).toLocaleString();
   document.querySelector("#inventory-search").value=state.inventoryUi.search;
   document.querySelector("#inventory-category").value=state.inventoryUi.category;
   document.querySelector("#inventory-sort").value=state.inventoryUi.sort;
+  const lockedCount=stackEntries.filter(entry=>entry.locked).length+gearEntries.filter(entry=>entry.locked).length;
+  const totalValue=[...stackEntries,...gearEntries].reduce((sum,entry)=>sum+entry.value,0);
+  document.querySelector("#inventory-summary").innerHTML=[
+    ["Stacks",stackEntries.length.toLocaleString()],
+    ["Spare Gear",gearEntries.length.toLocaleString()],
+    ["Locked",lockedCount.toLocaleString()],
+    ["Sell Value",`${totalValue.toLocaleString()}c`]
+  ].map(([label,value])=>`<div><span>${label}</span><strong>${value}</strong></div>`).join("");
   renderHeroModels();
   const setText=equipmentStatsObjectText(setBonuses());
   document.querySelector("#equipment-slots").innerHTML=Object.entries(state.equipment).map(([slot,ref])=>{
@@ -3347,9 +3494,12 @@ function renderInventory() {
 
 function inventoryCategory(name) {
   const category=itemMeta(name).category;
-  if (["Food","Consumable","Tonic"].includes(category)) return "food";
+  if (category==="Food") return "food";
+  if (["Consumable","Tonic"].includes(category)) return "tonic";
   if (["Combat Material","Boss Relic"].includes(category)) return "combat";
   if (category==="Equipment") return "equipment";
+  if (["Forge Essence","Reforge Token"].includes(name)) return "upgrade";
+  if (itemCraftUses(name).length) return "crafting";
   return "resource";
 }
 
@@ -3360,6 +3510,7 @@ function inventoryStackCardHtml(name,qty) {
     <header>${itemIcon(name)}<div><span class="item-category">${meta.category}</span><h4>${name}</h4></div><strong>${qty}</strong></header>
     <p class="item-description">${meta.description}</p>
     <p class="item-use"><b>Use:</b> ${meta.use}</p>
+    ${itemDetailHtml(name)}
     <div class="item-actions">
       ${usable?`<button class="primary-button use-item-button" data-item="${name}">${relicPowerData[name]?(state.relicsActivated[name]?"Attuned":"Attune Relic"):blueprintData[name]?(state.blueprints.includes(name)?"Learned":"Learn Recipes"):"Use"}</button>`:""}
       ${relicPowerData[name]&&state.relicsActivated[name]?`<button class="secondary-button exchange-relic-button" data-item="${name}">Guild Exchange</button>`:""}
@@ -3385,9 +3536,9 @@ function gearCardHtml(gear) {
   return `<div class="inventory-item gear-item rarity-${gear.rarity}" style="--rarity-color:${rarity.color}">
     <header>${itemIcon(gear.baseName)}<div><span class="item-category">${rarity.name} ${capitalize(slot)}</span><h4>${gearDisplayName(gear)}</h4></div><strong>+${gear.upgrade||0}</strong></header>
     <p class="gear-stats">${equipmentStatsText(gear.id)}</p>
-    <p class="gear-requirement">Requires Combat ${requirement} · ${equipmentSetName(gear.baseName)} set</p>
+    <p class="gear-requirement">Requires Combat ${requirement} - ${equipmentSetName(gear.baseName)} set - Power ${gearPowerScore(gear)}</p>
     <div class="gear-affixes">${affixes||"<span>No magical affixes</span>"}</div>
-    <p class="gear-compare">${gearComparisonText(gear)}</p>
+    ${gearComparisonHtml(gear)}
     <div class="item-actions">
       <button class="primary-button equip-gear-button" data-gear="${gear.id}" ${canEquip?"":"disabled"}>${canEquip?"Equip":`Combat ${requirement}`}</button>
       <button class="secondary-button upgrade-gear-button" data-gear="${gear.id}" ${(gear.upgrade||0)>=5||state.coins<cost.coins||(state.inventory[material]||0)<cost.material?"disabled":""}>Upgrade ${cost.coins}c + ${cost.material} ${material}</button>
@@ -3427,6 +3578,29 @@ function gearRequirement(baseName) {
   return craftingRecipes.find(recipe=>recipe.name===baseName)?.level||1;
 }
 
+function bestGearBySlot() {
+  const best={};
+  state.gearVault.forEach(gear=>{
+    const slot=equipmentData[gear.baseName]?.slot;
+    if (!slot) return;
+    if (!best[slot] || gearPowerScore(gear)>gearPowerScore(best[slot])) best[slot]=gear;
+  });
+  return best;
+}
+
+function protectBestGear() {
+  const best=bestGearBySlot();
+  const ids=new Set(state.lockedGear);
+  Object.values(state.equipment).forEach(id=>{ if (gearById(id)) ids.add(id); });
+  Object.values(best).forEach(gear=>ids.add(gear.id));
+  const before=state.lockedGear.length;
+  state.lockedGear=[...ids];
+  const added=state.lockedGear.length-before;
+  toast(added ? `Protected ${added} key gear pieces` : "Best gear is already protected");
+  saveState();
+  renderInventory();
+}
+
 function equipGear(id) {
   const gear=gearById(id), slot=equipmentData[gear?.baseName]?.slot;
   if (!gear||!slot) return;
@@ -3438,21 +3612,58 @@ function equipGear(id) {
   saveState(); render();
 }
 
-function salvageGear(id) {
-  const gear=gearById(id);
-  if (!gear || state.lockedGear.includes(id) || Object.values(state.equipment).includes(id)) return;
+function gearSalvageReturn(gear) {
   const recipe=craftingRecipes.find(item=>item.name===gear.baseName);
   const material=gearUpgradeMaterial(gear);
   const materialCost=recipe?.costs?.[material]||1;
   const rarityIndex=Math.max(0,Object.keys(rarityData).indexOf(gear.rarity));
   const bars=Math.max(1,Math.floor(materialCost*.5)+(gear.upgrade||0));
   const essence=1+rarityIndex+(gear.affixes?.length||0)+(gear.upgrade||0);
-  addItem(material,bars);
-  addItem("Forge Essence",essence);
-  state.gearVault=state.gearVault.filter(item=>item.id!==id);
-  state.lockedGear=state.lockedGear.filter(item=>item!==id);
-  state.stats.salvaged=(state.stats.salvaged||0)+1;
-  activity(`Salvaged ${gearDisplayName(gear)}: ${bars} ${material}, ${essence} Essence`,"craft");
+  return {material,bars,essence};
+}
+
+function salvageGearBatch(gearList) {
+  const totals={essence:0,materials:{}};
+  const ids=new Set();
+  gearList.forEach(gear=>{
+    const result=gearSalvageReturn(gear);
+    totals.materials[result.material]=(totals.materials[result.material]||0)+result.bars;
+    totals.essence+=result.essence;
+    ids.add(gear.id);
+  });
+  Object.entries(totals.materials).forEach(([material,qty])=>addItem(material,qty));
+  addItem("Forge Essence",totals.essence);
+  state.gearVault=state.gearVault.filter(item=>!ids.has(item.id));
+  state.lockedGear=state.lockedGear.filter(item=>!ids.has(item));
+  state.stats.salvaged=(state.stats.salvaged||0)+gearList.length;
+  return totals;
+}
+
+function salvageGear(id) {
+  const gear=gearById(id);
+  if (!gear || state.lockedGear.includes(id) || Object.values(state.equipment).includes(id)) return;
+  const totals=salvageGearBatch([gear]);
+  const material=Object.entries(totals.materials)[0];
+  activity(`Salvaged ${gearDisplayName(gear)}: ${material?.[1]||0} ${material?.[0]||"material"}, ${totals.essence} Essence`,"craft");
+  saveState();
+  render();
+}
+
+function salvageCommonGear() {
+  const equipped=new Set(Object.values(state.equipment));
+  const candidates=state.gearVault.filter(gear=>
+    !equipped.has(gear.id) &&
+    !state.lockedGear.includes(gear.id) &&
+    gear.rarity==="common" &&
+    !(gear.upgrade>0) &&
+    !(gear.affixes?.length)
+  );
+  if (!candidates.length) return toast("No unlocked plain common spare gear to salvage");
+  if (!confirm(`Salvage ${candidates.length} unlocked common spare gear pieces? Equipped, locked, upgraded, and affixed gear will be kept.`)) return;
+  const totals=salvageGearBatch(candidates);
+  const materialText=Object.entries(totals.materials).map(([item,qty])=>`${qty} ${item}`).join(", ");
+  activity(`Bulk salvaged ${candidates.length} common gear: ${materialText}, ${totals.essence} Essence`,"craft");
+  toast(`${candidates.length} common gear salvaged`);
   saveState();
   render();
 }
@@ -3912,6 +4123,8 @@ document.querySelector("#inventory-sort").onchange=event=>{
   state.inventoryUi.sort=event.currentTarget.value;
   saveState(); renderInventory();
 };
+document.querySelector("#protect-best-gear").onclick=protectBestGear;
+document.querySelector("#salvage-common-gear").onclick=salvageCommonGear;
 document.querySelector("#sell-all-unlocked").onclick=sellAllUnlocked;
 document.querySelector("#queue-add-button").onclick=()=>addProductionJob(currentSkill,getAction(currentSkill).id,document.querySelector("#queue-target").value);
 document.querySelector("#queue-start").onclick=startProductionQueue;

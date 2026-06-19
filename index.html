@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=26">
+  <link rel="stylesheet" href="styles.css?v=27">
 </head>
 <body>
   <div class="app-shell">
@@ -270,21 +270,30 @@
           <article>
             <div class="panel-heading"><div><span class="eyebrow">Resources and spoils</span><h3>Backpack</h3></div><span>Every item has value</span></div>
             <div class="inventory-guide">Select usable supplies for immediate benefits, equip forged gear, or sell spare materials. Item cards show where each resource fits into Emberfall's progression.</div>
+            <div id="inventory-summary" class="inventory-summary"></div>
             <div class="inventory-toolbar">
               <input id="inventory-search" type="search" placeholder="Search items" aria-label="Search inventory">
               <select id="inventory-category" aria-label="Filter inventory category">
                 <option value="all">All categories</option>
                 <option value="equipment">Equipment</option>
-                <option value="food">Food and tonics</option>
+                <option value="food">Food</option>
+                <option value="tonic">Potions and tonics</option>
+                <option value="crafting">Used in crafting</option>
+                <option value="upgrade">Upgrade materials</option>
                 <option value="resource">Resources</option>
                 <option value="combat">Combat loot</option>
+                <option value="relic">Boss relics</option>
+                <option value="locked">Locked</option>
               </select>
               <select id="inventory-sort" aria-label="Sort inventory">
                 <option value="name">Name</option>
                 <option value="quantity">Quantity</option>
                 <option value="value">Value</option>
                 <option value="rarity">Rarity</option>
+                <option value="tier">Combat tier</option>
               </select>
+              <button class="secondary-button" id="protect-best-gear">Protect Best Gear</button>
+              <button class="secondary-button" id="salvage-common-gear">Salvage Common Gear</button>
               <button class="secondary-button" id="sell-all-unlocked">Sell All Unlocked</button>
             </div>
             <div id="inventory-grid" class="inventory-grid"></div>
@@ -468,6 +477,6 @@
       document.documentElement.dataset.emberfallError = `${event.message} (${event.lineno}:${event.colno})`;
     });
   </script>
-  <script src="game.js?v=26"></script>
+  <script src="game.js?v=27"></script>
 </body>
 </html>

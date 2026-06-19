@@ -2,7 +2,7 @@ const { test, expect } = require("@playwright/test");
 const fs = require("fs");
 const path = require("path");
 
-const BUILD_URL = "http://localhost:8000/?build=progression-v26";
+const BUILD_URL = "http://localhost:8000/?build=progression-v27";
 const itemSlug = name => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 test("loads the game and renders core progression surfaces", async ({ page }) => {
@@ -66,6 +66,71 @@ test("equipped gear keeps base hero portrait", async ({ page }) => {
   expect(inventoryGeometry.topGap).toBeGreaterThanOrEqual(0);
   expect(inventoryGeometry.bottomGap).toBeGreaterThanOrEqual(0);
   expect(inventoryGeometry.imageHeight).toBeLessThanOrEqual(inventoryGeometry.stageHeight);
+  expect(errors).toEqual([]);
+});
+
+test("inventory explains item purpose and supports gear cleanup", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.addInitScript(() => {
+    const save = {
+      characterName: "Inventory Tester",
+      inventory: {
+        "Goblin Scrap": 24,
+        "Forge Essence": 5,
+        "Reforge Token": 2,
+        "Health Potion": 3,
+        "Trailbreaker Crest": 1
+      },
+      gearMigrated: true,
+      nextGearId: 5,
+      equipment: { weapon: "gear-1", shield: "Wooden Shield", body: "Leather Jerkin", head: "None" },
+      gearVault: [
+        { id: "gear-1", baseName: "Bronze Sword", rarity: "common", upgrade: 0, affixes: [] },
+        { id: "gear-2", baseName: "Iron Sword", rarity: "rare", upgrade: 1, affixes: [{ id: "attack", stat: "attack", value: 3 }] },
+        { id: "gear-3", baseName: "Bronze Shield", rarity: "common", upgrade: 0, affixes: [] },
+        { id: "gear-4", baseName: "Bronze Dagger", rarity: "common", upgrade: 0, affixes: [] }
+      ],
+      lastSeen: Date.now()
+    };
+    localStorage.setItem("emberfall-idle-save-v1", JSON.stringify(save));
+    localStorage.setItem("emberfall-idle-save-v1-backup", JSON.stringify(save));
+    localStorage.setItem("emberfall-idle-recovery-20260613", "1");
+  });
+  await page.goto(BUILD_URL);
+  await page.locator('[data-view="inventory"]').click();
+
+  await expect(page.locator("#inventory-summary")).toContainText("Spare Gear");
+  await expect(page.locator("#inventory-grid")).toContainText("Used in:");
+  await expect(page.locator("#inventory-grid")).toContainText("Best source:");
+  await expect(page.locator("#inventory-grid")).toContainText("Compared to Bronze Sword");
+  await expect(page.locator("#inventory-grid")).toContainText("Power");
+
+  await page.locator("#inventory-category").selectOption("crafting");
+  await expect(page.locator("#inventory-grid")).toContainText("Goblin Scrap");
+  await page.locator("#inventory-category").selectOption("upgrade");
+  await expect(page.locator("#inventory-grid")).toContainText("Forge Essence");
+  await expect(page.locator("#inventory-grid")).toContainText("Reforge Token");
+  await page.locator("#inventory-category").selectOption("relic");
+  await expect(page.locator("#inventory-grid")).toContainText("Trailbreaker Crest");
+  await page.locator("#inventory-category").selectOption("equipment");
+  await expect(page.locator("#inventory-grid")).toContainText("Iron Sword");
+
+  await page.getByRole("button", { name: "Protect Best Gear" }).click();
+  let stateSnapshot = await page.evaluate(() => ({
+    locked: state.lockedGear,
+    gearIds: state.gearVault.map(gear => gear.id)
+  }));
+  expect(stateSnapshot.locked).toEqual(expect.arrayContaining(["gear-1", "gear-2", "gear-3"]));
+
+  page.once("dialog", dialog => dialog.accept());
+  await page.getByRole("button", { name: "Salvage Common Gear" }).click();
+  stateSnapshot = await page.evaluate(() => ({
+    forgeEssence: state.inventory["Forge Essence"] || 0,
+    gearIds: state.gearVault.map(gear => gear.id)
+  }));
+  expect(stateSnapshot.gearIds).not.toContain("gear-4");
+  expect(stateSnapshot.forgeEssence).toBeGreaterThan(5);
   expect(errors).toEqual([]);
 });
 

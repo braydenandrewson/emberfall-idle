@@ -1250,15 +1250,50 @@ function rollZoneCacheReward(zoneIndex=state.currentZone,rolls=1,scale=1) {
   }
   return reward;
 }
-function rollBossChestReward(zoneIndex=state.currentZone,enemy=currentEnemy()) {
+function bossFirstClearReward(zoneIndex=state.currentZone,enemy=currentEnemy()) {
+  const reward=makeReward(400+zoneIndex*325,{});
+  mergeRewardItems(reward,rollZoneCacheReward(zoneIndex,3+Math.ceil(zoneIndex/2),1.35+zoneIndex*.08).items);
+  addRewardItem(reward,"Forge Essence",2+zoneIndex);
+  if (zoneIndex>=1) addRewardItem(reward,"Reforge Token",1+Math.floor(zoneIndex/3));
+  if (zoneIndex<=2) addRewardItem(reward,"Battle Tonic",1+zoneIndex);
+  if (zoneIndex>=4) addRewardItem(reward,"Fortune Philter",1);
+  return reward;
+}
+function rollBossChestReward(zoneIndex=state.currentZone,enemy=currentEnemy(),firstClear=false) {
   const repeatKills=state.bestiary.bosses?.[enemy.name]||0;
   const threat=zoneThreatRank(zoneIndex);
-  const reward=makeReward(Math.round((enemy.coins?.[0]||0)*(.3+threat*.08)),{});
-  const cacheRolls=2+Math.min(3,threat)+Math.min(2,repeatKills);
-  mergeRewardItems(reward,rollZoneCacheReward(zoneIndex,cacheRolls,1.25+threat*.15).items);
-  if (zoneIndex>=1 || threat>=2 || repeatKills>0) addRewardItem(reward,"Reforge Token",1+Math.floor(threat/3));
-  if (zoneIndex>=3) addRewardItem(reward,"Forge Essence",1+Math.floor(zoneIndex/2));
+  const baseCoins=firstClear
+    ? 0
+    : Math.round((enemy.coins?.[0]||0)*(.35+threat*.1+Math.min(.65,repeatKills*.045)));
+  const reward=makeReward(baseCoins,{});
+  const cacheRolls=firstClear
+    ? 0
+    : 2+Math.min(4,threat)+Math.min(6,Math.floor(Math.sqrt(repeatKills+1))*2);
+  if (cacheRolls) mergeRewardItems(reward,rollZoneCacheReward(zoneIndex,cacheRolls,1.15+threat*.15+Math.min(.75,repeatKills*.04)).items);
+  if (firstClear) {
+    const firstReward=bossFirstClearReward(zoneIndex,enemy);
+    mergeRewardItems(reward,firstReward.items);
+    reward.coins+=(firstReward.coins||0);
+  } else {
+    addRewardItem(reward,"Forge Essence",1+Math.floor(zoneIndex/2)+Math.floor(threat/2)+Math.floor(repeatKills/5));
+    if (zoneIndex>=1 || threat>=2 || repeatKills>0) addRewardItem(reward,"Reforge Token",1+Math.floor(threat/3)+Math.floor(repeatKills/8));
+    if (repeatKills>0 && (repeatKills+1)%5===0) addRewardItem(reward,enemy.item,1+Math.floor(threat/4));
+    if (repeatKills>=9 || threat>=4) addRewardItem(reward,"Fortune Philter",1);
+  }
   return reward;
+}
+function bossChestPreviewText(zoneIndex=state.currentZone) {
+  const zone=zoneData[zoneIndex], boss=zone.boss;
+  const repeatKills=state.bestiary.bosses?.[boss.name]||0;
+  const threat=zoneThreatRank(zoneIndex);
+  if (!state.bossDefeated[zoneIndex]) {
+    const tokenText=zoneIndex>=1 ? `, ${1+Math.floor(zoneIndex/3)} Reforge Token` : "";
+    return `First-clear chest - rare gear, ${3+Math.ceil(zoneIndex/2)} cache rolls, ${2+zoneIndex} Essence${tokenText}`;
+  }
+  const cacheRolls=2+Math.min(4,threat)+Math.min(6,Math.floor(Math.sqrt(repeatKills+1))*2);
+  const essence=1+Math.floor(zoneIndex/2)+Math.floor(threat/2)+Math.floor(repeatKills/5);
+  const tokens=(zoneIndex>=1 || threat>=2 || repeatKills>0) ? 1+Math.floor(threat/3)+Math.floor(repeatKills/8) : 0;
+  return `Repeat chest - ${cacheRolls} cache rolls, ${essence} Essence${tokens?`, ${tokens} Reforge Token`: ""}`;
 }
 function grantCombatCoins(reward,coins,track=true) {
   const amount=Math.max(0,Math.round(coins||0));
@@ -2554,6 +2589,8 @@ function defeatEnemy() {
   const defeatedZone=state.currentZone;
   const zone=currentZone();
   const firstKill=!wasBoss && !(state.bestiary.kills?.[enemy.name]>0);
+  const firstBossClear=wasBoss && !state.bossDefeated[defeatedZone];
+  const bossKillsBefore=wasBoss ? (state.bestiary.bosses?.[enemy.name]||0) : 0;
   const coinRange=enemyCoinRange(enemy);
   const baseCoins=coinRange[0]+Math.floor(Math.random()*(coinRange[1]-coinRange[0]+1));
   const chainBonus=Math.min(.25,state.combatChain*.01);
@@ -2573,7 +2610,10 @@ function defeatEnemy() {
   if (wasBoss || Math.random()<threatGearChance()) {
     const table=zone.gearTiers.flatMap(tier=>equipmentTierData[tier]?.gear||[]);
     const baseName=table[Math.floor(Math.random()*table.length)];
-    const rarity=rollRarity((wasBoss?12+state.currentZone*4:state.currentZone*2)+zoneThreatRank()*3);
+    const rolledRarity=rollRarity((wasBoss?12+state.currentZone*4:state.currentZone*2)+zoneThreatRank()*3+Math.min(20,bossKillsBefore*2));
+    const rarity=wasBoss
+      ? rarityAtLeast(rolledRarity,firstBossClear ? "rare" : bossKillsBefore>=5 ? "uncommon" : "common")
+      : rolledRarity;
     const gear=createGear(baseName,rarity);
     rareGearFound=["rare","epic","legendary"].includes(rarity);
     reward.gearNames.push(`${rarityData[rarity].name} ${gearDisplayName(gear)}`);
@@ -2598,12 +2638,12 @@ function defeatEnemy() {
     notable.push(`${state.combatChain}-hunt streak`);
   }
   if (wasBoss) {
-    grantCombatReward(reward,rollBossChestReward(defeatedZone,enemy),true);
+    grantCombatReward(reward,rollBossChestReward(defeatedZone,enemy,firstBossClear),true);
     state.bossDefeated[defeatedZone]=true;
     state.bestiary.bosses[enemy.name]=(state.bestiary.bosses[enemy.name]||0)+1;
     recordProgress("bosses",{zone:defeatedZone,enemy:enemy.name},1);
-    addLog(`${enemy.name} defeated! ${state.characterName} earns ${reward.coins.toLocaleString()} coins and opens a boss chest.`);
-    showRewardReveal(`${enemy.name} defeated`,reward,"Boss chest opened");
+    addLog(`${enemy.name} defeated! ${state.characterName} earns ${reward.coins.toLocaleString()} coins and opens ${firstBossClear?"a first-clear":"a repeat"} boss chest.`);
+    showRewardReveal(`${enemy.name} defeated`,reward,firstBossClear?"First-clear boss chest":"Repeat boss chest");
     if (defeatedZone+1<zoneData.length && state.unlockedZones<defeatedZone+2) {
       state.unlockedZones=defeatedZone+2;
       toast(`${zoneData[defeatedZone+1].name} unlocked`);
@@ -2875,6 +2915,7 @@ function renderCombatSetup() {
     `<b>${enemy.item} - 100%</b>`,
     !state.fightingBoss && enemy.bonusItem ? `<b>${enemy.bonusItem} - ${Math.round(enemyBonusDropChance(enemy)*100)}%</b>` : "",
     !state.fightingBoss && zone.cache ? `<b>${zone.cache.name} - ${Math.round(zoneCacheChance()*100)}%</b>` : "",
+    state.fightingBoss ? `<b>${bossChestPreviewText()}</b>` : "",
     `<b>Equipment - ${state.fightingBoss?100:Math.round(threatGearChance()*1000)/10}%</b>`
   ].join("");
   const ready=bossReady();

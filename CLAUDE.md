@@ -112,6 +112,8 @@ Mobile uses a compact nav with a "+ More" menu.
 - Current long-term loops include chapter questlines, starter quests, repeatable bounties,
   township contributions, reward reveal modals, combat event windows, and the gear
   collection log. Keep these data-driven and do not reintroduce manual combat abilities.
+- Boss kills have two reward paths: first clears grant milestone chests and a rare-or-better
+  gear floor, while repeat kills use `rollBossChestReward()` scaling by boss victories and Threat.
 - Inventory cards generate item source/use guidance from `skillData`, `craftingRecipes`,
   `zoneData`, and marketplace data. Gear cleanup protects equipped/locked pieces and
   should keep bulk actions conservative.

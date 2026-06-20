@@ -2,7 +2,7 @@ const { test, expect } = require("@playwright/test");
 const fs = require("fs");
 const path = require("path");
 
-const BUILD_URL = "http://localhost:8000/?build=progression-v27";
+const BUILD_URL = "http://localhost:8000/?build=progression-v28";
 const itemSlug = name => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 test("loads the game and renders core progression surfaces", async ({ page }) => {
@@ -131,6 +131,90 @@ test("inventory explains item purpose and supports gear cleanup", async ({ page 
   }));
   expect(stateSnapshot.gearIds).not.toContain("gear-4");
   expect(stateSnapshot.forgeEssence).toBeGreaterThan(5);
+  expect(errors).toEqual([]);
+});
+
+test("boss first clears and repeat chests give distinct progression rewards", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.addInitScript(() => {
+    const save = {
+      characterName: "Boss Tester",
+      zoneKills: [10],
+      unlockedZones: 1,
+      bossDefeated: [false],
+      bestiary: { kills: {}, drops: {}, bosses: {} },
+      inventory: {},
+      gearVault: [],
+      nextGearId: 1,
+      lastSeen: Date.now()
+    };
+    localStorage.setItem("emberfall-idle-save-v1", JSON.stringify(save));
+    localStorage.setItem("emberfall-idle-save-v1-backup", JSON.stringify(save));
+    localStorage.setItem("emberfall-idle-recovery-20260613", "1");
+  });
+  await page.goto(BUILD_URL);
+
+  const firstClear = await page.evaluate(() => {
+    const originalRandom = Math.random;
+    Math.random = () => 0.99;
+    try {
+      state.currentZone = 0;
+      state.zoneKills[0] = 10;
+      state.fightingBoss = true;
+      state.bossDefeated[0] = false;
+      state.enemyHp = 1;
+      defeatEnemy();
+      return {
+        unlockedZones: state.unlockedZones,
+        bossDefeated: state.bossDefeated[0],
+        bossKills: state.bestiary.bosses["Grak the Trailbreaker"] || 0,
+        crest: state.inventory["Trailbreaker Crest"] || 0,
+        essence: state.inventory["Forge Essence"] || 0,
+        battleTonic: state.inventory["Battle Tonic"] || 0,
+        bestRarity: state.gearVault.map(gear => gear.rarity)
+      };
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
+  await expect(page.locator("#reward-subtitle")).toContainText("First-clear boss chest");
+  expect(firstClear.unlockedZones).toBe(2);
+  expect(firstClear.bossDefeated).toBe(true);
+  expect(firstClear.bossKills).toBe(1);
+  expect(firstClear.crest).toBeGreaterThanOrEqual(1);
+  expect(firstClear.essence).toBeGreaterThanOrEqual(2);
+  expect(firstClear.battleTonic).toBeGreaterThanOrEqual(1);
+  expect(firstClear.bestRarity).toContain("rare");
+
+  const repeat = await page.evaluate(() => {
+    const originalRandom = Math.random;
+    Math.random = () => 0.99;
+    try {
+      state.currentZone = 0;
+      state.zoneKills[0] = 50;
+      state.zoneThreats[0] = 3;
+      state.fightingBoss = true;
+      state.enemyHp = 1;
+      const beforeEssence = state.inventory["Forge Essence"] || 0;
+      defeatEnemy();
+      return {
+        bossKills: state.bestiary.bosses["Grak the Trailbreaker"] || 0,
+        essenceGain: (state.inventory["Forge Essence"] || 0) - beforeEssence,
+        tokens: state.inventory["Reforge Token"] || 0,
+        preview: bossChestPreviewText(0)
+      };
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
+  await expect(page.locator("#reward-subtitle")).toContainText("Repeat boss chest");
+  expect(repeat.bossKills).toBe(2);
+  expect(repeat.essenceGain).toBeGreaterThanOrEqual(2);
+  expect(repeat.tokens).toBeGreaterThanOrEqual(2);
+  expect(repeat.preview).toContain("Repeat chest");
   expect(errors).toEqual([]);
 });
 

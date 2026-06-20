@@ -2,7 +2,7 @@ const { test, expect } = require("@playwright/test");
 const fs = require("fs");
 const path = require("path");
 
-const BUILD_URL = "http://localhost:8000/?build=progression-v29";
+const BUILD_URL = "http://localhost:8000/?build=progression-v30";
 const itemSlug = name => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 test("loads the game and renders core progression surfaces", async ({ page }) => {
@@ -131,6 +131,63 @@ test("inventory explains item purpose and supports gear cleanup", async ({ page 
   }));
   expect(stateSnapshot.gearIds).not.toContain("gear-4");
   expect(stateSnapshot.forgeEssence).toBeGreaterThan(5);
+  expect(errors).toEqual([]);
+});
+
+test("inventory remains compact and visible on mobile", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    const save = {
+      characterName: "Mobile Pack Tester",
+      inventory: {
+        "Goblin Scrap": 24,
+        "Forge Essence": 5,
+        "Reforge Token": 2,
+        "Health Potion": 3,
+        "Trail Map": 4,
+        "Tracking Snare": 2
+      },
+      gearMigrated: true,
+      nextGearId: 4,
+      equipment: { weapon: "gear-1", shield: "Wooden Shield", body: "Leather Jerkin", head: "None" },
+      gearVault: [
+        { id: "gear-1", baseName: "Bronze Sword", rarity: "common", upgrade: 0, affixes: [] },
+        { id: "gear-2", baseName: "Iron Sword", rarity: "rare", upgrade: 1, affixes: [{ id: "attack", stat: "attack", value: 3 }] },
+        { id: "gear-3", baseName: "Bronze Shield", rarity: "common", upgrade: 0, affixes: [] }
+      ],
+      lastSeen: Date.now()
+    };
+    localStorage.setItem("emberfall-idle-save-v1", JSON.stringify(save));
+    localStorage.setItem("emberfall-idle-save-v1-backup", JSON.stringify(save));
+    localStorage.setItem("emberfall-idle-recovery-20260613", "1");
+  });
+  await page.goto(BUILD_URL);
+  await page.locator('[data-view="inventory"]').click();
+  await expect(page.getByRole("heading", { name: "Inventory & Equipment" })).toBeVisible();
+
+  const layout = await page.evaluate(() => {
+    const rect = selector => {
+      const box = document.querySelector(selector).getBoundingClientRect();
+      return { top: box.top, right: box.right, bottom: box.bottom, height: box.height, width: box.width };
+    };
+    return {
+      viewportWidth: window.innerWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+      backpack: rect("#view-inventory .inventory-layout > article:nth-child(2)"),
+      equipment: rect("#view-inventory .equipment-panel"),
+      toolbar: rect(".inventory-toolbar"),
+      grid: rect("#inventory-grid"),
+      hero: rect(".equipment-hero")
+    };
+  });
+
+  expect(layout.scrollWidth).toBeLessThanOrEqual(layout.viewportWidth + 1);
+  expect(layout.backpack.top).toBeLessThan(layout.equipment.top);
+  expect(layout.toolbar.right).toBeLessThanOrEqual(layout.viewportWidth + 1);
+  expect(layout.grid.right).toBeLessThanOrEqual(layout.viewportWidth + 1);
+  expect(layout.hero.height).toBeLessThanOrEqual(200);
   expect(errors).toEqual([]);
 });
 

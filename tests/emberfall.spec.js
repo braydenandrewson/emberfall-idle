@@ -2,7 +2,7 @@ const { test, expect } = require("@playwright/test");
 const fs = require("fs");
 const path = require("path");
 
-const BUILD_URL = "http://localhost:8000/?build=progression-v28";
+const BUILD_URL = "http://localhost:8000/?build=progression-v29";
 const itemSlug = name => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 test("loads the game and renders core progression surfaces", async ({ page }) => {
@@ -255,6 +255,73 @@ test("all displayable items have project icon art", async ({ page }) => {
     .map(file => file.replace(/\.png$/, "")));
   const missing = names.filter(name => !existing.has(itemSlug(name)));
   expect(missing).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test("cartography and huntsmanship produce useful combat tools", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.addInitScript(() => {
+    const save = {
+      characterName: "Pathfinder",
+      inventory: {
+        "Logs": 20,
+        "Goblin Scrap": 20,
+        "Trail Map": 1,
+        "Boss Lure": 1
+      },
+      bossDefeated: [true],
+      zoneKills: [20],
+      unlockedZones: 2,
+      bestiary: { kills: {}, drops: {}, bosses: { "Grak the Trailbreaker": 2 } },
+      lastSeen: Date.now()
+    };
+    localStorage.setItem("emberfall-idle-save-v1", JSON.stringify(save));
+    localStorage.setItem("emberfall-idle-save-v1-backup", JSON.stringify(save));
+    localStorage.setItem("emberfall-idle-recovery-20260613", "1");
+  });
+  await page.goto(BUILD_URL);
+
+  await page.locator('.sidebar > .nav-item[data-view="cartography"]').click();
+  await expect(page.getByRole("heading", { name: "Cartography", exact: true })).toBeVisible();
+  await expect(page.locator("#action-list")).toContainText("Trail Survey");
+  await expect(page.locator("#nav-cartography")).toHaveText("1");
+
+  const result = await page.evaluate(() => {
+    const trailBefore = state.inventory["Trail Map"] || 0;
+    completeSkillCycle("cartography", skillData.cartography.actions[0]);
+    state.inventory["Trail Map"] = Math.max(state.inventory["Trail Map"] || 0, 2);
+    completeSkillCycle("huntsmanship", skillData.huntsmanship.actions[0]);
+    const cacheBeforeUse = zoneCacheChance(0, 0);
+    useInventoryItem("Tracking Snare");
+    const cacheAfterUse = zoneCacheChance(0, 0);
+    useInventoryItem("Boss Lure");
+    const preview = bossChestPreviewText(0);
+    return {
+      trailBefore,
+      trailAfter: state.inventory["Trail Map"] || 0,
+      snareActive: state.buffs.tracking > Date.now(),
+      bossLureActive: state.buffs.bosslure > Date.now(),
+      cacheBeforeUse,
+      cacheAfterUse,
+      preview,
+      cartographyXp: state.skills.cartography.xp,
+      huntsmanshipXp: state.skills.huntsmanship.xp
+    };
+  });
+
+  expect(result.trailAfter).toBeGreaterThanOrEqual(result.trailBefore);
+  expect(result.snareActive).toBe(true);
+  expect(result.bossLureActive).toBe(true);
+  expect(result.cacheAfterUse).toBeGreaterThan(result.cacheBeforeUse);
+  expect(result.preview).toContain("Boss Lure active");
+  expect(result.cartographyXp).toBeGreaterThan(0);
+  expect(result.huntsmanshipXp).toBeGreaterThan(0);
+
+  await page.locator('.sidebar > .nav-item[data-view="huntsmanship"]').click();
+  await expect(page.getByRole("heading", { name: "Huntsmanship", exact: true })).toBeVisible();
+  await expect(page.locator("#action-list")).toContainText("Tracking Snare");
+  await expect(page.locator("#combat-status-list")).toContainText("Tracking Snare");
   expect(errors).toEqual([]);
 });
 

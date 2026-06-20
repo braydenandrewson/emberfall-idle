@@ -58,10 +58,14 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .nav-woodcutting:after { width:11px;height:7px;background:#aeb8ae;transform:translate(-4px,-5px) rotate(38deg);border-radius:50% 2px 2px 50%; }
 .nav-fishing:before { width:13px;height:13px;border:2px solid #87b5ba;border-left-color:transparent;border-radius:50%;transform:rotate(35deg); }
 .nav-fishing:after { width:2px;height:8px;background:#87b5ba;transform:translate(5px,-7px) rotate(35deg); }
+.nav-cartography:before { width:16px;height:13px;background:#c8a76e;clip-path:polygon(0 8%,38% 0,62% 10%,100% 0,100% 92%,62% 100%,38% 90%,0 100%); }
+.nav-cartography:after { width:12px;height:2px;background:#5b4930;box-shadow:0 4px #5b4930;transform:rotate(-18deg); }
 .nav-smithing:before { width:15px;height:7px;background:#aeb8ae;clip-path:polygon(0 0,100% 0,75% 55%,55% 55%,55% 100%,30% 100%,30% 55%,12% 55%); }
 .nav-cooking:before { width:15px;height:10px;border:2px solid #c6844a;border-top:0;border-radius:0 0 9px 9px; }
 .nav-cooking:after { width:2px;height:7px;background:#9faaa0;transform:translate(0,-8px);box-shadow:-4px 2px #9faaa0,4px 2px #9faaa0; }
 .nav-alchemy:before { width:12px;height:14px;background:#9a63b1;clip-path:polygon(35% 0,65% 0,65% 35%,100% 90%,85% 100%,15% 100%,0 90%,35% 35%); }
+.nav-huntsmanship:before { width:17px;height:17px;border:2px solid #8fb879;border-right-color:transparent;border-bottom-color:transparent;border-radius:50%;transform:rotate(-36deg); }
+.nav-huntsmanship:after { width:16px;height:3px;background:#b9864c;transform:rotate(-32deg);box-shadow:6px -5px #c8d3c4; }
 .nav-crafting:before { width:14px;height:14px;border:2px solid var(--gold);transform:rotate(45deg); }
 .nav-inventory:before { width:14px;height:12px;border:2px solid #a47a43;border-radius:2px; }
 .nav-inventory:after { width:8px;height:4px;border:2px solid #a47a43;border-bottom:0;transform:translateY(-8px); }
@@ -313,6 +317,10 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .item-potion i,.item-tonic i { bottom:8px;width:23px;height:27px;background:linear-gradient(#c96549 45%,#7f2c31 46%);border:2px solid #d7c7a3;border-radius:5px 5px 10px 10px; }
 .item-potion:before,.item-tonic:before { top:7px;width:12px;height:9px;background:#a98554;border:2px solid #d7c7a3; }
 .item-tonic i { background:linear-gradient(#d6a2ee 45%,#675090 46%); }
+.item-map i { width:33px;height:25px;background:linear-gradient(145deg,#d6bd7a,#7a5730);clip-path:polygon(0 10%,36% 0,64% 12%,100% 2%,100% 88%,64% 100%,36% 88%,0 98%);box-shadow:inset 0 0 0 3px rgba(55,35,19,.2); }
+.item-map:after { width:22px;height:2px;background:#4f3924;box-shadow:0 6px #4f3924,8px 12px #4f3924;transform:rotate(-14deg); }
+.item-tool i { width:31px;height:31px;border:3px solid #b48347;border-right-color:transparent;border-bottom-color:#5c3c23;border-radius:50%;filter:hue-rotate(var(--icon-hue,0deg)); }
+.item-tool:after { width:19px;height:4px;background:#d0c0a0;transform:translate(7px,-6px) rotate(-28deg);box-shadow:-8px 9px #7a4d2b; }
 .item-stew i { bottom:9px;width:34px;height:18px;background:#8b482d;border-radius:4px 4px 17px 17px;border:2px solid #c47d47; }
 .item-stew:before { top:8px;width:22px;height:15px;border-left:2px solid #c9d2c3;border-radius:50%;filter:blur(.4px); }
 .item-weapon i { width:5px;height:35px;background:linear-gradient(90deg,#87988e,#eef1df);transform:rotate(38deg); }

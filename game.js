@@ -8,7 +8,7 @@ const AUTO_EAT_THRESHOLD = .35;
 const MAX_THREAT = 5;
 const MAX_OFFLINE_HOURS = 12;
 const MAX_PRODUCTION_QUEUE = 12;
-const productionSkills = ["mining","woodcutting","fishing","smithing","cooking","alchemy"];
+const productionSkills = ["mining","woodcutting","fishing","cartography","smithing","cooking","alchemy","huntsmanship"];
 const upgradeCaps = {speed:10,yield:3,mastery:3};
 const yieldUpgradeRequirements = [20,45,70];
 const STARTER_CONTRACT_THRESHOLD = {kills:3,mining:5,contracts:1};
@@ -472,6 +472,17 @@ const itemData = {
   "Venom Oil":{icon:"tonic",category:"Tonic",description:"A carefully stabilized offensive coating.",use:"Gain 8% combat damage for 10 minutes.",value:60,consume:{buff:"venom",duration:600000}},
   "Ward Draught":{icon:"tonic",category:"Tonic",description:"A sigil tonic that resists hostile environments.",use:"Reduce environmental combat penalties for 10 minutes.",value:85,consume:{buff:"ward",duration:600000}},
   "Fortune Philter":{icon:"tonic",category:"Tonic",description:"A volatile astral mixture prized by treasure hunters.",use:"Increase equipment drop chance for 10 minutes.",value:140,consume:{buff:"fortune",duration:600000}},
+  "Trail Map":{icon:"map",category:"Chart",description:"A hand-marked route through the Greenveil frontier.",use:"Consumed by Huntsmanship to build early cache-finding tools.",value:16},
+  "Quarry Map":{icon:"map",category:"Chart",description:"A heat-stained survey of Ashen Quarry tunnels and camps.",use:"Consumed by Huntsmanship to prepare targeted gear hunts.",value:30},
+  "Frostmere Map":{icon:"map",category:"Chart",description:"A cold-proof chart of the pass, safe caves, and raider trails.",use:"Consumed by Huntsmanship to prepare boss lures and field kits.",value:48},
+  "Citadel Map":{icon:"map",category:"Chart",description:"A tactical route through Emberfall Citadel patrol lines.",use:"Used by Huntsmanship for higher-tier expedition planning.",value:72},
+  "Mire Map":{icon:"map",category:"Chart",description:"A resin-sealed swamp chart with safe ground and ambush routes.",use:"Used by Huntsmanship to prepare venom-focused combat supplies.",value:96},
+  "Sunscar Map":{icon:"map",category:"Chart",description:"A mirrored desert route that tracks shade, ruins, and glass storms.",use:"Used by Huntsmanship to prepare warding supplies for severe zones.",value:125},
+  "Tempest Map":{icon:"map",category:"Chart",description:"A stormproof cliff chart etched with lightning channels.",use:"Used by Huntsmanship to plan high-value treasure routes.",value:155},
+  "Astral Scar Map":{icon:"map",category:"Chart",description:"A shifting star chart of fractured ground and void landmarks.",use:"Used by Huntsmanship to recover late-game reforging supplies.",value:190},
+  "Tracking Snare":{icon:"tool",category:"Hunting Tool",description:"A quiet field snare marked with fresh trail signs.",use:"Use before combat for +4% zone cache chance for 10 minutes.",value:28,consume:{buff:"tracking",duration:600000}},
+  "Hunter Mark":{icon:"tool",category:"Hunting Tool",description:"A waxed target token carrying enemy gait notes and weak-point marks.",use:"Use before combat for +2.5% equipment drop chance for 10 minutes.",value:58,consume:{buff:"huntermark",duration:600000}},
+  "Boss Lure":{icon:"tool",category:"Hunting Tool",description:"A dark bait charm made to draw repeat bosses into richer ambushes.",use:"Use before repeat boss fights for +2 cache rolls and extra forge rewards for 10 minutes.",value:115,consume:{buff:"bosslure",duration:600000}},
   "Wooden Grip":{icon:"logs",category:"Forge Component",description:"A shaped handle fitted to forged weapons.",use:"Used when crafting swords, blades, and other weapon gear.",value:6},
   "Shield Frame":{icon:"shield",category:"Forge Component",description:"A braced core that gives shields their structure.",use:"Used when crafting shields, wards, aegises, and bulwarks.",value:9},
   "Armor Lining":{icon:"body",category:"Forge Component",description:"Padded reinforcement fitted beneath metal armor.",use:"Used when crafting helms, crowns, plates, and body armor.",value:9},
@@ -904,6 +915,20 @@ const skillData = {
       {id:"leviathan",name:"Leviathan Banquet",level:92,time:11200,xp:290,item:"Leviathan Banquet",qty:1,costs:{"Leviathan Meat":1,"Worldroot Logs":1},description:"Create a legendary banquet from an abyssal catch."}
     ]
   },
+  cartography: {
+    name:"Cartography", letter:"R",
+    description:"Chart hostile routes, boss lairs, and resource trails so Huntsmanship can turn exploration into field advantages.",
+    actions: [
+      {id:"trail",name:"Trail Survey",level:1,time:4200,xp:18,item:"Trail Map",qty:1,costs:{"Logs":1,"Goblin Scrap":1},description:"Mark Greenveil paths, forage points, and safe ambush lanes."},
+      {id:"quarry",name:"Quarry Survey",level:15,time:5600,xp:36,item:"Quarry Map",qty:1,costs:{"Oak Logs":1,"Cinder Scale":2,"Coal":1},description:"Sketch Ashen Quarry tunnels, heat vents, and kobold routes."},
+      {id:"frostmere",name:"Frostmere Chart",level:30,time:7000,xp:62,item:"Frostmere Map",qty:1,costs:{"Emberpine Logs":1,"Frozen Sigil":2,"Silver Ore":1},description:"Create a cold-proof chart of passes, caves, and raider tracks."},
+      {id:"citadel",name:"Citadel War Map",level:45,time:8500,xp:92,item:"Citadel Map",qty:1,costs:{"Maple Logs":1,"Emberguard Seal":2,"Steel Bar":1},description:"Record guard rotations and forge routes through the burning fortress."},
+      {id:"mire",name:"Mire Marsh Map",level:58,time:9700,xp:128,item:"Mire Map",qty:1,costs:{"Yew Logs":1,"Mire Resin":2,"Obsidian":1},description:"Seal a swamp chart against rot, marking safe roots and venom dens."},
+      {id:"sunscar",name:"Sunscar Route Map",level:70,time:11000,xp:178,item:"Sunscar Map",qty:1,costs:{"Ashen Logs":1,"Sunscar Hide":2,"Runite Ore":1},description:"Trace shade lines, glass dunes, and buried shrine approaches."},
+      {id:"tempest",name:"Tempest Cliff Map",level:82,time:12400,xp:245,item:"Tempest Map",qty:1,costs:{"Ashen Logs":1,"Stormglass":2,"Astral Ore":1},description:"Bind stormglass bearings into a cliff chart that survives lightning."},
+      {id:"astral",name:"Astral Scar Map",level:92,time:14000,xp:335,item:"Astral Scar Map",qty:1,costs:{"Worldroot Logs":1,"Void Shard":2,"Star Metal":1},description:"Anchor a shifting star chart of void rifts and late-game trophy paths."}
+    ]
+  },
   alchemy: {
     name:"Alchemy", letter:"Y",
     actions: [
@@ -917,6 +942,19 @@ const skillData = {
       {id:"prospector",name:"Prospector Draught",level:65,time:8400,xp:145,item:"Prospector Draught",qty:1,costs:{"Emberguard Seal":2,"Obsidian Alloy":1},description:"Bind a citadel seal into an extract that improves gathering yield."}
       ,{id:"fortune",name:"Fortune Philter",level:80,time:9800,xp:235,item:"Fortune Philter",qty:1,costs:{"Stormglass":2,"Astral Bar":1},description:"Distill stormlight into a treasure hunter's philter."}
     ]
+  },
+  huntsmanship: {
+    name:"Huntsmanship", letter:"H",
+    description:"Turn maps and monster signs into practical hunting tools, targeted marks, boss lures, and late-game combat supplies.",
+    actions: [
+      {id:"snare",name:"Tracking Snare",level:1,time:4800,xp:22,item:"Tracking Snare",qty:1,costs:{"Trail Map":1,"Goblin Scrap":2,"Logs":1},description:"Build a quiet snare kit that improves zone cache discovery."},
+      {id:"mark",name:"Hunter Mark",level:18,time:6300,xp:46,item:"Hunter Mark",qty:1,costs:{"Quarry Map":1,"Cinder Scale":2,"Oak Logs":1},description:"Prepare a target mark that improves equipment drop odds during hunts."},
+      {id:"lure",name:"Boss Lure",level:35,time:8200,xp:82,item:"Boss Lure",qty:1,costs:{"Frostmere Map":1,"Frozen Sigil":2,"Silver Bar":1},description:"Bind a boss lure that improves repeat boss chest payouts."},
+      {id:"venomkit",name:"Mire Venom Kit",level:55,time:9500,xp:122,item:"Venom Oil",qty:1,costs:{"Mire Map":1,"Rotbloom":1,"Raw Ember Eel":1},description:"Use mire route knowledge to stabilize a stronger offensive oil."},
+      {id:"wardkit",name:"Sunscar Ward Kit",level:70,time:10800,xp:170,item:"Ward Draught",qty:1,costs:{"Sunscar Map":1,"Sunscar Hide":2,"Runic Bar":1},description:"Prepare warding supplies for harsh environments and boss pressure."},
+      {id:"fortunekit",name:"Tempest Fortune Route",level:82,time:12200,xp:240,item:"Fortune Philter",qty:1,costs:{"Tempest Map":1,"Stormglass":2,"Astral Bar":1},description:"Convert storm route planning into high-value treasure philters."},
+      {id:"reforgekit",name:"Astral Trophy Route",level:92,time:13800,xp:330,item:"Reforge Token",qty:1,costs:{"Astral Scar Map":1,"Void Shard":2,"Forge Essence":2},description:"Follow late-game trophy routes to recover reforging services."}
+    ]
   }
 };
 
@@ -925,16 +963,17 @@ const defaultState = () => ({
   autoEat:false, combatChain:0, bossDefeated:Array(zoneData.length).fill(false), zoneThreats:Array(zoneData.length).fill(0),
   coins:0, inventory:{}, equipment:{ weapon:"Rusty Sword", shield:"Wooden Shield", body:"Leather Jerkin", head:"None" },
   gearVault:[], gearMigrated:false, nextGearId:1, lockedItems:[], lockedGear:[],
-  skills:{ mining:{xp:0,masteryXp:0}, woodcutting:{xp:0,masteryXp:0}, fishing:{xp:0,masteryXp:0}, smithing:{xp:0,masteryXp:0}, cooking:{xp:0,masteryXp:0}, alchemy:{xp:0,masteryXp:0}, attack:{xp:0}, strength:{xp:0}, defence:{xp:0}, hitpoints:{xp:0} },
+  skills:{ mining:{xp:0,masteryXp:0}, woodcutting:{xp:0,masteryXp:0}, fishing:{xp:0,masteryXp:0}, cartography:{xp:0,masteryXp:0}, smithing:{xp:0,masteryXp:0}, cooking:{xp:0,masteryXp:0}, alchemy:{xp:0,masteryXp:0}, huntsmanship:{xp:0,masteryXp:0}, attack:{xp:0}, strength:{xp:0}, defence:{xp:0}, hitpoints:{xp:0} },
   upgrades:{
     mining:{speed:0,yield:0,mastery:0}, woodcutting:{speed:0,yield:0,mastery:0},
-    fishing:{speed:0,yield:0,mastery:0}, smithing:{speed:0,yield:0,mastery:0},
-    cooking:{speed:0,yield:0,mastery:0}, alchemy:{speed:0,yield:0,mastery:0}
+    fishing:{speed:0,yield:0,mastery:0}, cartography:{speed:0,yield:0,mastery:0},
+    smithing:{speed:0,yield:0,mastery:0}, cooking:{speed:0,yield:0,mastery:0},
+    alchemy:{speed:0,yield:0,mastery:0}, huntsmanship:{speed:0,yield:0,mastery:0}
   },
-  activeSkill:null, selectedActions:{mining:"copper",woodcutting:"normal",fishing:"shrimp",smithing:"bronze",cooking:"stew",alchemy:"health"},
+  activeSkill:null, selectedActions:{mining:"copper",woodcutting:"normal",fishing:"shrimp",cartography:"trail",smithing:"bronze",cooking:"stew",alchemy:"health",huntsmanship:"snare"},
   productionQueue:[], queueRunning:false, nextQueueId:1,
   actionMastery:{},
-  buffs:{battle:0,artisan:0,prospector:0,trailmeal:0,wardenmeal:0,embermeal:0,tunameal:0,stormmeal:0,frostmeal:0,leviathanmeal:0,ironbark:0,swiftwater:0,venom:0,ward:0,fortune:0},
+  buffs:{battle:0,artisan:0,prospector:0,trailmeal:0,wardenmeal:0,embermeal:0,tunameal:0,stormmeal:0,frostmeal:0,leviathanmeal:0,ironbark:0,swiftwater:0,venom:0,ward:0,fortune:0,tracking:0,huntermark:0,bosslure:0},
   enemyStatus:{}, playerStatus:{poisonTicks:0,poisonNext:0},
   combatEvent:{id:"",expiresAt:0,nextAt:0},
   combatAutomation:{offline:true,stopHp:15,stopAfter:0,killsRun:0,stopWhenFoodEmpty:false},
@@ -1175,7 +1214,8 @@ function zoneThreatMultiplier(index=state.currentZone) { return 1+zoneThreatRank
 function threatGearChance(index=state.currentZone,enemyName="") {
   const enemy=enemyName||(index===state.currentZone ? currentEnemy()?.name : "");
   const achievementChance=achievementBonus("gearChance",{zone:index,enemy});
-  return Math.min(.18,.035+zoneThreatRank(index)*.015+(townBranch("hall","hunters")?(state.town.hall||0)*.02:0)+(relicActive("Solar Core") ? .02 : 0)+(isBuffActive("fortune") ? .04 : 0)+achievementChance);
+  const hunterMark=isBuffActive("huntermark") ? .025 : 0;
+  return Math.min(.24,.035+zoneThreatRank(index)*.015+(townBranch("hall","hunters")?(state.town.hall||0)*.02:0)+(relicActive("Solar Core") ? .02 : 0)+(isBuffActive("fortune") ? .04 : 0)+hunterMark+achievementChance);
 }
 function combatDamageMultiplier() {
   const relic=relicActive("Cinder Crown") ? .05 : 0;
@@ -1217,7 +1257,7 @@ function enemyBonusDropChance(enemy=currentEnemy(),zoneIndex=state.currentZone,c
 function zoneCacheChance(zoneIndex=state.currentZone,chain=state.combatChain||0) {
   const cache=zoneData[zoneIndex]?.cache;
   if (!cache) return 0;
-  return Math.min(.35,(cache.chance||0)+zoneThreatRank(zoneIndex)*.025+Math.min(.06,chain*.002)+(isBuffActive("fortune") ? .03 : 0));
+  return Math.min(.42,(cache.chance||0)+zoneThreatRank(zoneIndex)*.025+Math.min(.06,chain*.002)+(isBuffActive("fortune") ? .03 : 0)+(isBuffActive("tracking") ? .04 : 0));
 }
 function weightedDrop(entries=[]) {
   const total=entries.reduce((sum,entry)=>sum+(entry.weight||1),0);
@@ -1262,21 +1302,22 @@ function bossFirstClearReward(zoneIndex=state.currentZone,enemy=currentEnemy()) 
 function rollBossChestReward(zoneIndex=state.currentZone,enemy=currentEnemy(),firstClear=false) {
   const repeatKills=state.bestiary.bosses?.[enemy.name]||0;
   const threat=zoneThreatRank(zoneIndex);
+  const bossLure=isBuffActive("bosslure") && !firstClear;
   const baseCoins=firstClear
     ? 0
     : Math.round((enemy.coins?.[0]||0)*(.35+threat*.1+Math.min(.65,repeatKills*.045)));
   const reward=makeReward(baseCoins,{});
   const cacheRolls=firstClear
     ? 0
-    : 2+Math.min(4,threat)+Math.min(6,Math.floor(Math.sqrt(repeatKills+1))*2);
+    : 2+Math.min(4,threat)+Math.min(6,Math.floor(Math.sqrt(repeatKills+1))*2)+(bossLure ? 2 : 0);
   if (cacheRolls) mergeRewardItems(reward,rollZoneCacheReward(zoneIndex,cacheRolls,1.15+threat*.15+Math.min(.75,repeatKills*.04)).items);
   if (firstClear) {
     const firstReward=bossFirstClearReward(zoneIndex,enemy);
     mergeRewardItems(reward,firstReward.items);
     reward.coins+=(firstReward.coins||0);
   } else {
-    addRewardItem(reward,"Forge Essence",1+Math.floor(zoneIndex/2)+Math.floor(threat/2)+Math.floor(repeatKills/5));
-    if (zoneIndex>=1 || threat>=2 || repeatKills>0) addRewardItem(reward,"Reforge Token",1+Math.floor(threat/3)+Math.floor(repeatKills/8));
+    addRewardItem(reward,"Forge Essence",1+Math.floor(zoneIndex/2)+Math.floor(threat/2)+Math.floor(repeatKills/5)+(bossLure ? 1 : 0));
+    if (zoneIndex>=1 || threat>=2 || repeatKills>0 || bossLure) addRewardItem(reward,"Reforge Token",1+Math.floor(threat/3)+Math.floor(repeatKills/8)+(bossLure ? 1 : 0));
     if (repeatKills>0 && (repeatKills+1)%5===0) addRewardItem(reward,enemy.item,1+Math.floor(threat/4));
     if (repeatKills>=9 || threat>=4) addRewardItem(reward,"Fortune Philter",1);
   }
@@ -1291,9 +1332,11 @@ function bossChestPreviewText(zoneIndex=state.currentZone) {
     return `First-clear chest - rare gear, ${3+Math.ceil(zoneIndex/2)} cache rolls, ${2+zoneIndex} Essence${tokenText}`;
   }
   const cacheRolls=2+Math.min(4,threat)+Math.min(6,Math.floor(Math.sqrt(repeatKills+1))*2);
-  const essence=1+Math.floor(zoneIndex/2)+Math.floor(threat/2)+Math.floor(repeatKills/5);
-  const tokens=(zoneIndex>=1 || threat>=2 || repeatKills>0) ? 1+Math.floor(threat/3)+Math.floor(repeatKills/8) : 0;
-  return `Repeat chest - ${cacheRolls} cache rolls, ${essence} Essence${tokens?`, ${tokens} Reforge Token`: ""}`;
+  const bossLure=isBuffActive("bosslure");
+  const lureCacheRolls=cacheRolls+(bossLure ? 2 : 0);
+  const essence=1+Math.floor(zoneIndex/2)+Math.floor(threat/2)+Math.floor(repeatKills/5)+(bossLure ? 1 : 0);
+  const tokens=(zoneIndex>=1 || threat>=2 || repeatKills>0 || bossLure) ? 1+Math.floor(threat/3)+Math.floor(repeatKills/8)+(bossLure ? 1 : 0) : 0;
+  return `Repeat chest - ${lureCacheRolls} cache rolls, ${essence} Essence${tokens?`, ${tokens} Reforge Token`: ""}${bossLure ? " - Boss Lure active" : ""}`;
 }
 function grantCombatCoins(reward,coins,track=true) {
   const amount=Math.max(0,Math.round(coins||0));
@@ -1428,6 +1471,8 @@ function itemIconType(name) {
   if (value.includes("logs")) return "logs";
   if (value.includes("raw")||value.includes("meat")) return "fish";
   if (value.includes("potion")||value.includes("tonic")||value.includes("draught")||value.includes("focus")) return "potion";
+  if (value.includes("map")||value.includes("chart")) return "map";
+  if (value.includes("snare")||value.includes("mark")||value.includes("lure")) return "tool";
   if (value.includes("sword")||value.includes("blade")||value.includes("dagger")) return "weapon";
   if (value.includes("shield")||value.includes("aegis")) return "shield";
   if (value.includes("helm")||value.includes("crown")) return "head";
@@ -2767,6 +2812,12 @@ function recommendedGoals() {
   }
   const foodCount=Object.entries(state.inventory).filter(([name])=>itemData[name]?.category==="Food").reduce((sum,[,qty])=>sum+qty,0);
   if (foodCount<5) goals.push({view:"cooking",title:"Prepare automatic combat food",detail:`Only ${foodCount} cooked meals available.`});
+  if ((state.inventory["Trail Map"]||0)<3 && (state.inventory["Goblin Scrap"]||0)>0 && (state.inventory["Logs"]||0)>0) {
+    goals.push({view:"cartography",title:"Chart Greenveil routes",detail:"Trail Maps turn early monster drops into hunting tools."});
+  }
+  if ((state.inventory["Tracking Snare"]||0)<2 && (state.inventory["Trail Map"]||0)>0) {
+    goals.push({view:"huntsmanship",title:"Prepare Tracking Snares",detail:"Hunting tools improve combat caches, gear targeting, and boss chests."});
+  }
   if (bossReady() && !state.bossDefeated[state.currentZone]) {
     goals.push({view:"combat",title:`Challenge ${currentZone().boss.name}`,detail:"The zone boss is ready."});
   } else if (!state.bossDefeated[state.currentZone]) {
@@ -2972,6 +3023,9 @@ function renderCombatSetup() {
 function renderCombatStatuses() {
   const statuses=[];
   if (state.playerStatus.poisonTicks>0) statuses.push(`Poisoned ${state.playerStatus.poisonTicks} ticks`);
+  if (isBuffActive("tracking")) statuses.push("Tracking Snare: cache routes");
+  if (isBuffActive("huntermark")) statuses.push("Hunter Mark: gear focus");
+  if (isBuffActive("bosslure")) statuses.push("Boss Lure: richer chests");
   document.querySelector("#combat-status-list").innerHTML=statuses.map(status=>`<span>${status}</span>`).join("");
 }
 

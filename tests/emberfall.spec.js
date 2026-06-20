@@ -2,7 +2,7 @@ const { test, expect } = require("@playwright/test");
 const fs = require("fs");
 const path = require("path");
 
-const BUILD_URL = "http://localhost:8000/?build=progression-v30";
+const BUILD_URL = "http://localhost:8000/?build=progression-v31";
 const itemSlug = name => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 test("loads the game and renders core progression surfaces", async ({ page }) => {
@@ -115,6 +115,23 @@ test("inventory explains item purpose and supports gear cleanup", async ({ page 
   await expect(page.locator("#inventory-grid")).toContainText("Trailbreaker Crest");
   await page.locator("#inventory-category").selectOption("equipment");
   await expect(page.locator("#inventory-grid")).toContainText("Iron Sword");
+  const toolbarLayout = await page.evaluate(() => {
+    const toolbar = document.querySelector(".inventory-toolbar").getBoundingClientRect();
+    const salvage = document.querySelector("#salvage-common-gear").getBoundingClientRect();
+    const button = document.querySelector("#salvage-common-gear");
+    return {
+      toolbarRight: toolbar.right,
+      salvageRight: salvage.right,
+      salvageWidth: salvage.width,
+      text: button.innerText.trim(),
+      scrollWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth
+    };
+  });
+  expect(toolbarLayout.text.toLowerCase()).toBe("salvage common gear");
+  expect(toolbarLayout.salvageRight).toBeLessThanOrEqual(toolbarLayout.toolbarRight + 1);
+  expect(toolbarLayout.salvageWidth).toBeGreaterThan(120);
+  expect(toolbarLayout.scrollWidth).toBeLessThanOrEqual(toolbarLayout.viewportWidth + 1);
 
   await page.getByRole("button", { name: "Protect Best Gear" }).click();
   let stateSnapshot = await page.evaluate(() => ({

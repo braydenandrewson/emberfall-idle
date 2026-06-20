@@ -267,9 +267,10 @@ h1,h2,h3 { font-family: Cinzel, serif; }
 .inventory-summary span,.inventory-summary strong { display:block; }
 .inventory-summary span { color:var(--muted); font-size:7px; text-transform:uppercase; letter-spacing:1px; }
 .inventory-summary strong { color:var(--gold-2); font-size:12px; margin-top:3px; }
-.inventory-toolbar { display:grid; grid-template-columns:minmax(150px,1fr) 155px 130px auto auto auto; gap:7px; margin-bottom:11px; }
+.inventory-toolbar { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr)); gap:7px; margin-bottom:11px; }
+#inventory-search { grid-column:span 2; }
 .inventory-toolbar input,.inventory-toolbar select { min-width:0; padding:10px; border:0; background:#111813; color:var(--cream); box-shadow:inset 0 0 0 1px #2b382e; font-size:9px; }
-.inventory-toolbar button { white-space:nowrap; }
+.inventory-toolbar button { min-width:0; white-space:normal; line-height:1.2; text-align:center; }
 .inventory-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(225px,1fr)); gap:10px; }
 .inventory-item { border:0; border-radius:11px; background:linear-gradient(155deg,#1a251d,#101612); padding:15px; min-height:245px; display:flex; flex-direction:column; box-shadow:inset 0 1px rgba(255,255,255,.04),0 10px 28px rgba(0,0,0,.14); }
 .inventory-item header { display:grid; grid-template-columns:58px 1fr auto; gap:10px; align-items:center; padding-bottom:8px; }
@@ -650,6 +651,7 @@ h1,h2,h3 { font-family: Cinzel, serif; }
   .zone-profile { grid-template-columns:repeat(3,1fr); }
   .zone-profile .zone-environment { grid-column:span 2; }
   .inventory-toolbar { grid-template-columns:1fr 1fr; }
+  #inventory-search { grid-column:1/-1; }
   .inventory-summary { grid-template-columns:repeat(2,1fr); }
   .achievement-grid { grid-template-columns:repeat(2,1fr); }
 }
@@ -730,6 +732,7 @@ h1,h2,h3 { font-family: Cinzel, serif; }
   .inventory-guide { padding:9px 10px; margin-bottom:8px; }
   .inventory-summary { grid-template-columns:repeat(2,1fr); }
   .inventory-toolbar { grid-template-columns:1fr 1fr; gap:6px; margin-bottom:9px; }
+  #inventory-search { grid-column:1/-1; }
   .inventory-toolbar input,.inventory-toolbar button { grid-column:1/-1; }
   .inventory-grid { grid-template-columns:repeat(auto-fit,minmax(min(100%,245px),1fr)); gap:8px; }
   .inventory-item { min-height:0; padding:12px; }
